@@ -33,6 +33,7 @@ npm-debug.log
 yarn-error.log
 testem.log
 /typings
+.playwright-mcp
 
 # Environment variables and secrets
 .env
