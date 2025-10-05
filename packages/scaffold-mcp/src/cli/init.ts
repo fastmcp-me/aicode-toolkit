@@ -4,14 +4,39 @@ import * as fs from 'fs-extra';
 import { icons, logger, sections } from '../utils/console';
 
 /**
+ * Find the workspace root by searching upwards for .git folder
+ */
+async function findWorkspaceRoot(startPath: string = process.cwd()): Promise<string> {
+  let currentPath = path.resolve(startPath);
+  const rootPath = path.parse(currentPath).root;
+
+  while (true) {
+    // Check if .git folder exists (repository root)
+    const gitPath = path.join(currentPath, '.git');
+    if (await fs.pathExists(gitPath)) {
+      return currentPath;
+    }
+
+    // Check if we've reached the filesystem root
+    if (currentPath === rootPath) {
+      // No .git found, return current working directory as workspace root
+      return process.cwd();
+    }
+
+    // Move up to parent directory
+    currentPath = path.dirname(currentPath);
+  }
+}
+
+/**
  * Init command - initialize templates folder
  */
 export const initCommand = new Command('init')
-  .description('Initialize templates folder structure')
-  .option('--path <path>', 'Path to templates folder', './templates')
-  .action(async (options) => {
+  .description('Initialize templates folder structure at workspace root')
+  .action(async () => {
     try {
-      const templatesPath = path.resolve(options.path);
+      const workspaceRoot = await findWorkspaceRoot();
+      const templatesPath = path.join(workspaceRoot, 'templates');
 
       logger.info(`${icons.rocket} Initializing templates folder at: ${templatesPath}`);
 
