@@ -229,7 +229,7 @@ pnpm release
 ## Documentation
 
 - **[Scaffold MCP Guide](./packages/scaffold-mcp/README.md)** - Complete guide to the scaffolding MCP server
-- **[Contributing Guide](./.github/CONTRIBUTING.md)** - How to contribute to this project
+- **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute to this project
 - **[Publishing Guide](./PUBLISHING.md)** - Release and versioning workflow
 
 ---
@@ -260,7 +260,7 @@ We welcome contributions! Whether it's bug reports, feature requests, or pull re
 6. 🚀 Push to your branch (`git push origin feature/amazing-feature`)
 7. 🎉 Open a Pull Request
 
-See [CONTRIBUTING.md](./.github/CONTRIBUTING.md) for detailed guidelines.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
