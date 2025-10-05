@@ -1,80 +1,179 @@
 # AI Code Toolkit
 
-A collection of Model Context Protocol (MCP) servers for AI-powered development tools.
+> Scale your AI coding agents with scaffolding, architecture patterns, and validation rules
+
+[![npm version](https://img.shields.io/npm/v/@agiflowai/scaffold-mcp.svg?style=flat-square)](https://www.npmjs.com/package/@agiflowai/scaffold-mcp)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg?style=flat-square)](https://opensource.org/licenses/AGPL-3.0)
+[![Node.js Version](https://img.shields.io/node/v/@agiflowai/scaffold-mcp?style=flat-square)](https://nodejs.org)
+
+A collection of [Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers and tools that help AI coding agents maintain consistency, follow conventions, and scale with your codebase.
+
+---
+
+## Contents
+
+- [Why This Exists](#why-this-exists)
+- [Core Pillars](#core-pillars)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Quick Start](#quick-start)
+- [Packages](#packages)
+- [Our Approach](#our-approach)
+- [Development](#development)
+- [Documentation](#documentation)
+- [Version Support](#version-support)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
 
 ## Why This Exists
 
-As projects evolve from MVP to mature state, they develop patterns, conventions, and opinionated approaches. Unfortunately, custom instructions (prompts) alone don't always ensure coding agents follow your requirements. As complexity grows, documenting all conventions and patterns in custom instructions and `.md` files overloads the context window.
+As projects evolve from MVP to production, they develop patterns, conventions, and opinionated approaches. Custom instructions alone struggle to ensure AI agents follow these requirements—especially as complexity grows and context windows fill up.
 
-This toolkit provides building blocks to scale coding agent capabilities as your project grows. Whether you're going from 0 to 1 or managing a complex monorepo with multiple apps and APIs, these tools ensure coding agents integrate with your internal processes and opinionated setup.
+**AI Code Toolkit provides building blocks to scale coding agent capabilities:**
 
-### Three Core Pillars
+- ✅ Generate code that follows your team's conventions
+- ✅ Enforce architectural patterns automatically
+- ✅ Validate agent outputs programmatically
+- ✅ Work with any AI coding agent (Claude, Cursor, etc.)
+- ✅ Support any tech stack (Next.js, React, or custom frameworks)
 
-**1. Scaffolding Templates**
+Whether you're bootstrapping a new project or managing a complex monorepo, these tools ensure AI agents integrate seamlessly with your development workflow.
 
-Scaffolding ensures standardization. Combining templating with LLMs generates code that follows your internal conventions while reducing template maintenance effort.
+---
 
-**2. Architecture + Design Patterns**
+## Core Pillars
 
-As projects grow, convention becomes more important than configuration. Frameworks like Ruby on Rails and Angular demonstrate how opinionated approaches make code easier to find and understand—the same principle applies to coding agents.
+### 1. 🏗️ Scaffolding Templates
 
-**3. Rules**
+Combine templating with LLMs to generate standardized code that follows your internal conventions while reducing maintenance overhead.
 
-Think of architecture and design patterns as pre-steps to guide the coding agent, and rules as post-checks to enforce your processes. Rules can be quantitative or qualitative, providing programmatic validation of agent outputs.
+### 2. 🎨 Architecture + Design Patterns
 
-## Our Approach
+Convention over configuration scales. Like Ruby on Rails or Angular, opinionated approaches make code predictable—for both humans and AI agents.
 
-### Agent Agnostic
+### 3. ✅ Rules
 
-The toolkit includes MCPs for scaffolding, architecture guidance, rules checking, and more. These MCPs work with any coding agent. Each library also provides CLI commands as alternatives to MCP tools, allowing you to script deterministic workflows.
+Pre-flight guidance + post-flight validation = consistent output. Rules provide programmatic checks (quantitative or qualitative) to enforce your processes.
 
-### Tech Stack Agnostic
+---
 
-The toolkit works with any tech stack. While we provide templates for popular frameworks (Next.js, Vite React, etc.), you can create custom templates for any framework. If your stack isn't covered, use the provided custom instructions or built-in MCP tools to generate your own templates.
+## Getting Started
 
-### Coding Tool Specific
+### Prerequisites
 
-To maximize effectiveness, combine MCPs with custom instructions, slash commands, and hooks. Follow this experimentation flow:
+- **Node.js**: `>= 18` (LTS recommended)
+- **Package Manager**: `pnpm` (or `npm`/`yarn`)
+- **Git**: `>= 2.13.2`
 
-1. **Install MCP servers** - Let the MCPs' default prompts guide the agent
-2. **Add custom instructions** - Use `CLAUDE.md`, `AGENTS.md`, etc. to specify when to use particular MCP servers
-3. **Add hooks** - Use CLI commands directly or intercept tool calls (e.g., prevent agents from creating arbitrary files when template features exist, prompting them to use scaffolding MCP instead)
+### Quick Start
 
-Calibrate these three steps to find the sweet spot for your project and tools. No one-size-fits-all solution exists.
+#### Option 1: Use as MCP Server (with Claude Desktop)
+
+1. **Install the package:**
+   ```bash
+   pnpm install @agiflowai/scaffold-mcp
+   ```
+
+2. **Configure Claude Desktop:**
+   Add to your MCP settings:
+   ```json
+   {
+     "mcpServers": {
+       "scaffold": {
+         "command": "scaffold-mcp",
+         "args": ["mcp-serve"]
+       }
+     }
+   }
+   ```
+
+3. **Start using it:**
+   The MCP server tools will be available in Claude Desktop.
+
+#### Option 2: Use as CLI
+
+```bash
+# Install globally or use npx
+pnpm install -g @agiflowai/scaffold-mcp
+
+# Initialize templates
+scaffold-mcp init
+
+# List available boilerplates
+scaffold-mcp boilerplate list
+
+# Create a new project
+scaffold-mcp boilerplate create nextjs-15 --vars '{"appName":"my-app"}'
+
+# Add features to existing projects
+scaffold-mcp scaffold list ./my-app
+scaffold-mcp scaffold add scaffold-nextjs-page --vars '{"pageName":"dashboard"}'
+```
+
+For detailed usage, see the [scaffold-mcp documentation](./packages/scaffold-mcp/README.md).
+
+---
 
 ## Packages
 
 ### [@agiflowai/scaffold-mcp](./packages/scaffold-mcp)
 
-An MCP server for scaffolding applications with boilerplate templates and feature generators.
+MCP server for scaffolding applications with boilerplate templates and feature generators.
 
-**Features:**
-- Create projects from boilerplate templates
-- Add features to existing projects with custom generators
-- Template management (initialize, add from repositories)
-- Support for Next.js, Vite React, and custom boilerplates
-- Multiple transport modes: stdio, HTTP, SSE
-- Standalone CLI mode
+**Key Features:**
+- 🚀 Create projects from boilerplate templates
+- 🎯 Add features to existing projects (pages, components, services)
+- 📦 Template management (initialize, add from repositories)
+- 🔧 Built-in templates: Next.js 15, Vite + React
+- 🌐 Multiple transport modes: stdio, HTTP, SSE
+- 💻 Standalone CLI mode
 
-**Quick Start:**
-```bash
-# Install
-pnpm install @agiflowai/scaffold-mcp
+[View full documentation →](./packages/scaffold-mcp/README.md)
 
-# Run as MCP server (for Claude Desktop)
-scaffold-mcp mcp-serve
+### [@agiflowai/scaffold-generator](./packages/scaffold-generator)
 
-# Use as CLI
-scaffold-mcp init
-scaffold-mcp boilerplate list
-scaffold-mcp boilerplate create <name> --vars '{"appName":"my-app"}'
-```
+Core utilities and types for scaffold generators. Internal library used by `scaffold-mcp`.
 
-[View full documentation](./packages/scaffold-mcp/README.md)
+[View source →](./packages/scaffold-generator)
+
+---
+
+## Our Approach
+
+### 🤖 Agent Agnostic
+
+Works with any AI coding agent (Claude Code, Cursor, Windsurf, etc.). Each library provides:
+- **MCP tools** for integration with MCP-compatible agents
+- **CLI commands** for scripting deterministic workflows
+
+### 🛠️ Tech Stack Agnostic
+
+Built-in templates for popular frameworks:
+- Next.js 15
+- Vite + React
+- _More coming soon_
+
+Don't see your stack? Use the built-in MCP tools to generate custom templates—the system is fully extensible.
+
+### 🎯 Coding Tool Specific
+
+Maximize effectiveness by combining three layers:
+
+1. **MCP Servers** → Let tools guide the agent with their default prompts
+2. **Custom Instructions** → Use `CLAUDE.md`, `AGENTS.md` to specify when to use MCP tools
+3. **Hooks** → Intercept tool calls to enforce workflows (e.g., require scaffolding for new files)
+
+Experiment with these layers to find the right balance for your project. There's no one-size-fits-all solution.
+
+---
 
 ## Development
 
-This is an Nx monorepo. Common commands:
+This is an [Nx](https://nx.dev) monorepo using [pnpm](https://pnpm.io) for package management.
+
+### Common Commands
 
 ```bash
 # Install dependencies
@@ -86,41 +185,93 @@ pnpm build
 # Build a specific package
 pnpm exec nx build scaffold-mcp
 
-# Lint all packages
-pnpm lint
-
-# Lint and fix all packages
-pnpm lint:fix
-
-# Format code
-pnpm format
-
-# Check formatting
-pnpm format:check
-
 # Run tests
+pnpm test
 pnpm exec nx test scaffold-mcp
 
-# Type check
+# Lint and format
+pnpm lint              # Check for issues
+pnpm lint:fix          # Auto-fix issues
+pnpm format            # Format code
+pnpm format:check      # Check formatting
+
+# Type checking
+pnpm typecheck
 pnpm exec nx typecheck scaffold-mcp
 
-# View project graph
+# Visualize project graph
 pnpm exec nx graph
 ```
 
 ### Code Quality
 
-This project uses [Biome](https://biomejs.dev/) for linting and formatting:
-- **Fast**: Written in Rust, much faster than ESLint
-- **All-in-one**: Replaces ESLint and Prettier
-- **Zero config**: Works out of the box with sensible defaults
+We use [Biome](https://biomejs.dev/) for lightning-fast linting and formatting:
+- ⚡ **10-100x faster** than ESLint (written in Rust)
+- 🎯 **All-in-one**: Replaces ESLint + Prettier
+- 🔧 **Zero config**: Sensible defaults out of the box
 
-Configuration is in `biome.json` at the workspace root.
+Configuration: [`biome.json`](./biome.json)
+
+### Publishing
+
+See [PUBLISHING.md](./PUBLISHING.md) for the complete release workflow:
+
+```bash
+# Preview release (dry run)
+pnpm release:dry-run
+
+# Publish to npm
+pnpm release
+```
+
+---
+
+## Documentation
+
+- **[Scaffold MCP Guide](./packages/scaffold-mcp/README.md)** - Complete guide to the scaffolding MCP server
+- **[Contributing Guide](./.github/CONTRIBUTING.md)** - How to contribute to this project
+- **[Publishing Guide](./PUBLISHING.md)** - Release and versioning workflow
+
+---
+
+## Version Support
+
+| Component | Requirement |
+|-----------|-------------|
+| **Node.js** | `>= 18` (LTS recommended) |
+| **Git** | `>= 2.13.2` |
+| **pnpm** | `>= 9` (or use npm/yarn) |
+
+Security patches are applied to non-EOL versions. Features are added to the latest version only.
+
+---
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions! Whether it's bug reports, feature requests, or pull requests—all contributions are appreciated.
+
+**How to contribute:**
+
+1. 🍴 Fork the repository
+2. 🌿 Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. 💻 Make your changes
+4. ✅ Run tests and linting (`pnpm test && pnpm lint`)
+5. 📝 Commit your changes (follow [conventional commits](https://www.conventionalcommits.org))
+6. 🚀 Push to your branch (`git push origin feature/amazing-feature`)
+7. 🎉 Open a Pull Request
+
+See [CONTRIBUTING.md](./.github/CONTRIBUTING.md) for detailed guidelines.
+
+---
 
 ## License
 
-AGPL-3.0
+[AGPL-3.0](./LICENSE) © AgiflowIO
+
+---
+
+**Built with ❤️ by the AgiflowIO team**
+
+- 🐛 [Report Issues](https://github.com/AgiFlow/aicode-toolkit/issues)
+- 💬 [Discussions](https://github.com/AgiFlow/aicode-toolkit/discussions)
+- 🌐 [Website](https://agiflow.io)
