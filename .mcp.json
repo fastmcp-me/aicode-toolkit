@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "scaffold-mcp": {
+      "type": "stdio",
+      "command": "bun",
+      "args": ["run", "packages/scaffold-mcp/src/index.ts", "mcp-serve", "--admin-enable"],
+      "disabled": false
+    },
+    "nx-mcp": {
+      "type": "stdio",
+      "command": "pnpx",
+      "args": ["nx-mcp@latest"]
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "disabled": false
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "sh",
+      "args": ["-c", "pnpx @playwright/mcp@latest"],
+      "env": {},
+      "disabled": false
+    }
+  }
+}
