@@ -1,3 +1,14 @@
+## 0.3.0 (2025-10-06)
+
+### 🚀 Features
+
+- nextjs-15-drizzle template Add completed nextjs-15 template with drizzle and better-auth integration. ([8e21344](https://github.com/AgiFlow/aicode-toolkit/commit/8e21344))
+- **scaffold-mcp:** cli Update `add` command to get template from git sub folder. Update `init` command to pull all default templates. ([7b2da59](https://github.com/AgiFlow/aicode-toolkit/commit/7b2da59))
+
+### ❤️ Thank You
+
+- Vuong Ngo @AgiFlow
+
 ## 0.2.0 (2025-10-06)
 
 ### 🚀 Features

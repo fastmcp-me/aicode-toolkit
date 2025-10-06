@@ -1,7 +1,7 @@
 {
   "name": "@agiflowai/scaffold-generator",
   "description": "Shared utilities and types for scaffold generators",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "AGPL-3.0",
   "author": "AgiflowIO",
   "repository": {
