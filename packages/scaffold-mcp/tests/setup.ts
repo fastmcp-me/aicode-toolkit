@@ -1,14 +1,7 @@
 import { beforeEach, vi } from 'vitest';
 
-// Mock fs-extra
-vi.mock('fs-extra', () => ({
-  ensureDir: vi.fn(),
-  copy: vi.fn(),
-  writeFile: vi.fn(),
-  readFile: vi.fn(),
-  pathExists: vi.fn(),
-  remove: vi.fn(),
-}));
+// Note: fs-extra mock is in tests/__mocks__/fs-extra.ts
+// Vitest will automatically use it when vi.mock('fs-extra') is called
 
 // Mock @modelcontextprotocol/sdk
 vi.mock('@modelcontextprotocol/sdk/server/index.js', () => {

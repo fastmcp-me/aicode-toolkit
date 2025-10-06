@@ -12,10 +12,14 @@ export default defineConfig({
       exclude: ['node_modules/', 'tests/', 'dist/', '**/*.d.ts', '**/*.config.*', '**/index.ts'],
     },
     include: ['tests/**/*.test.ts'],
+    alias: {
+      'fs-extra': path.resolve(__dirname, './tests/__mocks__/fs-extra.ts'),
+    },
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'fs-extra': path.resolve(__dirname, './tests/__mocks__/fs-extra.ts'),
     },
   },
 });

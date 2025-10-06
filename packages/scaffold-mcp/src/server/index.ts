@@ -5,7 +5,12 @@ import {
   ListPromptsRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { GenerateBoilerplatePrompt, GenerateFeatureScaffoldPrompt } from '../prompts';
+import {
+  GenerateBoilerplatePrompt,
+  GenerateFeatureScaffoldPrompt,
+  ScaffoldApplicationPrompt,
+  ScaffoldFeaturePrompt,
+} from '../prompts';
 import { TemplatesManager } from '../services/TemplatesManager';
 import {
   GenerateBoilerplateFileTool,
@@ -45,6 +50,10 @@ export function createServer(options: ServerOptions = {}) {
   // Initialize prompts (admin only)
   const generateBoilerplatePrompt = adminEnabled ? new GenerateBoilerplatePrompt() : null;
   const generateFeatureScaffoldPrompt = adminEnabled ? new GenerateFeatureScaffoldPrompt() : null;
+
+  // Initialize user-facing prompts (always available)
+  const scaffoldApplicationPrompt = new ScaffoldApplicationPrompt();
+  const scaffoldFeaturePrompt = new ScaffoldFeaturePrompt();
 
   // Build instructions based on admin mode
   const baseInstructions = `Use this MCP server to create new project and adding a new feature (pages, component, services, etc...).
@@ -202,11 +211,16 @@ Example workflow for feature:
     throw new Error(`Unknown tool: ${name}`);
   });
 
-  // Prompt handlers (only available in admin mode)
-  if (adminEnabled) {
-    server.setRequestHandler(ListPromptsRequestSchema, async () => {
-      const prompts = [];
+  // Prompt handlers
+  server.setRequestHandler(ListPromptsRequestSchema, async () => {
+    const prompts = [];
 
+    // User-facing prompts (always available)
+    prompts.push(scaffoldApplicationPrompt.getDefinition());
+    prompts.push(scaffoldFeaturePrompt.getDefinition());
+
+    // Admin prompts (only in admin mode)
+    if (adminEnabled) {
       if (generateBoilerplatePrompt) {
         prompts.push(generateBoilerplatePrompt.getDefinition());
       }
@@ -214,34 +228,48 @@ Example workflow for feature:
       if (generateFeatureScaffoldPrompt) {
         prompts.push(generateFeatureScaffoldPrompt.getDefinition());
       }
+    }
 
-      return { prompts };
-    });
+    return { prompts };
+  });
 
-    server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
+  server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
 
-      if (name === GenerateBoilerplatePrompt.PROMPT_NAME) {
-        if (!generateBoilerplatePrompt) {
-          throw new Error('Prompt not available');
-        }
-        return {
-          messages: generateBoilerplatePrompt.getMessages(args as any),
-        };
+    // User-facing prompts (always available)
+    if (name === ScaffoldApplicationPrompt.PROMPT_NAME) {
+      return {
+        messages: scaffoldApplicationPrompt.getMessages(args as any),
+      };
+    }
+
+    if (name === ScaffoldFeaturePrompt.PROMPT_NAME) {
+      return {
+        messages: scaffoldFeaturePrompt.getMessages(args as any),
+      };
+    }
+
+    // Admin prompts (only in admin mode)
+    if (name === GenerateBoilerplatePrompt.PROMPT_NAME) {
+      if (!generateBoilerplatePrompt) {
+        throw new Error('Prompt not available');
       }
+      return {
+        messages: generateBoilerplatePrompt.getMessages(args as any),
+      };
+    }
 
-      if (name === GenerateFeatureScaffoldPrompt.PROMPT_NAME) {
-        if (!generateFeatureScaffoldPrompt) {
-          throw new Error('Prompt not available');
-        }
-        return {
-          messages: generateFeatureScaffoldPrompt.getMessages(args as any),
-        };
+    if (name === GenerateFeatureScaffoldPrompt.PROMPT_NAME) {
+      if (!generateFeatureScaffoldPrompt) {
+        throw new Error('Prompt not available');
       }
+      return {
+        messages: generateFeatureScaffoldPrompt.getMessages(args as any),
+      };
+    }
 
-      throw new Error(`Unknown prompt: ${name}`);
-    });
-  }
+    throw new Error(`Unknown prompt: ${name}`);
+  });
 
   return server;
 }

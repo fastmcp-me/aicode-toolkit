@@ -129,6 +129,7 @@ MCP server for scaffolding applications with boilerplate templates and feature g
 - 🔧 Built-in templates: Next.js 15, Vite + React
 - 🌐 Multiple transport modes: stdio, HTTP, SSE
 - 💻 Standalone CLI mode
+- 🎙️ Slash command prompts for AI coding agents
 
 [View full documentation →](./packages/scaffold-mcp/README.md)
 
@@ -166,6 +167,22 @@ Maximize effectiveness by combining three layers:
 3. **Hooks** → Intercept tool calls to enforce workflows (e.g., require scaffolding for new files)
 
 Experiment with these layers to find the right balance for your project. There's no one-size-fits-all solution.
+
+#### Slash Command Prompts
+
+The scaffold-mcp server provides built-in slash commands for AI coding agents like Claude Code:
+
+**For Users:**
+- **`/scaffold-mcp:scaffold-application`** - Guide the agent to create a new application from boilerplate templates
+- **`/scaffold-mcp:scaffold-feature`** - Guide the agent to add features (pages, components, services) to existing projects
+
+**For Template Creators:**
+- **`/scaffold-mcp:generate-boilerplate`** - Guide the agent to create a new boilerplate template configuration
+- **`/scaffold-mcp:generate-feature-scaffold`** - Guide the agent to create a new feature scaffold configuration
+
+These prompts provide step-by-step instructions to the AI agent, ensuring it follows the correct workflow for scaffolding tasks. They're automatically available when the MCP server is configured in your coding agent.
+
+📖 **[Learn how to use prompts →](./packages/scaffold-mcp/docs/how-to.md)**
 
 ---
 
@@ -229,6 +246,7 @@ pnpm release
 ## Documentation
 
 - **[Scaffold MCP Guide](./packages/scaffold-mcp/README.md)** - Complete guide to the scaffolding MCP server
+- **[How to Use Prompts](./packages/scaffold-mcp/docs/how-to.md)** - Step-by-step guide for using slash command prompts
 - **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute to this project
 - **[Publishing Guide](./PUBLISHING.md)** - Release and versioning workflow
 
