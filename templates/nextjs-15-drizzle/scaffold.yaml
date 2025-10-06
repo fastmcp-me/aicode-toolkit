@@ -34,15 +34,13 @@ boilerplate:
       - next.config.ts
       - postcss.config.js
       - .gitignore
-      - .env.local
+      - .env.example->.env.local
       - README.md
       - src/app/layout.tsx
       - src/app/page.tsx
       - src/app/globals.css
       - src/styles/colors.css
       - src/lib/utils.ts
-      - src/components/Example/index.tsx
-      - src/components/Example/Example.stories.tsx
       - .storybook/main.ts
       - .storybook/preview.ts
       - public/.gitkeep
@@ -65,7 +63,6 @@ boilerplate:
       - src/app/globals.css: Global styles using Tailwind 4's @import and @theme syntax
       - src/styles/colors.css: Optional color palette reference (can be removed or customized)
       - src/lib/utils.ts: Utility functions including cn() for className merging
-      - src/components/Example: Example component with Storybook story (can be renamed/removed)
       - .storybook/main.ts: Storybook configuration
       - .storybook/preview.ts: Storybook preview with Tailwind CSS and Playground view
       - drizzle.config.ts: (if withDrizzle) Drizzle Kit configuration for schema generation

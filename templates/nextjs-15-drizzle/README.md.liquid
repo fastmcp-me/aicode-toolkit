@@ -4,19 +4,67 @@
 
 ## Getting Started
 
-First, install dependencies:
+### 1. Install Dependencies
 
 ```bash
 npm install
 ```
+{% if withDrizzle %}
+### 2. Set Up Database
 
-Then, run the development server:
+Start the local database with Docker:
+
+```bash
+docker-compose up -d
+```
+
+This starts:{% if databaseProvider == "neon" %}
+- PostgreSQL 17 on port 5432
+- Neon Proxy on port 4444 (allows using Neon serverless driver locally){% else %}
+- PostgreSQL 17 on port 5432{% endif %}
+
+Copy `.env.local` and update if needed (default values work with docker-compose):
+
+```bash
+# .env.local is already configured for local development
+# DATABASE_URL is set to work with docker-compose
+```
+
+### 3. Run Database Migrations
+
+Generate and apply migrations:
+
+```bash
+# Generate migration files from schema
+npm run db:generate
+
+# Apply migrations to database
+npm run db:migrate
+```
+
+Optional - Open Drizzle Studio to view/manage your database:
+
+```bash
+npm run db:studio
+```
+{% endif %}
+### {% if withDrizzle %}4{% else %}2{% endif %}. Start Development Server
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see your app.
+
+### {% if withDrizzle %}5{% else %}3{% endif %}. Start Storybook (Optional)
+
+Run Storybook for component development:
+
+```bash
+npm run storybook
+```
+
+Open [http://localhost:6006](http://localhost:6006) to view components.
 
 ## Tech Stack
 
@@ -40,59 +88,6 @@ src/
 │   ├── schema.ts       # Database schema
 │   └── migrations/     # Migration files{% endif %}
 ```
-{% if withDrizzle %}
-## Database Setup
-
-### Option 1: Cloud-hosted Database
-
-1. Update the `DATABASE_URL` in `.env.local` with your {{ databaseProvider }} connection string
-
-### Option 2: Local Development with Docker
-
-1. Start the local database:
-
-```bash
-docker-compose up -d
-```
-
-2. Update the `DATABASE_URL` in `.env.local`:{% if databaseProvider == "neon" %}
-
-```bash
-# For Neon with local proxy (allows using Neon serverless driver locally)
-DATABASE_URL=postgres://postgres:postgres@db.localtest.me:5432/main
-```
-
-**Note:** For offline work, add `127.0.0.1 db.localtest.me` to your `/etc/hosts` file{% else %}
-
-```bash
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/main
-```{% endif %}
-
-### Running Migrations
-
-After setting up your database (cloud or local):
-
-1. Define your schema in `src/db/schema.ts`
-
-2. Generate and run migrations:
-
-```bash
-# Generate migration files
-npm run db:generate
-
-# Apply migrations to database
-npm run db:migrate
-
-# Or push schema directly (development only)
-npm run db:push
-```
-
-3. Open Drizzle Studio to manage your database:
-
-```bash
-npm run db:studio
-```
-{% endif %}
 
 ## Learn More
 
