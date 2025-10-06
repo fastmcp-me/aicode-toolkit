@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { BoilerplateService } from '../services/BoilerplateService';
 import { TemplatesManager } from '../services/TemplatesManager';
-import { icons, logger, messages, sections } from '../utils/console';
+import { icons, logger, messages, sections } from '../utils';
 
 // Get the templates directory
 const templatesDir = TemplatesManager.findTemplatesPathSync();

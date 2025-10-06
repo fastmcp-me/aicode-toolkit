@@ -1,8 +1,15 @@
 import path from 'node:path';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
-import { icons, logger, messages, sections } from '../utils/console';
-import { cloneRepository, cloneSubdirectory, parseGitHubUrl } from '../utils/git';
+import {
+  icons,
+  logger,
+  messages,
+  sections,
+  cloneRepository,
+  cloneSubdirectory,
+  parseGitHubUrl,
+} from '../utils';
 
 /**
  * Add command - add a template to templates folder
