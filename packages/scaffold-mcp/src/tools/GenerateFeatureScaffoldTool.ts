@@ -117,9 +117,7 @@ Best practices:
 - Use conditional includes with ?variableName=value for optional files
 - Use path mapping with -> when source and target paths differ
 - Use {{ variableName }} in target paths for dynamic file placement
-- Avoid wildcards unless you have a good reason
-
-See templates/nextjs-15/scaffold.yaml features section for examples.`,
+- Avoid wildcards unless you have a good reason`,
             items: {
               type: 'string',
             },

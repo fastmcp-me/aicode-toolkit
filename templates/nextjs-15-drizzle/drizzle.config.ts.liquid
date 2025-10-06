@@ -1,0 +1,43 @@
+/**
+ * Drizzle Kit Configuration
+ * 
+ * This file configures Drizzle Kit for database migrations and schema management.
+ * Drizzle Kit uses this config for commands like generate, migrate, push, pull, and studio.
+ * 
+ * DESIGN PATTERNS:
+ * - Configuration file pattern for Drizzle Kit CLI
+ * - Environment variable based database connection
+ * - Schema-first approach with migration tracking
+ * 
+ * CODING STANDARDS:
+ * - Use defineConfig() helper for type-safe configuration
+ * - Load environment variables from .env.local
+ * - Specify schema paths relative to project root
+ * - Set output directory for migration files
+ * - Define database dialect (postgresql, mysql, sqlite)
+ * 
+ * USAGE:
+ * - drizzle-kit generate: Generate SQL migrations from schema changes
+ * - drizzle-kit migrate: Apply migrations to database
+ * - drizzle-kit push: Push schema changes directly (development only)
+ * - drizzle-kit studio: Launch Drizzle Studio GUI
+ * 
+ * AVOID:
+ * - Don't commit .env.local with real credentials
+ * - Don't use push command in production (use migrations instead)
+ * - Don't modify generated migration files manually
+ */
+
+import { config } from 'dotenv';
+import { defineConfig } from 'drizzle-kit';
+
+config({ path: '.env.local' });
+
+export default defineConfig({
+  schema: './src/db/schema.ts',
+  out: './src/db/migrations',
+  dialect: 'postgresql',
+  dbCredentials: {
+    url: process.env.DATABASE_URL!,
+  },
+});

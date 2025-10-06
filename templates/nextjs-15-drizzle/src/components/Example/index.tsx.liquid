@@ -1,0 +1,38 @@
+/**
+ * {{ componentName }} Component
+ *
+ * DESIGN PATTERNS:
+ * - Composition Pattern: Build complex UIs from simple, reusable components
+ * - Type Safety: Extend HTML element props for full TypeScript support
+ *
+ * CODING STANDARDS:
+ * - Import cn() utility from @/lib/utils for className merging
+ * - Use React.ComponentPropsWithoutRef<'element'> for type inheritance
+ * - Apply Tailwind utility classes with conditional logic via cn()
+ * - Export component as default export
+ *
+ * USAGE:
+ * - Import: import {{ componentName }} from '@/components/{{ componentName }}'
+ * - Props: Extend with custom props using intersection types
+ * - Styling: Pass className prop, merged with default styles via cn()
+ */
+
+import * as React from 'react';
+
+import { cn } from '@/lib/utils';
+
+type {{ componentName }}Props = {
+  // Add your custom props here
+} & React.ComponentPropsWithoutRef<'div'>;
+
+export default function {{ componentName }}({
+  className,
+  children,
+  ...rest
+}: {{ componentName }}Props) {
+  return (
+    <div className={cn('', className)} {...rest}>
+      {children}
+    </div>
+  );
+}

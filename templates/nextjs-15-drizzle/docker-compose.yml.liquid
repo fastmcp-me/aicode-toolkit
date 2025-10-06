@@ -1,0 +1,51 @@
+# Docker Compose for Local Development
+#
+# This setup provides a local PostgreSQL database{% if databaseProvider == "neon" %} with Neon Proxy
+# allowing you to use the Neon serverless driver with a local database{% endif %}.
+#
+# Services:
+# - postgres: PostgreSQL 17 database server{% if databaseProvider == "neon" %}
+# - neon-proxy: HTTP/WebSocket proxy for Neon serverless driver{% endif %}
+#
+# Usage:
+# - Start: docker-compose up -d
+# - Stop: docker-compose down
+# - Reset data: docker-compose down -v
+#
+# Connection:
+# - PostgreSQL: postgres://postgres:postgres@localhost:5432/main{% if databaseProvider == "neon" %}
+# - Neon Proxy: postgres://postgres:postgres@db.localtest.me:5432/main
+#
+# Note: The neon-proxy uses db.localtest.me which points to 127.0.0.1
+# For offline work, add "127.0.0.1 db.localtest.me" to your hosts file{% endif %}
+
+services:
+  postgres:
+    image: postgres:17
+    command: '-d 1'
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=main
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+{% if databaseProvider == "neon" %}
+  neon-proxy:
+    image: ghcr.io/timowilhelm/local-neon-http-proxy:main
+    environment:
+      - PG_CONNECTION_STRING=postgres://postgres:postgres@postgres:5432/main
+    ports:
+      - '4444:4444'
+    depends_on:
+      postgres:
+        condition: service_healthy
+{% endif %}
+volumes:
+  db_data:

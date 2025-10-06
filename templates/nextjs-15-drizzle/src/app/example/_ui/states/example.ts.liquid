@@ -1,0 +1,48 @@
+/**
+ * {{ featureName }} State Management
+ *
+ * DESIGN PATTERNS:
+ * - Zustand store for client-side state
+ * - Single source of truth for component state
+ * - Actions colocated with state
+ *
+ * CODING STANDARDS:
+ * - Use 'use client' directive
+ * - Define TypeScript interface for state shape
+ * - Export hook with 'use' prefix (use{{ featureName }}Store)
+ * - Keep state minimal and focused
+ *
+ * USAGE:
+ * - Import: import { use{{ featureName }}Store } from '../states/{{ featureName | downcase }}'
+ * - Use in component: const { count, increment } = use{{ featureName }}Store()
+ * - Access specific state: const count = use{{ featureName }}Store((s) => s.count)
+ *
+ * AVOID:
+ * - Don't put server-side logic here
+ * - Don't store derived state - compute it
+ * - Don't make the store too large - split if needed
+ *
+ * NOTE:
+ * - This example uses Zustand. Install with: pnpm add zustand
+ * - You can also use React Context, useState, or other state solutions
+ */
+
+'use client';
+
+import { create } from 'zustand';
+
+interface {{ featureName }}State {
+  // Add your state properties here
+  count: number;
+  // Add your actions here
+  increment: () => void;
+  decrement: () => void;
+  reset: () => void;
+}
+
+export const use{{ featureName }}Store = create<{{ featureName }}State>((set) => ({
+  count: 0,
+  increment: () => set((state) => ({ count: state.count + 1 })),
+  decrement: () => set((state) => ({ count: state.count - 1 })),
+  reset: () => set({ count: 0 }),
+}));

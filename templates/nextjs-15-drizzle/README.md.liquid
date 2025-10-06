@@ -1,0 +1,103 @@
+# {{ appName }}
+
+{{ description }}
+
+## Getting Started
+
+First, install dependencies:
+
+```bash
+npm install
+```
+
+Then, run the development server:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Tech Stack
+
+- **Next.js 15** - React framework with App Router
+- **React 19** - UI library
+- **TypeScript** - Type safety
+- **Tailwind CSS 4** - Utility-first CSS{% if withDrizzle %}
+- **Drizzle ORM** - Type-safe database ORM
+- **{{ databaseProvider | capitalize }}** - Database provider{% endif %}
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── layout.tsx      # Root layout
+│   ├── page.tsx        # Home page
+│   └── globals.css     # Global styles{% if withDrizzle %}
+├── db/
+│   ├── drizzle.ts      # Database client
+│   ├── schema.ts       # Database schema
+│   └── migrations/     # Migration files{% endif %}
+```
+{% if withDrizzle %}
+## Database Setup
+
+### Option 1: Cloud-hosted Database
+
+1. Update the `DATABASE_URL` in `.env.local` with your {{ databaseProvider }} connection string
+
+### Option 2: Local Development with Docker
+
+1. Start the local database:
+
+```bash
+docker-compose up -d
+```
+
+2. Update the `DATABASE_URL` in `.env.local`:{% if databaseProvider == "neon" %}
+
+```bash
+# For Neon with local proxy (allows using Neon serverless driver locally)
+DATABASE_URL=postgres://postgres:postgres@db.localtest.me:5432/main
+```
+
+**Note:** For offline work, add `127.0.0.1 db.localtest.me` to your `/etc/hosts` file{% else %}
+
+```bash
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/main
+```{% endif %}
+
+### Running Migrations
+
+After setting up your database (cloud or local):
+
+1. Define your schema in `src/db/schema.ts`
+
+2. Generate and run migrations:
+
+```bash
+# Generate migration files
+npm run db:generate
+
+# Apply migrations to database
+npm run db:migrate
+
+# Or push schema directly (development only)
+npm run db:push
+```
+
+3. Open Drizzle Studio to manage your database:
+
+```bash
+npm run db:studio
+```
+{% endif %}
+
+## Learn More
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Learn Next.js](https://nextjs.org/learn)
+- [Tailwind CSS](https://tailwindcss.com/docs){% if withDrizzle %}
+- [Drizzle ORM Documentation](https://orm.drizzle.team/docs/overview)
+- [Drizzle Kit Commands](https://orm.drizzle.team/docs/kit-overview){% endif %}

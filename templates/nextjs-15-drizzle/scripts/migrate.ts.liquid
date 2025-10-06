@@ -1,0 +1,21 @@
+import { config } from 'dotenv';
+config({ path: '.env.local' });
+
+{% if databaseProvider == 'neon' %}import { migrate } from 'drizzle-orm/neon-http/migrator';{% elsif databaseProvider == 'vercel-postgres' %}import { migrate } from 'drizzle-orm/vercel-postgres/migrator';{% elsif databaseProvider == 'supabase' or databaseProvider == 'local-postgres' %}import { migrate } from 'drizzle-orm/postgres-js/migrator';{% else %}import { migrate } from 'drizzle-orm/neon-http/migrator';{% endif %}
+import { db } from '../src/db/drizzle';
+
+async function main() {
+  console.log('Running migrations...');
+  console.log('DATABASE_URL:', process.env.DATABASE_URL);
+
+  await migrate(db, { migrationsFolder: './src/db/migrations' });
+
+  console.log('Migrations completed!');
+  process.exit(0);
+}
+
+main().catch((err) => {
+  console.error('Migration failed!');
+  console.error(err);
+  process.exit(1);
+});

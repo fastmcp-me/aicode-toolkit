@@ -1,0 +1,42 @@
+/**
+ * Request Validation Schema
+ * 
+ * DESIGN PATTERNS:
+ * - Uses Zod for runtime type validation
+ * - Provides type-safe validation with TypeScript inference
+ * - Returns validation results with detailed error messages
+ * 
+ * CODING STANDARDS:
+ * - Define schemas using z.object() for request bodies
+ * - Export schema types using z.infer<typeof schema>
+ * - Use safeParse() for validation to avoid throwing errors
+ * - Provide clear error messages for validation failures
+ * 
+ * AVOID:
+ * - Don't use parse() directly (use safeParse() instead)
+ * - Don't skip validation on untrusted input
+ * - Don't expose sensitive validation details to clients
+ */
+
+import { z } from 'zod';
+
+/**
+ * Request body validation schema
+ * Define your validation rules here
+ */
+export const requestSchema = z.object({
+  // TODO: Add your validation schema fields
+  // Example:
+  // name: z.string().min(1, 'Name is required'),
+  // email: z.string().email('Invalid email address'),
+  // age: z.number().min(0).optional(),
+});
+
+export type RequestBody = z.infer<typeof requestSchema>;
+
+/**
+ * Validates request body against schema
+ */
+export function validateRequest(data: unknown) {
+  return requestSchema.safeParse(data);
+}

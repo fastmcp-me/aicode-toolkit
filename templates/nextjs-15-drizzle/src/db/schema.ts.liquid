@@ -1,0 +1,53 @@
+/**
+ * Database Schema Definition
+ * 
+ * Define your database tables, columns, indexes, and relationships here.
+ * Drizzle Kit will generate migrations based on changes to this schema.
+ * 
+ * DESIGN PATTERNS:
+ * - Schema-first approach for type-safe database operations
+ * - Table definitions using Drizzle ORM builders
+ * - Automatic TypeScript type inference from schema
+ * 
+ * CODING STANDARDS:
+ * - Use descriptive table and column names (snake_case for DB, camelCase for TS)
+ * - Define primary keys, foreign keys, and constraints
+ * - Add indexes for frequently queried columns
+ * - Use appropriate data types for each column
+ * - Define default values where appropriate
+ * - Use relations for type-safe joins
+ * 
+ * USAGE:
+ * - Import tables: import { users, posts } from '@/db/schema'
+ * - Query with types: await db.select().from(users)
+ * - Infer types: type User = typeof users.$inferSelect
+ * - Insert types: type NewUser = typeof users.$inferInsert
+ * 
+ * MIGRATIONS:
+ * - Run `drizzle-kit generate` to create migration files
+ * - Run `drizzle-kit migrate` to apply migrations
+ * - Or use `drizzle-kit push` for development (no migration files)
+ * 
+ * AVOID:
+ * - Don't use reserved SQL keywords as column names
+ * - Don't delete columns that contain data without migration
+ * - Don't change column types without considering data migration
+ */
+
+import { pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+
+/**
+ * Example Table Schema
+ * Replace with your actual database tables
+ */
+export const exampleTable = pgTable('example_table', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Type inference examples
+// export type Example = typeof exampleTable.$inferSelect;
+// export type NewExample = typeof exampleTable.$inferInsert;

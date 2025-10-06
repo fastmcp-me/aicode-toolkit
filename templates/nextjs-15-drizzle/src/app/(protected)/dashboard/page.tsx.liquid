@@ -1,0 +1,65 @@
+/**
+ * Protected Dashboard Page
+ *
+ * DESIGN PATTERNS:
+ * - Protected route requiring authentication
+ * - Uses middleware or layout for auth check
+ * - Displays user session information
+ *
+ * CODING STANDARDS:
+ * - Check session on server side when possible
+ * - Show loading state while checking auth
+ * - Redirect to /sign-in if not authenticated
+ */
+
+"use client";
+
+import { useSession } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+export default function DashboardPage() {
+  const { data: session, isPending } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isPending && !session) {
+      router.push("/sign-in");
+    }
+  }, [session, isPending, router]);
+
+  if (isPending) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen p-8">
+      <div className="mx-auto max-w-4xl">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <div className="mt-6 rounded-lg border p-6">
+          <h2 className="text-xl font-semibold">Welcome, {session.user.name}!</h2>
+          <p className="mt-2 text-gray-600">Email: {session.user.email}</p>
+          <div className="mt-4">
+            <button
+              onClick={() => {
+                // Sign out logic
+                router.push("/sign-in");
+              }}
+              className="rounded-md bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

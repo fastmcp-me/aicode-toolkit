@@ -1,0 +1,40 @@
+/**
+ * {{ featureName }} Component
+ *
+ * DESIGN PATTERNS:
+ * - Client Component for interactivity
+ * - Props interface for type safety
+ * - className prop for styling flexibility
+ *
+ * CODING STANDARDS:
+ * - Use 'use client' directive at the top
+ * - Export props interface for reusability
+ * - Use cn() utility for className merging
+ * - Keep business logic in hooks or state management
+ *
+ * USAGE:
+ * - Import: import {{ featureName }} from './_ui/components/{{ featureName }}'
+ * - Use: <{{ featureName }} className="custom-class" />
+ *
+ * AVOID:
+ * - Don't fetch data here - receive as props from page.tsx
+ * - Don't put server-only code in this file
+ * - Don't hardcode styles - use Tailwind classes
+ */
+
+'use client';
+
+import { cn } from '@/lib/utils';
+
+export interface {{ featureName }}Props {
+  className?: string;
+}
+
+export default function {{ featureName }}({ className }: {{ featureName }}Props) {
+  return (
+    <div className={cn('', className)}>
+      <h1>{{ featureName }}</h1>
+      <p>Generated with scaffold-route-ui</p>
+    </div>
+  );
+}

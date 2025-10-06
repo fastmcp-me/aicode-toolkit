@@ -1,0 +1,195 @@
+/**
+ * {{ routeName }} API Route Handler
+ * 
+ * DESIGN PATTERNS:
+ * - Uses Next.js App Router Web Request/Response APIs
+ * - Each HTTP method is a separate exported async function
+ * - Returns NextResponse.json() for consistent JSON responses
+ * - Implements proper error handling with HTTP status codes
+ * 
+ * CODING STANDARDS:
+ * - Export async functions named after HTTP methods (GET, POST, etc.)
+ * - First parameter is always Request object
+ * - Use NextResponse for responses (supports headers, cookies, etc.)
+ * - Validate inputs before processing
+ * - Return appropriate status codes (200, 201, 400, 401, 404, 500)
+ * 
+ * CACHING:
+ * - GET methods can be cached with route segment config
+ * - Other methods (POST, PUT, DELETE) are never cached
+ * - Use 'export const dynamic' to control caching behavior
+ * 
+ * AVOID:
+ * - Don't mix with page.tsx at same route level
+ * - Don't use res/req from Pages Router (use Request/Response)
+ * - Don't forget error handling and proper status codes
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+{% if withValidation %}import { validateRequest } from './validation';{% endif %}
+
+// Route segment config (optional)
+// export const dynamic = 'force-dynamic'; // or 'force-static' for caching GET
+// export const runtime = 'nodejs'; // or 'edge'
+
+{% if methods contains 'GET' %}
+/**
+ * GET /api/{{ routePath }}
+ * Handles GET requests to retrieve data
+ */
+export async function GET(request: NextRequest) {
+  try {
+    // TODO: Implement GET logic
+    const data = { message: 'GET request successful' };
+    
+    return NextResponse.json(data, { status: 200 });
+  } catch (error) {
+    console.error('[{{ routeName }}] GET error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+{% endif %}
+
+{% if methods contains 'POST' %}
+/**
+ * POST /api/{{ routePath }}
+ * Handles POST requests to create new resources
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    {% if withValidation %}
+    // Validate request body
+    const validationResult = validateRequest(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: validationResult.error },
+        { status: 400 }
+      );
+    }
+    {% endif %}
+    {% if withAuth %}
+    // TODO: Add authentication check
+    // const session = await getSession(request);
+    // if (!session) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // }
+    {% endif %}
+
+    // TODO: Implement POST logic
+    const result = { message: 'Resource created', data: body };
+    
+    return NextResponse.json(result, { status: 201 });
+  } catch (error) {
+    console.error('[{{ routeName }}] POST error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+{% endif %}
+
+{% if methods contains 'PUT' %}
+/**
+ * PUT /api/{{ routePath }}
+ * Handles PUT requests to update resources
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    {% if withValidation %}
+    const validationResult = validateRequest(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: validationResult.error },
+        { status: 400 }
+      );
+    }
+    {% endif %}
+
+    // TODO: Implement PUT logic
+    const result = { message: 'Resource updated', data: body };
+    
+    return NextResponse.json(result, { status: 200 });
+  } catch (error) {
+    console.error('[{{ routeName }}] PUT error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+{% endif %}
+
+{% if methods contains 'PATCH' %}
+/**
+ * PATCH /api/{{ routePath }}
+ * Handles PATCH requests to partially update resources
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+
+    // TODO: Implement PATCH logic
+    const result = { message: 'Resource partially updated', data: body };
+    
+    return NextResponse.json(result, { status: 200 });
+  } catch (error) {
+    console.error('[{{ routeName }}] PATCH error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+{% endif %}
+
+{% if methods contains 'DELETE' %}
+/**
+ * DELETE /api/{{ routePath }}
+ * Handles DELETE requests to remove resources
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    {% if withAuth %}
+    // TODO: Add authentication check
+    // const session = await getSession(request);
+    // if (!session) {
+    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // }
+    {% endif %}
+
+    // TODO: Implement DELETE logic
+    
+    return NextResponse.json(
+      { message: 'Resource deleted' },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('[{{ routeName }}] DELETE error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+{% endif %}
+
+{% if methods contains 'OPTIONS' %}
+/**
+ * OPTIONS /api/{{ routePath }}
+ * Handles OPTIONS requests for CORS preflight
+ */
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Allow': '{{ methods }}',
+    },
+  });
+}
+{% endif %}

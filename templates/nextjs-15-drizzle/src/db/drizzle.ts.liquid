@@ -1,0 +1,73 @@
+/**
+ * Drizzle ORM Database Connection
+ * 
+ * This file initializes the Drizzle ORM client for database operations.
+ * Import this db instance anywhere you need to query or mutate data.
+ * 
+ * DESIGN PATTERNS:
+ * - Singleton pattern for database connection
+ * - Environment variable based configuration
+ * - Type-safe database client with schema inference
+ * 
+ * CODING STANDARDS:
+ * - Export a single db instance for the entire application
+ * - Load environment variables from .env.local
+ * - Use appropriate driver for your database provider
+ * - Import schema for type inference and relational queries
+ * 
+ * USAGE:
+ * - Import: import { db } from '@/db/drizzle'
+ * - Query: await db.select().from(users)
+ * - Insert: await db.insert(users).values({ ... })
+ * - Update: await db.update(users).set({ ... }).where(...)
+ * - Delete: await db.delete(users).where(...)
+ * 
+ * PERFORMANCE:
+ * - Connection pooling is handled by the driver
+ * - Serverless-optimized drivers (Neon, Vercel) use HTTP
+ * - Local drivers use traditional connection pooling
+ * 
+ * AVOID:
+ * - Don't create multiple db instances
+ * - Don't expose raw connection credentials
+ * - Don't use this in client components (server-side only)
+ */
+
+import { config } from 'dotenv';
+{% if databaseProvider == 'neon' %}import { drizzle } from 'drizzle-orm/neon-http';
+import { neon, neonConfig } from '@neondatabase/serverless';{% elsif databaseProvider == 'vercel-postgres' %}import { drizzle } from 'drizzle-orm/vercel-postgres';
+import { sql } from '@vercel/postgres';{% elsif databaseProvider == 'supabase' or databaseProvider == 'local-postgres' %}import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';{% else %}import { drizzle } from 'drizzle-orm/neon-http';
+import { neon, neonConfig } from '@neondatabase/serverless';{% endif %}
+import * as schema from './schema';
+
+config({ path: '.env.local' });
+
+{% if databaseProvider == 'neon' %}// Configure Neon for local development with proxy
+// Check if using local proxy (db.localtest.me or localhost)
+neonConfig.fetchEndpoint = (host) => {
+  // If host is localhost or db.localtest.me, use local proxy on port 4444
+  if (host === 'localhost' || host === 'db.localtest.me') {
+    console.log(`[Neon Config] Using local proxy for ${host}`);
+    return `http://${host}:4444/sql`;
+  }
+  // Otherwise, use default HTTPS
+  return `https://${host}/sql`;
+};
+
+const sql = neon(process.env.DATABASE_URL!);
+export const db = drizzle(sql, { schema });{% elsif databaseProvider == 'vercel-postgres' %}export const db = drizzle(sql, { schema });{% elsif databaseProvider == 'supabase' or databaseProvider == 'local-postgres' %}const client = postgres(process.env.DATABASE_URL!);
+export const db = drizzle(client, { schema });{% else %}// Configure Neon for local development with proxy
+// Check if using local proxy (db.localtest.me or localhost)
+neonConfig.fetchEndpoint = (host) => {
+  // If host is localhost or db.localtest.me, use local proxy on port 4444
+  if (host === 'localhost' || host === 'db.localtest.me') {
+    console.log(`[Neon Config] Using local proxy for ${host}`);
+    return `http://${host}:4444/sql`;
+  }
+  // Otherwise, use default HTTPS
+  return `https://${host}/sql`;
+};
+
+const sql = neon(process.env.DATABASE_URL!);
+export const db = drizzle(sql, { schema });{% endif %}

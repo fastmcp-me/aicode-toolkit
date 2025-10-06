@@ -1,0 +1,21 @@
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
+  eslint: {
+    dirs: ['src'],
+  },
+
+  reactStrictMode: true,
+
+  // Uncomment to add domain whitelist
+  // images: {
+  //   remotePatterns: [
+  //     {
+  //       protocol: 'https',
+  //       hostname: 'res.cloudinary.com',
+  //     },
+  //   ]
+  // },
+};
+
+export default nextConfig;
