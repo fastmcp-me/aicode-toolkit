@@ -1,16 +1,10 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import { FileSystemService } from '../services/FileSystemService';
 import { ScaffoldingMethodsService } from '../services/ScaffoldingMethodsService';
-import { icons, logger, messages } from '../utils/console';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Get the templates directory
-const templatesDir = path.resolve(__dirname, '../../../../templates');
+import { TemplatesManager } from '../services/TemplatesManager';
+import { icons, logger, messages } from '../utils';
 
 /**
  * Scaffold CLI command
@@ -33,6 +27,7 @@ scaffoldCommand
         process.exit(1);
       }
 
+      const templatesDir = await TemplatesManager.findTemplatesPath();
       const fileSystemService = new FileSystemService();
       const scaffoldingMethodsService = new ScaffoldingMethodsService(
         fileSystemService,
@@ -96,6 +91,7 @@ scaffoldCommand
         }
       }
 
+      const templatesDir = await TemplatesManager.findTemplatesPath();
       const fileSystemService = new FileSystemService();
       const scaffoldingMethodsService = new ScaffoldingMethodsService(
         fileSystemService,
@@ -206,6 +202,7 @@ scaffoldCommand
         process.exit(1);
       }
 
+      const templatesDir = await TemplatesManager.findTemplatesPath();
       const fileSystemService = new FileSystemService();
       const scaffoldingMethodsService = new ScaffoldingMethodsService(
         fileSystemService,

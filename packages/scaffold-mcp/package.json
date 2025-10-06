@@ -58,7 +58,6 @@
     "tsdown": "^0.15.6",
     "typescript": "5.9.3"
   },
-  "type": "module",
   "publishConfig": {
     "access": "public"
   }

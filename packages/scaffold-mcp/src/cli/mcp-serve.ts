@@ -51,13 +51,13 @@ export const mcpServeCommand = new Command('mcp-serve')
         const handler = new StdioTransportHandler(server);
         await startServer(handler);
       } else if (transportType === 'http') {
-        const server = createServer(serverOptions);
+        // For HTTP, pass a factory function to create new server instances per session
         const config: TransportConfig = {
           mode: TransportMode.HTTP,
           port: options.port || Number(process.env.MCP_PORT) || 3000,
           host: options.host || process.env.MCP_HOST || 'localhost',
         };
-        const handler = new HttpTransportHandler(server, config);
+        const handler = new HttpTransportHandler(() => createServer(serverOptions), config);
         await startServer(handler);
       } else if (transportType === 'sse') {
         // For SSE, pass a factory function to create new server instances per connection

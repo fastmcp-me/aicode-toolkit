@@ -1,8 +1,14 @@
 import path from 'node:path';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
-import { icons, logger, messages, sections } from '../utils/console';
-import { cloneSubdirectory, fetchGitHubDirectoryContents } from '../utils/git';
+import {
+  icons,
+  logger,
+  messages,
+  sections,
+  cloneSubdirectory,
+  fetchGitHubDirectoryContents,
+} from '../utils';
 
 /**
  * Find the workspace root by searching upwards for .git folder
@@ -77,12 +83,7 @@ async function downloadTemplates(templatesPath: string): Promise<void> {
 
       const repoUrl = `https://github.com/${DEFAULT_TEMPLATE_REPO.owner}/${DEFAULT_TEMPLATE_REPO.repo}.git`;
 
-      await cloneSubdirectory(
-        repoUrl,
-        DEFAULT_TEMPLATE_REPO.branch,
-        template.path,
-        targetFolder,
-      );
+      await cloneSubdirectory(repoUrl, DEFAULT_TEMPLATE_REPO.branch, template.path, targetFolder);
 
       logger.success(`${icons.check} Downloaded ${template.name}`);
     }
