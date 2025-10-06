@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
-import { icons, logger, sections } from '../utils/console';
+import { icons, logger, messages, sections } from '../utils/console';
+import { cloneSubdirectory, fetchGitHubDirectoryContents } from '../utils/git';
 
 /**
  * Find the workspace root by searching upwards for .git folder
@@ -28,34 +29,101 @@ async function findWorkspaceRoot(startPath: string = process.cwd()): Promise<str
   }
 }
 
+const DEFAULT_TEMPLATE_REPO = {
+  owner: 'AgiFlow',
+  repo: 'aicode-toolkit',
+  branch: 'main',
+  path: 'templates',
+};
+
+/**
+ * Download templates from GitHub repository
+ */
+async function downloadTemplates(templatesPath: string): Promise<void> {
+  try {
+    logger.info(
+      `${icons.download} Fetching templates from ${DEFAULT_TEMPLATE_REPO.owner}/${DEFAULT_TEMPLATE_REPO.repo}...`,
+    );
+
+    // Fetch directory listing from GitHub
+    const contents = await fetchGitHubDirectoryContents(
+      DEFAULT_TEMPLATE_REPO.owner,
+      DEFAULT_TEMPLATE_REPO.repo,
+      DEFAULT_TEMPLATE_REPO.path,
+      DEFAULT_TEMPLATE_REPO.branch,
+    );
+
+    // Filter only directories
+    const templateDirs = contents.filter((item) => item.type === 'dir');
+
+    if (templateDirs.length === 0) {
+      messages.warning('No templates found in repository');
+      return;
+    }
+
+    logger.info(`${icons.folder} Found ${templateDirs.length} template(s)`);
+
+    // Download each template
+    for (const template of templateDirs) {
+      const targetFolder = path.join(templatesPath, template.name);
+
+      // Skip if already exists
+      if (await fs.pathExists(targetFolder)) {
+        logger.info(`${icons.skip} Skipping ${template.name} (already exists)`);
+        continue;
+      }
+
+      logger.info(`${icons.download} Downloading ${template.name}...`);
+
+      const repoUrl = `https://github.com/${DEFAULT_TEMPLATE_REPO.owner}/${DEFAULT_TEMPLATE_REPO.repo}.git`;
+
+      await cloneSubdirectory(
+        repoUrl,
+        DEFAULT_TEMPLATE_REPO.branch,
+        template.path,
+        targetFolder,
+      );
+
+      logger.success(`${icons.check} Downloaded ${template.name}`);
+    }
+
+    logger.success(`\n${icons.check} All templates downloaded successfully!`);
+  } catch (error) {
+    throw new Error(`Failed to download templates: ${(error as Error).message}`);
+  }
+}
+
 /**
  * Init command - initialize templates folder
  */
 export const initCommand = new Command('init')
   .description('Initialize templates folder structure at workspace root')
-  .action(async () => {
+  .option('--no-download', 'Skip downloading templates from repository')
+  .option('--path <path>', 'Custom path for templates folder (relative to workspace root)')
+  .action(async (options) => {
     try {
       const workspaceRoot = await findWorkspaceRoot();
-      const templatesPath = path.join(workspaceRoot, 'templates');
+      const templatesPath = options.path
+        ? path.join(workspaceRoot, options.path)
+        : path.join(workspaceRoot, 'templates');
 
       logger.info(`${icons.rocket} Initializing templates folder at: ${templatesPath}`);
 
-      // Create templates directory structure
+      // Create templates directory
       await fs.ensureDir(templatesPath);
-      await fs.ensureDir(path.join(templatesPath, 'boilerplates'));
-      await fs.ensureDir(path.join(templatesPath, 'scaffolds'));
 
       // Create README.md
       const readme = `# Templates
 
 This folder contains boilerplate templates and scaffolding methods for your projects.
 
-## Structure
+## Templates
 
-- \`boilerplates/\` - Full project boilerplate templates
-- \`scaffolds/\` - Feature scaffolding methods for existing projects
+Templates are organized by framework/technology and include configuration files (\`scaffold.yaml\`) that define:
+- Boilerplates: Full project starter templates
+- Features: Code scaffolding methods for adding new features to existing projects
 
-## Adding Templates
+## Adding More Templates
 
 Use the \`add\` command to add templates from remote repositories:
 
@@ -63,38 +131,49 @@ Use the \`add\` command to add templates from remote repositories:
 scaffold-mcp add --name my-template --url https://github.com/user/template
 \`\`\`
 
+Or add templates from subdirectories:
+
+\`\`\`bash
+scaffold-mcp add --name nextjs-template --url https://github.com/user/repo/tree/main/templates/nextjs
+\`\`\`
+
 ## Creating Custom Templates
 
-### Boilerplate Template Structure
+Each template should have a \`scaffold.yaml\` configuration file defining:
+- \`boilerplate\`: Array of boilerplate configurations
+- \`features\`: Array of feature scaffold configurations
 
-Each boilerplate should have:
-- \`boilerplate.yaml\` - Configuration file
-- Template files with variable placeholders using Liquid syntax (\`{{ variableName }}\`)
+Template files use Liquid syntax for variable placeholders: \`{{ variableName }}\`
 
-### Scaffold Method Structure
-
-Each scaffold method should have:
-- \`scaffold.yaml\` - Configuration file
-- Template files organized by project type
-
-See documentation for more details on template creation.
+See existing templates for examples and documentation for more details.
 `;
 
       await fs.writeFile(path.join(templatesPath, 'README.md'), readme);
 
-      logger.success(`${icons.check} Templates folder initialized successfully!`);
-      logger.header(`\n${icons.folder} Created structure:`);
-      logger.indent(`${templatesPath}/`);
-      logger.indent(`├── boilerplates/`);
-      logger.indent(`├── scaffolds/`);
-      logger.indent(`└── README.md`);
+      logger.success(`${icons.check} Templates folder created!`);
 
-      sections.nextSteps([
-        `Add templates using: scaffold-mcp add --name <name> --url <url>`,
-        `Or manually create templates in ${templatesPath}/`,
-      ]);
+      // Download templates if not skipped
+      if (options.download !== false) {
+        await downloadTemplates(templatesPath);
+      } else {
+        logger.info(`${icons.skip} Skipping template download (use --download to enable)`);
+      }
+
+      logger.header(`\n${icons.folder} Templates location:`);
+      logger.indent(templatesPath);
+
+      const nextSteps = [];
+      if (options.download === false) {
+        nextSteps.push(`Download templates: scaffold-mcp init --download`);
+        nextSteps.push(`Add templates manually: scaffold-mcp add --name <name> --url <url>`);
+      } else {
+        nextSteps.push(`List available boilerplates: scaffold-mcp boilerplate list`);
+        nextSteps.push(`Add more templates: scaffold-mcp add --name <name> --url <url>`);
+      }
+
+      sections.nextSteps(nextSteps);
     } catch (error) {
-      logger.error(`${icons.cross} Error initializing templates folder:`, error as Error);
+      messages.error(`Error initializing templates folder: ${(error as Error).message}`);
       process.exit(1);
     }
   });
