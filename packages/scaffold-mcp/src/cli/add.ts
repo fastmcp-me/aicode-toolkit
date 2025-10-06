@@ -1,11 +1,8 @@
-import { exec } from 'node:child_process';
 import path from 'node:path';
-import { promisify } from 'node:util';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import { icons, logger, messages, sections } from '../utils/console';
-
-const execAsync = promisify(exec);
+import { cloneRepository, cloneSubdirectory, parseGitHubUrl } from '../utils/git';
 
 /**
  * Add command - add a template to templates folder
@@ -43,14 +40,25 @@ export const addCommand = new Command('add')
 
       await fs.ensureDir(path.dirname(targetFolder));
 
+      // Parse URL to detect if it's a subdirectory
+      const parsedUrl = parseGitHubUrl(templateUrl);
+
       // Clone the repository
       try {
-        await execAsync(`git clone ${templateUrl} "${targetFolder}"`);
-
-        // Remove .git folder
-        const gitFolder = path.join(targetFolder, '.git');
-        if (await fs.pathExists(gitFolder)) {
-          await fs.remove(gitFolder);
+        if (parsedUrl.isSubdirectory && parsedUrl.branch && parsedUrl.subdirectory) {
+          // Clone subdirectory using sparse checkout
+          logger.info(
+            `${icons.folder} Detected subdirectory: ${parsedUrl.subdirectory} (branch: ${parsedUrl.branch})`,
+          );
+          await cloneSubdirectory(
+            parsedUrl.repoUrl,
+            parsedUrl.branch,
+            parsedUrl.subdirectory,
+            targetFolder,
+          );
+        } else {
+          // Clone entire repository
+          await cloneRepository(parsedUrl.repoUrl, targetFolder);
         }
 
         messages.success(`Template '${templateName}' added successfully!`);

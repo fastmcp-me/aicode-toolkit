@@ -101,6 +101,7 @@ export const icons = {
   upload: '=�',
   gear: '�',
   clipboard: '=�',
+  skip: '⏭',
 };
 
 /**

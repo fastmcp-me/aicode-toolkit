@@ -98,21 +98,62 @@ Pre-flight guidance + post-flight validation = consistent output. Rules provide 
 # Install globally or use npx
 pnpm install -g @agiflowai/scaffold-mcp
 
-# Initialize templates
+# Initialize templates (auto-downloads official templates)
 scaffold-mcp init
 
 # List available boilerplates
 scaffold-mcp boilerplate list
 
 # Create a new project
-scaffold-mcp boilerplate create nextjs-15 --vars '{"appName":"my-app"}'
+scaffold-mcp boilerplate create scaffold-nextjs-app \
+  --vars '{"appName":"my-app","withDrizzle":true}'
 
 # Add features to existing projects
-scaffold-mcp scaffold list ./my-app
-scaffold-mcp scaffold add scaffold-nextjs-page --vars '{"pageName":"dashboard"}'
+scaffold-mcp scaffold list ./apps/my-app
+scaffold-mcp scaffold add scaffold-route \
+  --project ./apps/my-app \
+  --vars '{"routePath":"about","pageTitle":"About Us"}'
 ```
 
+**Key Features:**
+- 🎁 **Auto-download templates**: `init` command downloads official templates from GitHub
+- 🔗 **GitHub subdirectory support**: Add templates from specific folders in repositories
+- 🌐 **Multiple transport modes**: stdio (MCP), HTTP, SSE, or standalone CLI
+- 📦 **Built-in templates**: Next.js 15 with Drizzle ORM, Storybook, and more
+
 For detailed usage, see the [scaffold-mcp documentation](./packages/scaffold-mcp/README.md).
+
+### Template Management
+
+The `init` command automatically downloads official templates from the AgiFlow repository:
+
+```bash
+# Initialize and auto-download official templates
+scaffold-mcp init
+
+# Skip auto-download
+scaffold-mcp init --no-download
+
+# Custom templates path
+scaffold-mcp init --path ./custom-templates
+```
+
+Add additional templates from GitHub (supports subdirectories):
+
+```bash
+# Add from full repository
+scaffold-mcp add --name my-template --url https://github.com/user/repo
+
+# Add from repository subdirectory
+scaffold-mcp add \
+  --name nextjs-template \
+  --url https://github.com/user/repo/tree/main/templates/nextjs
+```
+
+**Current Templates:**
+- **nextjs-15-drizzle**: Next.js 15 + App Router + TypeScript + Tailwind CSS 4 + Storybook + Optional Drizzle ORM
+  - Boilerplate: Full application setup
+  - Features: Routes, components, API routes, auth, services, and more
 
 ---
 
