@@ -1,0 +1,53 @@
+/**
+ * {{ featureName }} Storybook Stories
+ *
+ * DESIGN PATTERNS:
+ * - Component Story Format (CSF) 3.0
+ * - Playground story as default for interactive testing
+ * - Multiple story variations for different states
+ *
+ * CODING STANDARDS:
+ * - Use 'satisfies Meta' for type safety
+ * - Export meta as default
+ * - Use descriptive story names
+ * - Document args and props
+ *
+ * USAGE:
+ * - Run Storybook: npm run storybook
+ * - View at: http://localhost:6006
+ * - Stories appear under: Routes/{{ routePath }}/{{ featureName }}
+ *
+ * STORY ORGANIZATION:
+ * - Playground: Interactive story with all controls
+ * - Default: Basic usage example
+ * - Add more stories for different states/variations
+ *
+ * BEST PRACTICES:
+ * - Test component in isolation
+ * - Document props with JSDoc
+ * - Show different component states
+ * - Use args for interactive controls
+ */
+
+import type { Meta, StoryObj } from '@storybook/react';
+import {{ featureName }} from './index';
+
+const meta = {
+  title: 'Routes/{{ routePath }}/{{ featureName }}',
+  component: {{ featureName }},
+  parameters: {
+    layout: 'centered',
+  },
+  tags: ['autodocs'],
+} satisfies Meta<typeof {{ featureName }}>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Playground: Story = {
+  args: {},
+};
+
+export const Default: Story = {
+  args: {},
+};

@@ -1,0 +1,41 @@
+/**
+ * Service Type Definitions
+ *
+ * This file contains all service interfaces for dependency injection.
+ * Import these types when you need to mock services or use dependency injection.
+ *
+ * USAGE:
+ * - Import type: import type { I{{ serviceName }} } from '@/services/types'
+ * - Use for DI: constructor(private userService: IUserService)
+ * - Use for mocking: const mockService: IUserService = { ... }
+ */
+
+/**
+ * {{ serviceName }} interface for dependency injection
+ */
+export interface I{{ serviceName }} {
+  /**
+   * Get a single record by ID
+   */
+  getById(id: number): Promise<any | null>;
+
+  /**
+   * Get all records
+   */
+  getAll(): Promise<any[]>;
+
+  /**
+   * Create a new record
+   */
+  create(data: any): Promise<any>;
+
+  /**
+   * Update an existing record
+   */
+  update(id: number, data: Partial<any>): Promise<any | null>;
+
+  /**
+   * Delete a record
+   */
+  delete(id: number): Promise<boolean>;
+}

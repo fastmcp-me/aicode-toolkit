@@ -1,0 +1,48 @@
+/**
+ * Next.js Middleware for Route Protection
+ *
+ * DESIGN PATTERNS:
+ * - Runs on Edge runtime for performance
+ * - Checks auth before page loads
+ * - Redirects unauthorized users to sign-in
+ *
+ * CODING STANDARDS:
+ * - Use matcher config to specify protected routes
+ * - Check session from Better Auth
+ * - Redirect with proper status codes (307 for temporary)
+ *
+ * USAGE:
+ * - Automatically runs on routes matching config.matcher
+ * - Add more protected routes to matcher array
+ */
+
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+export async function middleware(request: NextRequest) {
+  const sessionToken = request.cookies.get("better-auth.session_token")?.value;
+
+  // If no session token, redirect to sign-in
+  if (!sessionToken) {
+    const signInUrl = new URL("/sign-in", request.url);
+    signInUrl.searchParams.set("from", request.nextUrl.pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - api/auth (auth API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico (favicon)
+     * - public folder
+     * - sign-in, sign-up pages
+     */
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\..*|sign-in|sign-up).*)",
+  ],
+};

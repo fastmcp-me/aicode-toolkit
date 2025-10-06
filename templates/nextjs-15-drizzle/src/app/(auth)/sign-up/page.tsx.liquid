@@ -1,0 +1,41 @@
+/**
+ * Sign Up Page
+ *
+ * DESIGN PATTERNS:
+ * - Server Component with client form components
+ * - Route group (auth) for layout isolation
+ * - Redirect to sign-in after successful registration
+ */
+
+import { Metadata } from "next";
+{% if withAuthComponents %}import { AuthForm } from "@/components/AuthForm";{% endif %}
+
+export const metadata: Metadata = {
+  title: "Sign Up",
+  description: "Create a new account",
+};
+
+export default function SignUpPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="w-full max-w-md space-y-8 px-4">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold">Create Account</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Sign up to get started
+          </p>
+        </div>
+        {% if withAuthComponents %}
+        <AuthForm mode="signup" providers="{{ authProviders }}" />
+        {% else %}
+        {/* TODO: Implement sign-up form */}
+        <div className="rounded-lg border p-6">
+          <p className="text-sm text-gray-500">
+            Sign-up form implementation goes here
+          </p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  );
+}

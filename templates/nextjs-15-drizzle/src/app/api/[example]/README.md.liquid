@@ -1,0 +1,73 @@
+# {{ routeName }} API Route
+
+API endpoint: `/api/{{ routePath }}`
+
+## Supported Methods
+
+{{ methods }}
+
+## Usage
+
+### Request
+
+```typescript
+// Example request
+const response = await fetch('/api/{{ routePath }}', {
+  method: 'POST', // or GET, PUT, DELETE, etc.
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    // your data here
+  }),
+});
+
+const data = await response.json();
+```
+
+### Response
+
+```typescript
+// Success response (200/201)
+{
+  "message": "Success message",
+  "data": { /* response data */ }
+}
+
+// Error response (400/401/500)
+{
+  "error": "Error message",
+  "details": { /* optional error details */ }
+}
+```
+
+## Authentication
+
+{% if withAuth %}
+This route requires authentication. Include authentication token in request headers.
+{% else %}
+This route does not require authentication.
+{% endif %}
+
+## Validation
+
+{% if withValidation %}
+Request bodies are validated using Zod schema. See `validation.ts` for schema details.
+{% else %}
+No request validation is configured. Consider adding validation for production use.
+{% endif %}
+
+## Implementation Notes
+
+- Route handler follows Next.js App Router conventions
+- Uses Web Request/Response APIs
+- Returns JSON responses with appropriate status codes
+- Implements error handling for all methods
+
+## Next Steps
+
+1. Implement business logic in route handlers
+2. {% if withValidation %}Update validation schema in `validation.ts`{% else %}Add request validation if needed{% endif %}
+3. {% if withAuth %}Implement authentication middleware{% else %}Add authentication if needed{% endif %}
+4. Add tests for route handlers
+5. Update this README with specific API documentation

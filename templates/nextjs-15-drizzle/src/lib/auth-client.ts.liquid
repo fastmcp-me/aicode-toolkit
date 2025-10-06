@@ -1,0 +1,28 @@
+/**
+ * Better Auth Client Configuration
+ *
+ * DESIGN PATTERNS:
+ * - Client-side auth hooks and utilities
+ * - Use 'use client' directive in components that import this
+ * - React hooks for auth state management
+ *
+ * CODING STANDARDS:
+ * - Import in client components only
+ * - Use hooks (useSession, useSignIn, useSignUp, etc.)
+ * - Handle loading and error states properly
+ *
+ * USAGE:
+ * - Import { authClient } from '@/lib/auth-client'
+ * - Use authClient hooks in client components
+ * - Check session state before rendering protected UI
+ */
+
+"use client";
+
+import { createAuthClient } from "better-auth/react";
+
+export const authClient = createAuthClient({
+  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "http://localhost:3000",
+});
+
+export const { useSession, signIn, signOut, signUp } = authClient;

@@ -1,0 +1,46 @@
+/**
+ * Sign In Page
+ *
+ * DESIGN PATTERNS:
+ * - Server Component with client form components
+ * - Route group (auth) for layout isolation
+ * - Redirect after successful sign-in
+ *
+ * CODING STANDARDS:
+ * - Use AuthForm component if withAuthComponents=true
+ * - Handle OAuth providers based on authProviders
+ * - Show error states and loading states
+ */
+
+import { Metadata } from "next";
+{% if withAuthComponents %}import { AuthForm } from "@/components/AuthForm";{% endif %}
+
+export const metadata: Metadata = {
+  title: "Sign In",
+  description: "Sign in to your account",
+};
+
+export default function SignInPage() {
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="w-full max-w-md space-y-8 px-4">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold">Sign In</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Welcome back! Please sign in to continue.
+          </p>
+        </div>
+        {% if withAuthComponents %}
+        <AuthForm mode="signin" providers="{{ authProviders }}" />
+        {% else %}
+        {/* TODO: Implement sign-in form */}
+        <div className="rounded-lg border p-6">
+          <p className="text-sm text-gray-500">
+            Sign-in form implementation goes here
+          </p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,468 @@
+boilerplate:
+  - name: scaffold-nextjs-app
+    targetFolder: apps
+    description: |-
+      A minimal Next.js 15 starter template with App Router, TypeScript, Tailwind CSS 4, and Storybook. Clean and simple foundation for building modern web applications with isolated component development. Optional Drizzle ORM integration for type-safe database operations with migration support.
+
+      Perfect for quick prototypes, new projects, or learning Next.js 15 features. Choose to include Drizzle ORM for database-backed applications or keep it minimal for static sites and prototypes.
+
+      Includes essential developer tools: TypeScript with strict mode, Tailwind CSS 4 for styling, Storybook 9 for component development, ESLint for code quality, clean App Router structure, and optional Drizzle ORM with PostgreSQL support (Neon, Supabase, Vercel Postgres, or local).
+    variables_schema:
+      type: object
+      properties:
+        appName:
+          type: string
+          description: Name of the Next.js application (kebab-case)
+        description:
+          type: string
+          description: Short description of the application
+          default: A Next.js application
+        withDrizzle:
+          type: boolean
+          description: Include Drizzle ORM setup with migrations
+          default: false
+        databaseProvider:
+          type: string
+          description: Database provider (neon, supabase, vercel-postgres, local-postgres)
+          default: neon
+      required:
+        - appName
+      additionalProperties: false
+    includes:
+      - package.json
+      - tsconfig.json
+      - next.config.ts
+      - postcss.config.js
+      - .gitignore
+      - .env.local
+      - README.md
+      - src/app/layout.tsx
+      - src/app/page.tsx
+      - src/app/globals.css
+      - src/styles/colors.css
+      - src/lib/utils.ts
+      - src/components/Example/index.tsx
+      - src/components/Example/Example.stories.tsx
+      - .storybook/main.ts
+      - .storybook/preview.ts
+      - public/.gitkeep
+      - drizzle.config.ts?withDrizzle=true
+      - src/db/drizzle.ts?withDrizzle=true
+      - src/db/schema.ts?withDrizzle=true
+      - src/db/migrations/.gitkeep?withDrizzle=true
+      - scripts/migrate.ts?withDrizzle=true
+      - docker-compose.yml?withDrizzle=true
+    instruction: |-
+      Minimal Next.js 15 application template with App Router, TypeScript, Tailwind CSS 4, and Storybook. Optionally includes Drizzle ORM for type-safe database operations.
+
+      File purposes:
+      - package.json: NPM configuration with Next.js 15, React 19, Tailwind CSS 4, Storybook 9, and optional Drizzle ORM
+      - next.config.ts: Next.js configuration with reactStrictMode and ESLint settings
+      - postcss.config.js: PostCSS configuration for Tailwind CSS 4 and autoprefixer
+      - tsconfig.json: TypeScript configuration with path aliases (@/)
+      - src/app/layout.tsx: Root layout component
+      - src/app/page.tsx: Home page component
+      - src/app/globals.css: Global styles using Tailwind 4's @import and @theme syntax
+      - src/styles/colors.css: Optional color palette reference (can be removed or customized)
+      - src/lib/utils.ts: Utility functions including cn() for className merging
+      - src/components/Example: Example component with Storybook story (can be renamed/removed)
+      - .storybook/main.ts: Storybook configuration
+      - .storybook/preview.ts: Storybook preview with Tailwind CSS and Playground view
+      - drizzle.config.ts: (if withDrizzle) Drizzle Kit configuration for schema generation
+      - src/db/drizzle.ts: (if withDrizzle) Database client instance with Neon proxy configuration
+      - src/db/schema.ts: (if withDrizzle) Database schema definitions
+      - src/db/migrations/: (if withDrizzle) Generated migration files
+      - scripts/migrate.ts: (if withDrizzle) Custom migration script using the same driver as the app
+      - docker-compose.yml: (if withDrizzle) Docker setup for local PostgreSQL with Neon Proxy on port 4444
+
+      How to use the scaffolded code:
+      1. Install dependencies: npm install or pnpm install
+      2. (If using Drizzle) Set up database - choose one option:
+
+         Option A - Local Development (Recommended for getting started):
+         - Start local database: docker-compose up -d
+         - This starts PostgreSQL 17 (with Neon Proxy if provider is Neon)
+         - Connection string is pre-configured in .env.local
+         - No cloud setup needed!
+
+         Option B - Cloud-hosted:
+         - Create database at Neon/Supabase/Vercel Postgres
+         - Update DATABASE_URL in .env.local with your connection string
+
+      3. (If using Drizzle) Define schema in src/db/schema.ts and run: npm run db:generate && npm run db:migrate
+      4. Start dev server: npm run dev
+      5. Start Storybook: npm run storybook (runs on http://localhost:6006)
+      6. (If using Drizzle) Open Drizzle Studio: npm run db:studio
+      7. Add new pages: Create files in src/app/
+      8. Add new components: Create in src/components/ with .stories.tsx for Storybook
+      9. Style with Tailwind: Use utility classes in components
+      10. Customize theme: Edit @theme block in src/app/globals.css
+      11. Build for production: npm run build
+
+      Design patterns to follow:
+      - Server Components: Use Server Components by default, add 'use client' only when needed
+      - File-based Routing: Create pages by adding files to src/app/
+      - Layouts: Use layout.tsx for shared UI across routes
+      - Tailwind 4: Configure theme using @theme directive in CSS, no config file needed
+      - Component Development: Use Storybook for isolated component development and documentation
+      - Type Safety: Leverage TypeScript for better development experience
+      - Utility Classes: Use cn() helper for dynamic className composition
+      - Database (if enabled): Import { db } from '@/db/drizzle' for database operations, use Drizzle Kit for schema changes
+features:
+  - name: scaffold-route
+    description: Generate a new route (page) for Next.js 15 App Router with TypeScript and SEO metadata. Supports dynamic routes, layouts, loading states, error handling, and route groups. Creates page.tsx and optional layout.tsx, loading.tsx, and error.tsx files using the Server Component pattern.
+    variables_schema:
+      type: object
+      properties:
+        routePath:
+          type: string
+          description: Route path relative to app directory. Supports static (e.g., 'about'), nested ('blog/post'), dynamic ('blog/[slug]'), catch-all ('blog/[...slug]'), and route groups ('(admin)/dashboard')
+        pageTitle:
+          type: string
+          description: Page title for metadata
+        pageDescription:
+          type: string
+          description: Page description for metadata
+          default: ''
+        withLayout:
+          type: boolean
+          description: Generate layout.tsx for shared UI
+          default: false
+        withLoading:
+          type: boolean
+          description: Generate loading.tsx for loading states
+          default: false
+        withError:
+          type: boolean
+          description: Generate error.tsx for error handling
+          default: false
+      required:
+        - routePath
+        - pageTitle
+      additionalProperties: false
+    includes:
+      - src/app/example/page.tsx->src/app/{{ routePath }}/page.tsx
+      - src/app/example/layout.tsx->src/app/{{ routePath }}/layout.tsx?withLayout=true
+      - src/app/example/loading.tsx->src/app/{{ routePath }}/loading.tsx?withLoading=true
+      - src/app/example/error.tsx->src/app/{{ routePath }}/error.tsx?withError=true
+    instruction: |-
+      Next.js routes use file-system based routing with special files for different purposes.
+
+      File organization: Each route lives in src/app/{path}/ and can contain:
+      - page.tsx: The route's UI (required)
+      - layout.tsx: Shared UI wrapper for nested routes (optional)
+      - loading.tsx: Loading UI with Suspense boundaries (optional)
+      - error.tsx: Error UI with error boundaries (optional)
+
+      Route types supported:
+      - Static: 'about', 'contact'
+      - Nested: 'blog/posts', 'dashboard/settings'
+      - Dynamic: 'blog/[slug]', 'products/[id]'
+      - Catch-all: 'blog/[...slug]', 'docs/[...path]'
+      - Route groups: '(auth)/login', '(marketing)/about' - groups routes without affecting URL
+
+      Naming conventions: Use lowercase with hyphens for routes. Component names should be PascalCase.
+
+      Usage guidelines: Export metadata for SEO. Use async Server Components by default. Add 'use client' only for error.tsx or when client interactivity is needed.
+
+      Design patterns: Server Components by default, layouts for shared UI, loading states for better UX, error boundaries for resilience.
+    patterns:
+      - src/app/**/page.tsx
+  - name: scaffold-component
+    description: Generate a reusable React component with TypeScript, following Next.js best practices. Creates a component file with proper type definitions, className merging support using cn() utility, and forward ref pattern. Perfect for building UI components, shared utilities, or feature-specific components with full type safety.
+    variables_schema:
+      type: object
+      properties:
+        componentName:
+          type: string
+          description: Name of the component in PascalCase (e.g., Button, UserCard, Badge)
+        withForwardRef:
+          type: boolean
+          description: Whether to use React.forwardRef pattern
+          default: false
+      required:
+        - componentName
+      additionalProperties: false
+    includes:
+      - src/components/Example/index.tsx->src/components/{{ componentName }}/index.tsx
+      - src/components/Example/Example.stories.tsx->src/components/{{ componentName }}/{{ componentName }}.stories.tsx
+    instruction: |-
+      Components follow a composition-based pattern with TypeScript strict typing and Tailwind CSS utility classes. Each component includes a Storybook story for isolated development and documentation.
+
+      File organization: Each component lives in its own directory under src/components/{ComponentName}/ with index.tsx and {ComponentName}.stories.tsx files. This keeps related files colocated.
+
+      Naming conventions: Component directories and exports use PascalCase. Use descriptive names that indicate purpose (Button, UserCard, Badge). Story files follow {ComponentName}.stories.tsx pattern.
+
+      Usage guidelines: Import using absolute path alias @/components/{ComponentName}. Use the cn() utility from @/lib/utils for className merging. Extend props using React.ComponentPropsWithRef or React.ComponentPropsWithoutRef for proper type inheritance. Test components in Storybook before integrating into pages.
+
+      Design patterns: Use forwardRef for components that need ref access. Leverage TypeScript discriminated unions for variant props. Apply Tailwind utility classes with cn() for dynamic styling. Export component as default for simpler imports. Create Playground story as default for interactive testing.
+    patterns:
+      - src/components/**/*.tsx
+  - name: scaffold-nextjs-api-route
+    description: Generate a Next.js App Router API route handler following Web Request/Response API standards. Creates a route.ts file with support for multiple HTTP methods (GET, POST, PUT, DELETE, etc.) and proper TypeScript types. Perfect for building RESTful API endpoints, webhooks, or server-side data processing routes.
+    variables_schema:
+      type: object
+      properties:
+        routePath:
+          type: string
+          description: API route path relative to app/api directory (e.g., 'users', 'auth/login', 'webhooks/stripe')
+        routeName:
+          type: string
+          description: Descriptive name for the route handler (PascalCase, e.g., 'UsersList', 'AuthLogin', 'StripeWebhook')
+        methods:
+          type: string
+          description: 'HTTP methods to support (comma-separated: GET,POST,PUT,DELETE,PATCH,OPTIONS)'
+        withAuth:
+          type: boolean
+          description: Include authentication/authorization middleware
+          default: false
+        withValidation:
+          type: boolean
+          description: Include request body validation with Zod
+          default: false
+      required:
+        - routePath
+        - routeName
+        - methods
+      additionalProperties: false
+    includes:
+      - src/app/api/[example]/route.ts->src/app/api/{{ routePath }}/route.ts
+      - src/app/api/[example]/validation.ts->src/app/api/{{ routePath }}/validation.ts?withValidation=true
+      - src/app/api/[example]/README.md->src/app/api/{{ routePath }}/README.md
+    instruction: |-
+      API routes follow Next.js App Router convention using Web Request and Response APIs. Route handlers are defined in route.ts files within the app/api directory structure, with each route supporting one or more HTTP methods (GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD).
+
+      Place API routes in src/app/api/{routePath}/route.ts. The route path determines the URL endpoint - for example, src/app/api/users/route.ts creates /api/users endpoint. Nested paths like src/app/api/auth/login/route.ts create /api/auth/login.
+
+      Route handlers must export async functions named after HTTP methods (GET, POST, etc.). Each function receives a Request object and returns a Response. Use NextResponse.json() for JSON responses with proper status codes.
+
+      For routes requiring authentication, add middleware checks at the start of each handler. For request validation, define Zod schemas and validate before processing. Handle errors consistently with appropriate HTTP status codes (400 for validation, 401 for auth, 500 for server errors).
+
+      GET method handlers can be cached using route segment config (export const dynamic = 'force-static'). Other methods are never cached. Cannot coexist with page.ts at the same route segment level.
+    patterns:
+      - src/app/api/**/route.ts
+  - name: scaffold-auth
+    description: Add Better Auth authentication with Drizzle adapter integration to your Next.js application. Generates auth configuration with provider setup, database schema for auth tables, API route handler, sign-in/sign-up pages, and auth utility functions. Requires Drizzle ORM to be configured first - adds user, session, account, and verification tables to your existing schema.
+    variables_schema:
+      type: object
+      properties:
+        authProviders:
+          type: string
+          description: 'Authentication providers to enable (comma-separated: email,google,github,discord,etc.)'
+        withProtectedRoute:
+          type: boolean
+          description: Generate example protected dashboard route with auth guards
+          default: true
+        withAuthComponents:
+          type: boolean
+          description: Generate pre-built sign-in/sign-up form components with validation
+          default: true
+      required:
+        - authProviders
+      additionalProperties: false
+    includes:
+      - src/lib/auth.ts
+      - src/lib/auth-client.ts
+      - src/db/auth-schema.ts
+      - src/app/api/auth/[...all]/route.ts
+      - src/app/(auth)/sign-in/page.tsx
+      - src/app/(auth)/sign-up/page.tsx
+      - src/app/(auth)/layout.tsx
+      - src/components/AuthForm/index.tsx?withAuthComponents=true
+      - src/components/AuthForm/AuthForm.stories.tsx?withAuthComponents=true
+      - src/app/(protected)/dashboard/page.tsx?withProtectedRoute=true
+      - src/app/(protected)/layout.tsx?withProtectedRoute=true
+      - middleware.ts?withProtectedRoute=true
+      - AUTH_SETUP.md
+    instruction: |-
+      Better Auth integration follows the Drizzle adapter pattern with server-side auth configuration and client-side hooks for authentication state management. Auth tables are added to your existing Drizzle schema and require migration.
+
+      File organization: Auth configuration lives in src/lib/auth.ts (server) and src/lib/auth-client.ts (client). Database schema additions go in src/db/auth-schema.ts and must be exported from your main schema file. API routes use catch-all pattern in src/app/api/auth/[...all]/route.ts. Auth pages use route groups: (auth) for public auth pages, (protected) for guarded routes.
+
+      Post-generation steps (CRITICAL - follow in order):
+      1. Install Better Auth: pnpm add better-auth
+      2. Add auth schema to main schema: In src/db/schema.ts, add: export * from './auth-schema'
+      3. Generate migration: pnpm db:generate (creates migration for user, session, account, verification tables)
+      4. Apply migration: pnpm db:migrate
+      5. Configure environment variables in .env.local:
+         - BETTER_AUTH_SECRET: Generate with: npx better-auth secret
+         - BETTER_AUTH_URL: Your app URL (e.g., http://localhost:3000)
+         - For OAuth: Add provider credentials (GOOGLE_CLIENT_ID, GITHUB_CLIENT_ID, etc.)
+      6. Update next.config.ts: Add Better Auth URL to experimental.serverActions.allowedOrigins if using Server Actions
+      7. Test auth flow: Visit /sign-up to create account, /sign-in to authenticate
+      8. Add redirect guards to layout components:
+         - For protected routes: Add auth check in layout.tsx server components
+         - Example: const session = await auth.api.getSession({ headers: await headers() }); if (!session) redirect('/sign-in');
+         - For auth pages: Redirect authenticated users away from sign-in/sign-up
+         - Example in (auth)/layout.tsx: if (session) redirect('/dashboard');
+         - Apply guards at the layout level to protect entire route groups
+      9. Protect additional routes: Use middleware.ts pattern or create additional protected route groups like (protected)
+
+      Design patterns: Server Components for auth pages with Server Actions for form submission, client components ('use client') only for interactive auth forms, middleware for route protection, session management via Better Auth hooks (useSession), Drizzle schema extension pattern for auth tables, route groups for organizing public vs protected pages.
+    patterns:
+      - src/app/**/page.tsx
+      - src/db/schema.ts
+  - name: scaffold-route-ui
+    description: Add collocated UI structure to an existing Next.js route using _ui directory pattern. Creates organized component in components/{FeatureName}, optional client state in states/{featureName}.ts, and optional server actions in actions/{featureName}.ts. Use scaffold-route first to create the page, then use this to add the UI structure. Perfect for building feature-rich pages with proper separation of concerns.
+    variables_schema:
+      type: object
+      properties:
+        routePath:
+          type: string
+          description: Route path relative to app directory (e.g., 'dashboard', 'products/[id]', '(admin)/settings')
+        featureName:
+          type: string
+          description: Feature name in PascalCase (e.g., 'ProductList', 'UserDashboard') - used for component, state, and action file names
+        withState:
+          type: boolean
+          description: Include client state management file
+          default: false
+        withActions:
+          type: boolean
+          description: Include server actions file
+          default: false
+      required:
+        - routePath
+        - featureName
+      additionalProperties: false
+    includes:
+      - src/app/example/_ui/components/Example/index.tsx->src/app/{{ routePath }}/_ui/components/{{ featureName }}/index.tsx
+      - src/app/example/_ui/components/Example/Example.stories.tsx->src/app/{{ routePath }}/_ui/components/{{ featureName }}/{{ featureName }}.stories.tsx
+      - src/app/example/_ui/states/example.ts->src/app/{{ routePath }}/_ui/states/{{ featureName | downcase }}.ts?withState=true
+      - src/app/example/_ui/actions/example.ts->src/app/{{ routePath }}/_ui/actions/{{ featureName | downcase }}.ts?withActions=true
+    instruction: |-
+      PREREQUISITE: Use scaffold-route first to create the page.tsx, then use this to add the collocated UI structure.
+
+      Routes with collocated UI follow a separation of concerns pattern where page logic is separated from UI components using a _ui directory convention.
+
+      Pattern explanation: This scaffold adds a _ui directory to an existing route. The page.tsx file (created with scaffold-route) acts as a thin wrapper that handles data fetching and server-side logic, while the actual UI rendering is delegated to a component in the _ui/components directory. State management and server actions are optionally organized in separate _ui/states and _ui/actions folders for clear separation of concerns.
+
+      File organization: Each route lives in src/app/{path}/ with a _ui subdirectory containing:
+      - components/{FeatureName}/index.tsx - Main UI component
+      - components/{FeatureName}/{FeatureName}.stories.tsx - Storybook stories
+      - states/{featureName}.ts - Client state management (optional)
+      - actions/{featureName}.ts - Server actions (optional)
+
+      This keeps all feature-related code together while maintaining clear separation between server and client concerns, and between different types of logic.
+
+      Naming conventions:
+      - Components: {FeatureName}/index.tsx in PascalCase (e.g., ProductList/index.tsx)
+      - Story files: {FeatureName}.stories.tsx (e.g., ProductList.stories.tsx)
+      - State files: {featureName}.ts in camelCase (e.g., productList.ts)
+      - Actions files: {featureName}.ts in camelCase (e.g., productList.ts)
+      - Use PascalCase for the feature name input, it will be transformed to camelCase where needed
+
+      Usage guidelines:
+      - Update the existing page.tsx to import and use the generated component
+      - The page.tsx should be a Server Component that fetches data and passes it to the UI component
+      - UI components should be Client Components ('use client') when they need interactivity
+      - State files should export hooks or store instances for client-side state
+      - Actions files should export server actions marked with 'use server'
+      - Import from _ui using relative paths: import FeatureName from './_ui/components/FeatureName'
+
+      Testing approach:
+      - Develop and test UI components in Storybook (npm run storybook)
+      - Stories are automatically generated for each component
+      - Write unit tests for server actions in actions/ directory
+      - Create integration tests for page.tsx with mocked data
+      - Use Storybook for visual regression testing and component documentation
+    patterns:
+      - src/app/**/page.tsx
+  - name: scaffold-action
+    description: Generate a Next.js server action file in the shared actions directory. Creates a reusable server action with proper 'use server' directive, Zod validation, error handling, and revalidation examples. Perfect for creating shared server-side mutations that can be used across multiple routes and components.
+    variables_schema:
+      type: object
+      properties:
+        actionName:
+          type: string
+          description: Action name in camelCase (e.g., 'createUser', 'updateProduct', 'deleteOrder')
+      required:
+        - actionName
+      additionalProperties: false
+    includes:
+      - src/actions/example.ts->src/actions/{{ actionName }}.ts
+    instruction: |-
+      Server actions follow the Next.js App Router pattern for server-side mutations with 'use server' directive. These are reusable across the entire application.
+
+      Pattern explanation: Server actions are async functions marked with 'use server' that run exclusively on the server. They can be called from Client Components, Server Components, or Server Actions. Actions in the shared src/actions/ directory are meant to be reused across multiple routes and features, unlike route-specific actions in _ui/actions/.
+
+      File organization: Shared server actions live in src/actions/{actionName}.ts. Each file contains the action function, Zod validation schema, and TypeScript types in a single location for simplicity.
+
+      Naming conventions:
+      - Action files: {actionName}.ts in camelCase (e.g., createUser.ts, updateProduct.ts)
+      - Exported functions: Same as file name in camelCase
+      - Schema names: {actionName}Schema (e.g., createUserSchema)
+      - Type exports: {ActionName}Input (e.g., CreateUserInput)
+      - Use descriptive verb-noun combinations (create, update, delete, fetch, etc.)
+
+      Usage guidelines:
+      - Import in any component: import { actionName } from '@/actions/actionName'
+      - Use in forms: <form action={actionName}>
+      - Use in transitions: startTransition(() => actionName(data))
+      - Use in event handlers: onClick={() => actionName(data)}
+      - Always validate input before processing
+      - Return success/error status with data
+      - Use revalidatePath/revalidateTag for cache invalidation
+      - Handle errors gracefully with try-catch
+      - IMPORTANT: Use services for business logic and data access instead of accessing db directly
+      - Example: Import and use services like 'const userService = new UserService(); await userService.create(data)'
+      - Keep actions thin - they should validate input, call services, and handle cache revalidation
+
+      Security best practices:
+      - Always validate and sanitize input
+      - Check authentication/authorization
+      - Never trust client-provided data
+      - Use Zod or similar for type-safe validation
+      - Don't expose sensitive data in return values
+      - Log security-relevant events
+
+      Testing approach: Write unit tests for server actions with mocked dependencies. Test validation by checking error handling for invalid inputs. Integration tests should verify the action works correctly with database and cache revalidation. Consider using tools like Vitest or Jest for testing.
+    patterns:
+      - src/actions/**/*.ts
+  - name: scaffold-service
+    description: Generate a service class for business logic and data manipulation using Drizzle ORM. Creates a class-based service with CRUD operations, error handling, and TypeScript types. Includes interface definition in types.ts for dependency injection. Perfect for encapsulating business logic that can be reused across server actions, API routes, and other services.
+    variables_schema:
+      type: object
+      properties:
+        serviceName:
+          type: string
+          description: Service name in PascalCase (e.g., 'UserService', 'ProductService', 'OrderService')
+      required:
+        - serviceName
+      additionalProperties: false
+    includes:
+      - src/services/ExampleService.ts->src/services/{{ serviceName }}.ts
+      - src/services/types.ts
+    instruction: |-
+      Services follow a class-based pattern for encapsulating business logic and data access with Drizzle ORM. These are reusable across server actions, API routes, and other parts of the application.
+
+      Pattern explanation: Services are TypeScript classes that encapsulate business logic and database operations. They use Drizzle ORM for type-safe database queries and mutations. Services provide a clean abstraction layer between your data access and business logic, making code more maintainable and testable. Interfaces are defined in types.ts for dependency injection.
+
+      File organization: Services live in src/services/{ServiceName}.ts. All service interfaces are exported from src/services/types.ts. Each service should focus on a specific domain or entity (e.g., UserService, ProductService).
+
+      Naming conventions:
+      - Service files: {ServiceName}.ts in PascalCase with 'Service' suffix (e.g., UserService.ts)
+      - Interface names: I{ServiceName} with 'I' prefix (e.g., IUserService)
+      - Class names: Same as file name (e.g., export class UserService implements IUserService)
+      - Method names: camelCase, descriptive verbs (getById, create, update, delete, findByEmail)
+      - Use singular entity names (UserService, not UsersService)
+
+      Usage guidelines:
+      - Import service: import { UserService } from '@/services/UserService'
+      - Import interface: import type { IUserService } from '@/services/types'
+      - Instantiate: const userService = new UserService() or use singleton pattern
+      - Call methods: await userService.getById(id)
+      - Services can call other services for complex operations
+      - Keep business logic in services, not in actions/routes
+      - Use dependency injection with interfaces for testability
+
+      Design patterns:
+      - Repository pattern for data access
+      - Single Responsibility: one service per entity/domain
+      - Dependency injection with interfaces from types.ts
+      - Error handling with custom error types
+      - Return types should be consistent (Result<T> or direct values)
+
+      Testing approach: Write unit tests with mocked Drizzle database. Test each method independently. Use dependency injection with interface types. Integration tests should use test database. Consider using factories for test data generation.
+    patterns:
+      - src/services/**/*.ts

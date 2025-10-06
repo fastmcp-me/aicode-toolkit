@@ -1,0 +1,75 @@
+/**
+ * {{ featureName }} Server Actions
+ *
+ * DESIGN PATTERNS:
+ * - Server Actions for mutations
+ * - Form data handling with FormData API
+ * - Automatic revalidation after mutations
+ *
+ * CODING STANDARDS:
+ * - Use 'use server' directive at the top
+ * - Export async functions for server actions
+ * - Validate input before processing
+ * - Use revalidatePath/revalidateTag for cache updates
+ * - Return success/error status with data
+ *
+ * USAGE:
+ * - Import: import { create{{ featureName }} } from '../actions/{{ featureName | downcase }}'
+ * - In forms: <form action={create{{ featureName }}}>
+ * - In transitions: startTransition(() => create{{ featureName }}(formData))
+ *
+ * SECURITY:
+ * - Always validate input
+ * - Check authentication/authorization
+ * - Sanitize data before database operations
+ * - Use Zod or similar for validation
+ *
+ * AVOID:
+ * - Don't use client-only APIs (localStorage, window, etc.)
+ * - Don't return sensitive data to client
+ * - Don't forget to revalidate after mutations
+ */
+
+'use server';
+
+import { revalidatePath } from 'next/cache';
+
+/**
+ * Example server action for {{ featureName }}
+ */
+export async function create{{ featureName }}(formData: FormData) {
+  // Validate input
+  const data = {
+    name: formData.get('name') as string,
+  };
+
+  // TODO: Add your server-side logic here
+  // e.g., database operations, API calls, etc.
+
+  // Revalidate the page to reflect changes
+  revalidatePath('/{{ routePath }}');
+
+  return { success: true, data };
+}
+
+/**
+ * Example server action for updating {{ featureName }}
+ */
+export async function update{{ featureName }}(id: string, formData: FormData) {
+  // TODO: Add your update logic here
+
+  revalidatePath('/{{ routePath }}');
+
+  return { success: true };
+}
+
+/**
+ * Example server action for deleting {{ featureName }}
+ */
+export async function delete{{ featureName }}(id: string) {
+  // TODO: Add your delete logic here
+
+  revalidatePath('/{{ routePath }}');
+
+  return { success: true };
+}

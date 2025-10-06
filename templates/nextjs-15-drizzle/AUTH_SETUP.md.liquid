@@ -1,0 +1,267 @@
+# Authentication Setup Guide
+
+This guide walks through setting up Better Auth authentication in your Next.js application.
+
+## 🚀 Quick Start
+
+### 1. Install Better Auth
+
+```bash
+pnpm add better-auth
+```
+
+### 2. Update Database Schema
+
+Add auth schema to your main schema file:
+
+```typescript
+// src/db/schema.ts
+export * from './auth-schema';
+// ... rest of your schema exports
+```
+
+### 3. Generate and Run Migrations
+
+```bash
+# Generate migration files for auth tables
+pnpm db:generate
+
+# Apply migrations to database
+pnpm db:migrate
+```
+
+This creates the following tables:
+- `user` - User accounts
+- `session` - Active sessions
+- `account` - OAuth provider accounts
+- `verification` - Email verification tokens
+
+### 4. Configure Environment Variables
+
+Update your `.env.local` file:
+
+```bash
+# Generate a secret key
+npx better-auth secret
+
+# Add to .env.local:
+BETTER_AUTH_SECRET="your-generated-secret"
+NEXT_PUBLIC_BETTER_AUTH_URL="http://localhost:3000"
+
+# For OAuth providers (if enabled):
+{% if authProviders contains 'google' %}
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+{% endif %}
+{% if authProviders contains 'github' %}
+GITHUB_CLIENT_ID="your-github-client-id"
+GITHUB_CLIENT_SECRET="your-github-client-secret"
+{% endif %}
+{% if authProviders contains 'discord' %}
+DISCORD_CLIENT_ID="your-discord-client-id"
+DISCORD_CLIENT_SECRET="your-discord-client-secret"
+{% endif %}
+```
+
+### 5. Update Next.js Configuration (if using Server Actions)
+
+If you plan to use Server Actions with Better Auth:
+
+```typescript
+// next.config.ts
+const nextConfig = {
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["localhost:3000"],
+    },
+  },
+};
+```
+
+### 6. Test Authentication
+
+Start your dev server and navigate to:
+- `/sign-up` - Create a new account
+- `/sign-in` - Sign in to existing account
+- `/dashboard` - Protected route (requires auth)
+
+## 📁 File Structure
+
+```
+src/
+├── lib/
+│   ├── auth.ts              # Server-side auth config
+│   └── auth-client.ts       # Client-side auth hooks
+├── db/
+│   ├── auth-schema.ts       # Auth database schema
+│   └── schema.ts            # Main schema (export auth-schema here)
+├── app/
+│   ├── api/
+│   │   └── auth/
+│   │       └── [...all]/
+│   │           └── route.ts # Auth API endpoints
+│   ├── (auth)/              # Auth route group
+│   │   ├── layout.tsx
+│   │   ├── sign-in/
+│   │   │   └── page.tsx
+│   │   └── sign-up/
+│   │       └── page.tsx
+│   └── (protected)/         # Protected route group
+│       ├── layout.tsx
+│       └── dashboard/
+│           └── page.tsx
+{% if withAuthComponents %}├── components/
+│   └── AuthForm/            # Reusable auth form
+│       ├── index.tsx
+│       └── AuthForm.stories.tsx
+{% endif %}{% if withProtectedRoute %}└── middleware.ts             # Route protection
+{% endif %}```
+
+## 🔒 Protecting Routes
+
+### Option 1: Middleware (Recommended)
+
+The generated `middleware.ts` automatically protects routes. Customize the matcher:
+
+```typescript
+export const config = {
+  matcher: [
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\..*|sign-in|sign-up).*)",
+  ],
+};
+```
+
+### Option 2: Route Groups
+
+Use route groups for organization:
+- `(auth)` - Public auth pages
+- `(protected)` - Protected pages requiring auth
+- `(marketing)` - Public marketing pages
+
+### Option 3: Per-Page Protection
+
+Check auth in individual pages:
+
+```typescript
+"use client";
+
+import { useSession } from "@/lib/auth-client";
+import { redirect } from "next/navigation";
+
+export default function ProtectedPage() {
+  const { data: session, isPending } = useSession();
+  
+  if (!isPending && !session) {
+    redirect("/sign-in");
+  }
+  
+  // ... rest of page
+}
+```
+
+## 🎨 Customizing Auth Forms
+
+{% if withAuthComponents %}
+The `AuthForm` component supports multiple modes and providers:
+
+```tsx
+<AuthForm mode="signin" providers="email,google,github" />
+<AuthForm mode="signup" providers="email" />
+```
+
+Customize styling in `src/components/AuthForm/index.tsx`.
+{% else %}
+Implement your own auth forms using Better Auth hooks:
+
+```tsx
+"use client";
+
+import { signIn } from "@/lib/auth-client";
+
+function SignInForm() {
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    await signIn.email({ email, password });
+  };
+  
+  // ... form JSX
+}
+```
+{% endif %}
+
+## 🔌 Adding OAuth Providers
+
+To add more OAuth providers:
+
+1. Update `src/lib/auth.ts`:
+```typescript
+socialProviders: {
+  twitter: {
+    clientId: process.env.TWITTER_CLIENT_ID!,
+    clientSecret: process.env.TWITTER_CLIENT_SECRET!,
+  },
+}
+```
+
+2. Add environment variables to `.env.local`
+
+3. Get OAuth credentials from provider's developer console
+
+## 📚 Common Patterns
+
+### Getting Session Data
+
+**Client Component:**
+```typescript
+"use client";
+import { useSession } from "@/lib/auth-client";
+
+const { data: session, isPending } = useSession();
+```
+
+**Server Component:**
+```typescript
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+
+const session = await auth.api.getSession({ headers: headers() });
+```
+
+### Sign Out
+
+```typescript
+import { signOut } from "@/lib/auth-client";
+
+await signOut();
+router.push("/sign-in");
+```
+
+### Email Verification
+
+Better Auth supports email verification. Configure in `src/lib/auth.ts`:
+
+```typescript
+emailAndPassword: {
+  enabled: true,
+  requireEmailVerification: true,
+  sendResetPasswordEmail: async ({ user, url }) => {
+    // Send email logic
+  },
+}
+```
+
+## 🐛 Troubleshooting
+
+**Sessions not persisting:** Check that cookies are being set correctly and BETTER_AUTH_SECRET is configured.
+
+**OAuth redirect fails:** Ensure NEXT_PUBLIC_BETTER_AUTH_URL matches your app's URL and callback URLs are configured in provider settings.
+
+**Database errors:** Verify migrations ran successfully with `pnpm db:migrate` and check database connection.
+
+**Type errors:** Run `pnpm typecheck` and ensure Better Auth types are properly imported.
+
+## 📖 Resources
+
+- [Better Auth Documentation](https://better-auth.com)
+- [Drizzle ORM Documentation](https://orm.drizzle.team)
+- [Next.js Authentication](https://nextjs.org/docs/authentication)

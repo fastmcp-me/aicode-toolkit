@@ -1,0 +1,88 @@
+/**
+ * {{ actionName }} Server Action
+ *
+ * DESIGN PATTERNS:
+ * - Server Action pattern with 'use server' directive
+ * - Error handling with try-catch
+ * - Input validation before processing
+ * - Cache revalidation after mutations
+ *
+ * CODING STANDARDS:
+ * - Use 'use server' at the top of the file
+ * - Export async functions only
+ * - Validate all input data
+ * - Return consistent response format { success, data?, error? }
+ * - Use revalidatePath/revalidateTag for cache updates
+ * - Log errors for debugging
+ *
+ * USAGE:
+ * - Import: import { {{ actionName }} } from '@/actions/{{ actionName }}'
+ * - In forms: <form action={ {{- actionName -}} }>
+ * - In components: startTransition(() => {{ actionName }}(formData))
+ * - In handlers: await {{ actionName }}(formData)
+ *
+ * SECURITY:
+ * - Validate and sanitize all input
+ * - Check authentication/authorization
+ * - Don't trust client data
+ * - Don't expose sensitive information
+ * - Use environment variables for secrets
+ *
+ * AVOID:
+ * - Don't use client-only APIs (window, localStorage, etc.)
+ * - Don't return sensitive data to client
+ * - Don't forget to revalidate after mutations
+ * - Don't skip input validation
+ */
+
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+
+/**
+ * Validation schema for {{ actionName }}
+ */
+const {{ actionName }}Schema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  // Add more fields as needed
+});
+
+export type {{ actionName | capitalize }}Input = z.infer<typeof {{ actionName }}Schema>;
+
+/**
+ * {{ actionName }} server action
+ *
+ * @param formData - Form data or input object
+ * @returns Result object with success status and data/error
+ */
+export async function {{ actionName }}(formData: FormData) {
+  try {
+    // Validate input
+    const data = {{ actionName }}Schema.parse({
+      // Extract and validate form data
+      name: formData.get('name'),
+    });
+
+    // TODO: Implement your business logic here
+    // e.g., database operations, API calls, etc.
+    
+    // Example: 
+    // await db.insert(table).values(data);
+
+    // Revalidate affected paths
+    revalidatePath('/');
+
+    return { 
+      success: true, 
+      data 
+    };
+  } catch (error) {
+    console.error('{{ actionName }} error:', error);
+    
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'An error occurred' 
+    };
+  }
+}

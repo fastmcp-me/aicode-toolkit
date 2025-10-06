@@ -1,0 +1,117 @@
+/**
+ * {{ serviceName }}
+ *
+ * DESIGN PATTERNS:
+ * - Repository pattern for data access
+ * - Class-based service architecture
+ * - Dependency injection ready
+ * - Single responsibility principle
+ *
+ * CODING STANDARDS:
+ * - Use Drizzle ORM for all database operations
+ * - Return null for not found items
+ * - Use type-safe queries with eq, and, or operators
+ * - Export class with public methods
+ * - Use async/await for all database operations
+ * - Include JSDoc comments for all methods
+ *
+ * USAGE:
+ * - Import: import { {{ serviceName }} } from '@/services/{{ serviceName }}'
+ * - Instantiate: const service = new {{ serviceName }}()
+ * - Use methods: await service.getById(1)
+ * - In actions: const result = await new {{ serviceName }}().create(data)
+ * - In API routes: const service = new {{ serviceName }}()
+ *
+ * DATABASE:
+ * - Uses Drizzle ORM for type-safe queries
+ * - Import db from '@/db/drizzle'
+ * - Import tables from '@/db/schema'
+ * - Use eq, and, or for conditions
+ * - Use .returning() to get inserted/updated data
+ *
+ * ERROR HANDLING:
+ * - Let Drizzle errors bubble up
+ * - Return null for not found items
+ * - Validate input in calling code (actions/routes)
+ * - Consider custom error classes for business logic errors
+ *
+ * AVOID:
+ * - Don't put validation in service (use actions/routes)
+ * - Don't handle HTTP concerns (status codes, etc.)
+ * - Don't mix multiple entity operations
+ * - Don't use raw SQL unless necessary
+ */
+
+import { db } from '@/db/drizzle';
+import { exampleTable } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import type { I{{ serviceName }} } from './types';
+
+/**
+ * {{ serviceName }} - Business logic and data access for Example entity
+ */
+export class {{ serviceName }} implements I{{ serviceName }} {
+  /**
+   * Get item by ID
+   */
+  async getById(id: number) {
+    const result = await db
+      .select()
+      .from(exampleTable)
+      .where(eq(exampleTable.id, id))
+      .limit(1);
+
+    return result[0] || null;
+  }
+
+  /**
+   * Get all items
+   */
+  async getAll() {
+    return await db.select().from(exampleTable);
+  }
+
+  /**
+   * Create new item
+   */
+  async create(data: { name: string; description?: string }) {
+    const result = await db
+      .insert(exampleTable)
+      .values({
+        name: data.name,
+        description: data.description,
+      })
+      .returning();
+
+    return result[0];
+  }
+
+  /**
+   * Update existing item
+   */
+  async update(id: number, data: { name?: string; description?: string }) {
+    const result = await db
+      .update(exampleTable)
+      .set({
+        name: data.name,
+        description: data.description,
+        updatedAt: new Date(),
+      })
+      .where(eq(exampleTable.id, id))
+      .returning();
+
+    return result[0] || null;
+  }
+
+  /**
+   * Delete item
+   */
+  async delete(id: number) {
+    const result = await db
+      .delete(exampleTable)
+      .where(eq(exampleTable.id, id))
+      .returning();
+
+    return result.length > 0;
+  }
+}

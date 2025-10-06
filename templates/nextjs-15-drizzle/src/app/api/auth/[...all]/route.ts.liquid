@@ -1,0 +1,23 @@
+/**
+ * Better Auth API Route Handler
+ *
+ * DESIGN PATTERNS:
+ * - Catch-all route for all auth endpoints
+ * - Handles all HTTP methods (GET, POST, etc.)
+ * - Uses Better Auth's built-in API handlers
+ *
+ * CODING STANDARDS:
+ * - Must be at /api/auth/[...all]/route.ts
+ * - Export auth.handler for both GET and POST
+ * - Do not modify unless adding custom middleware
+ *
+ * ENDPOINTS CREATED:
+ * - /api/auth/sign-in, /api/auth/sign-up, /api/auth/sign-out
+ * - /api/auth/session, /api/auth/callback/[provider]
+ * - See Better Auth docs for full API reference
+ */
+
+import { auth } from "@/lib/auth";
+import { toNextJsHandler } from "better-auth/next-js";
+
+export const { GET, POST } = toNextJsHandler(auth);

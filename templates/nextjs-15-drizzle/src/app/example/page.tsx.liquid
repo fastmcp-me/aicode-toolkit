@@ -1,0 +1,33 @@
+/**
+ * {{ pageTitle }} Page
+ *
+ * DESIGN PATTERNS:
+ * - Server Component: Async component that runs on the server
+ * - SEO Optimized: Includes metadata for search engines
+ *
+ * CODING STANDARDS:
+ * - Export metadata object for static meta tags
+ * - Use async/await for data fetching
+ * - Keep Server Components by default
+ *
+ * USAGE:
+ * - Add data fetching logic in the component body
+ * - Use Server Actions for mutations
+ * - Extract client-side interactivity to separate 'use client' components
+ */
+
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: '{{ pageTitle }}',
+  description: '{{ pageDescription }}',
+};
+
+export default async function Page() {
+  return (
+    <div>
+      <h1>{{ pageTitle }}</h1>
+      <p>{{ pageDescription }}</p>
+    </div>
+  );
+}

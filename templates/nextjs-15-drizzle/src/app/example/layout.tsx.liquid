@@ -1,0 +1,30 @@
+/**
+ * {{ pageTitle }} Layout
+ *
+ * DESIGN PATTERNS:
+ * - Layout Component: Shared UI wrapper for nested routes
+ * - Composition: Renders children prop for nested content
+ *
+ * CODING STANDARDS:
+ * - Accept children prop of type React.ReactNode
+ * - Use Server Components by default
+ * - Keep layouts simple and focused on structure
+ *
+ * USAGE:
+ * - Wraps all nested routes automatically
+ * - Add shared UI elements (navigation, sidebar, footer)
+ * - State persists across route changes within this layout
+ */
+
+export default function Layout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      {/* Add shared UI here (nav, sidebar, etc.) */}
+      {children}
+    </div>
+  );
+}

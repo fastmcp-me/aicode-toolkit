@@ -1,0 +1,42 @@
+import type { Meta, StoryObj } from "@storybook/react";
+import { AuthForm } from "./index";
+
+const meta: Meta<typeof AuthForm> = {
+  title: "Auth/AuthForm",
+  component: AuthForm,
+  parameters: {
+    layout: "centered",
+  },
+  tags: ["autodocs"],
+};
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const SignInEmail: Story = {
+  args: {
+    mode: "signin",
+    providers: "email",
+  },
+};
+
+export const SignUpEmail: Story = {
+  args: {
+    mode: "signup",
+    providers: "email",
+  },
+};
+
+export const SignInWithOAuth: Story = {
+  args: {
+    mode: "signin",
+    providers: "email,google,github",
+  },
+};
+
+export const SignUpWithOAuth: Story = {
+  args: {
+    mode: "signup",
+    providers: "email,google,github,discord",
+  },
+};

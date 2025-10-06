@@ -1,0 +1,51 @@
+/**
+ * Better Auth Server Configuration
+ *
+ * DESIGN PATTERNS:
+ * - Server-side only configuration (do not import in client components)
+ * - Drizzle adapter for database operations
+ * - Plugin-based architecture for extending functionality
+ *
+ * CODING STANDARDS:
+ * - Import plugins from 'better-auth/plugins'
+ * - Add auth providers based on authProviders variable
+ * - Configure session and token settings as needed
+ *
+ * USAGE:
+ * - Import in API routes and Server Components only
+ * - Use auth.api for server-side auth operations
+ * - Export auth instance as const for tree-shaking
+ */
+
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { db } from "@/db/drizzle";
+
+export const auth = betterAuth({
+  database: drizzleAdapter(db, {
+    provider: "pg", // postgres
+  }),
+  emailAndPassword: {
+    enabled: {% if authProviders contains 'email' %}true{% else %}false{% endif %},
+  },
+  socialProviders: {
+    {% if authProviders contains 'google' %}
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    },
+    {% endif %}
+    {% if authProviders contains 'github' %}
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    },
+    {% endif %}
+    {% if authProviders contains 'discord' %}
+    discord: {
+      clientId: process.env.DISCORD_CLIENT_ID!,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+    },
+    {% endif %}
+  },
+});
