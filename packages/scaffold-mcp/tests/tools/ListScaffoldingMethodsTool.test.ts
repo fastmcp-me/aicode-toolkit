@@ -1,0 +1,117 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ListScaffoldingMethodsTool } from '../../src/tools/ListScaffoldingMethodsTool';
+
+// Mock the services
+vi.mock('../../src/services/FileSystemService');
+vi.mock('../../src/services/ScaffoldingMethodsService');
+
+describe('ListScaffoldingMethodsTool', () => {
+  let tool: ListScaffoldingMethodsTool;
+  const templatesPath = '/test/templates';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    tool = new ListScaffoldingMethodsTool(templatesPath);
+  });
+
+  describe('getDefinition', () => {
+    it('should return tool definition with correct schema', () => {
+      const definition = tool.getDefinition();
+
+      expect(definition.name).toBe('list-scaffolding-methods');
+      expect(definition.description).toBeTruthy();
+      expect(definition.description).toContain('Lists all available scaffolding methods');
+      expect(definition.inputSchema.type).toBe('object');
+      expect(definition.inputSchema.required).toContain('projectPath');
+    });
+
+    it('should include projectPath in schema', () => {
+      const definition = tool.getDefinition();
+
+      expect(definition.inputSchema.properties.projectPath).toBeDefined();
+      expect(definition.inputSchema.properties.projectPath.type).toBe('string');
+    });
+  });
+
+  describe('execute', () => {
+    it('should list scaffolding methods successfully', async () => {
+      const mockMethods = {
+        sourceTemplate: 'nextjs-15',
+        templatePath: 'nextjs-15',
+        methods: [
+          {
+            name: 'scaffold-route',
+            description: 'Generate a new route for Next.js App Router',
+            variables_schema: {
+              type: 'object',
+              properties: {
+                routePath: { type: 'string', description: 'Route path' },
+                pageTitle: { type: 'string', description: 'Page title' },
+              },
+              required: ['routePath', 'pageTitle'],
+            },
+          },
+          {
+            name: 'scaffold-component',
+            description: 'Generate a new React component',
+            variables_schema: {
+              type: 'object',
+              properties: {
+                componentName: { type: 'string', description: 'Component name' },
+              },
+              required: ['componentName'],
+            },
+          },
+        ],
+      };
+
+      const spy = vi.spyOn(tool['scaffoldingMethodsService'], 'listScaffoldingMethods');
+      spy.mockResolvedValue(mockMethods);
+
+      const result = await tool.execute({ projectPath: '/test/apps/my-app' });
+
+      expect(result.isError).toBeFalsy();
+      expect(result.content[0].type).toBe('text');
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.sourceTemplate).toBe('nextjs-15');
+      expect(response.methods).toHaveLength(2);
+      expect(response.methods[0].name).toBe('scaffold-route');
+      expect(spy).toHaveBeenCalledWith('/test/apps/my-app');
+    });
+
+    it('should return error when projectPath is missing', async () => {
+      const result = await tool.execute({});
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Missing required parameter: projectPath');
+    });
+
+    it('should handle empty methods list', async () => {
+      const mockMethods = {
+        sourceTemplate: 'nextjs-15',
+        templatePath: 'nextjs-15',
+        methods: [],
+      };
+
+      const spy = vi.spyOn(tool['scaffoldingMethodsService'], 'listScaffoldingMethods');
+      spy.mockResolvedValue(mockMethods);
+
+      const result = await tool.execute({ projectPath: '/test/apps/my-app' });
+
+      expect(result.isError).toBeFalsy();
+      const response = JSON.parse(result.content[0].text);
+      expect(response.methods).toHaveLength(0);
+    });
+
+    it('should handle service errors gracefully', async () => {
+      const spy = vi.spyOn(tool['scaffoldingMethodsService'], 'listScaffoldingMethods');
+      spy.mockRejectedValue(new Error('Project not found or missing project.json'));
+
+      const result = await tool.execute({ projectPath: '/test/apps/missing' });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Project not found or missing project.json');
+    });
+  });
+});
