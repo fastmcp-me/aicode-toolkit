@@ -1,3 +1,13 @@
+## 0.2.0 (2025-10-06)
+
+### 🚀 Features
+
+- **scaffold-mcp:** extra prompts Add two extra prompts for slash commands: scaffold-application and scaffold-feature ([54d1991](https://github.com/AgiFlow/aicode-toolkit/commit/54d1991))
+
+### ❤️ Thank You
+
+- Vuong Ngo @AgiFlow
+
 ## 0.1.0 (2025-10-05)
 
 ### 🚀 Features
