@@ -11,29 +11,44 @@ import type {
 } from './types.js';
 
 /**
- * Session manager for HTTP transports
+ * Session data for HTTP connections
  */
-class HttpSessionManager implements SessionManager {
-  private transports: Map<string, StreamableHTTPServerTransport> = new Map();
+interface HttpSession {
+  transport: StreamableHTTPServerTransport;
+  server: McpServer;
+}
 
-  getSession(sessionId: string): StreamableHTTPServerTransport | undefined {
-    return this.transports.get(sessionId);
+/**
+ * HTTP session manager
+ */
+class HttpFullSessionManager {
+  private sessions: Map<string, HttpSession> = new Map();
+
+  getSession(sessionId: string): HttpSession | undefined {
+    return this.sessions.get(sessionId);
   }
 
-  setSession(sessionId: string, transport: StreamableHTTPServerTransport): void {
-    this.transports.set(sessionId, transport);
+  setSession(sessionId: string, transport: StreamableHTTPServerTransport, server: McpServer): void {
+    this.sessions.set(sessionId, { transport, server });
   }
 
   deleteSession(sessionId: string): void {
-    this.transports.delete(sessionId);
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.server.close();
+    }
+    this.sessions.delete(sessionId);
   }
 
   hasSession(sessionId: string): boolean {
-    return this.transports.has(sessionId);
+    return this.sessions.has(sessionId);
   }
 
   clear(): void {
-    this.transports.clear();
+    for (const session of this.sessions.values()) {
+      session.server.close();
+    }
+    this.sessions.clear();
   }
 }
 
@@ -42,16 +57,17 @@ class HttpSessionManager implements SessionManager {
  * Provides stateful session management with resumability support
  */
 export class HttpTransportHandler implements IHttpTransportHandler {
-  private mcpServer: McpServer;
+  private serverFactory: () => McpServer;
   private app: express.Application;
   private server: HttpServer | null = null;
-  private sessionManager: HttpSessionManager;
+  private sessionManager: HttpFullSessionManager;
   private config: Required<TransportConfig>;
 
-  constructor(mcpServer: McpServer, config: TransportConfig) {
-    this.mcpServer = mcpServer;
+  constructor(serverFactory: McpServer | (() => McpServer), config: TransportConfig) {
+    // Support both a factory function and a direct server instance for backwards compatibility
+    this.serverFactory = typeof serverFactory === 'function' ? serverFactory : () => serverFactory;
     this.app = express();
-    this.sessionManager = new HttpSessionManager();
+    this.sessionManager = new HttpFullSessionManager();
     this.config = {
       mode: config.mode,
       port: config.port ?? 3000,
@@ -94,13 +110,17 @@ export class HttpTransportHandler implements IHttpTransportHandler {
 
     if (sessionId && this.sessionManager.hasSession(sessionId)) {
       // Reuse existing transport
-      transport = this.sessionManager.getSession(sessionId)!;
+      const session = this.sessionManager.getSession(sessionId)!;
+      transport = session.transport;
     } else if (!sessionId && isInitializeRequest(req.body)) {
-      // New initialization request
+      // New initialization request - create new server instance
+      const mcpServer = this.serverFactory();
+
       transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
+        enableJsonResponse: true, // Return JSON instead of SSE for simple request/response
         onsessioninitialized: (sessionId) => {
-          this.sessionManager.setSession(sessionId, transport);
+          this.sessionManager.setSession(sessionId, transport, mcpServer);
         },
       });
 
@@ -111,8 +131,8 @@ export class HttpTransportHandler implements IHttpTransportHandler {
         }
       };
 
-      // Connect to the MCP server
-      await this.mcpServer.connect(transport);
+      // Connect the new MCP server instance to the transport
+      await mcpServer.connect(transport);
     } else {
       // Invalid request
       res.status(400).json({
@@ -138,8 +158,8 @@ export class HttpTransportHandler implements IHttpTransportHandler {
       return;
     }
 
-    const transport = this.sessionManager.getSession(sessionId)!;
-    await transport.handleRequest(req, res);
+    const session = this.sessionManager.getSession(sessionId)!;
+    await session.transport.handleRequest(req, res);
   }
 
   private async handleDeleteRequest(req: Request, res: Response): Promise<void> {
@@ -150,8 +170,8 @@ export class HttpTransportHandler implements IHttpTransportHandler {
       return;
     }
 
-    const transport = this.sessionManager.getSession(sessionId)!;
-    await transport.handleRequest(req, res);
+    const session = this.sessionManager.getSession(sessionId)!;
+    await session.transport.handleRequest(req, res);
 
     // Clean up session
     this.sessionManager.deleteSession(sessionId);

@@ -3,9 +3,6 @@ import { BoilerplateService } from '../services/BoilerplateService';
 import { TemplatesManager } from '../services/TemplatesManager';
 import { icons, logger, messages, sections } from '../utils';
 
-// Get the templates directory
-const templatesDir = TemplatesManager.findTemplatesPathSync();
-
 /**
  * Boilerplate CLI command
  */
@@ -19,6 +16,7 @@ boilerplateCommand
   .description('List all available boilerplate templates')
   .action(async () => {
     try {
+      const templatesDir = await TemplatesManager.findTemplatesPath();
       const boilerplateService = new BoilerplateService(templatesDir);
       const { boilerplates } = await boilerplateService.listBoilerplates();
 
@@ -59,6 +57,7 @@ boilerplateCommand
   .option('--verbose', 'Enable verbose logging')
   .action(async (boilerplateName, options) => {
     try {
+      const templatesDir = await TemplatesManager.findTemplatesPath();
       const boilerplateService = new BoilerplateService(templatesDir);
 
       // Parse variables if provided
@@ -164,6 +163,7 @@ boilerplateCommand
   .description('Show detailed information about a boilerplate template')
   .action(async (boilerplateName) => {
     try {
+      const templatesDir = await TemplatesManager.findTemplatesPath();
       const boilerplateService = new BoilerplateService(templatesDir);
       const bp = await boilerplateService.getBoilerplate(boilerplateName);
 
