@@ -1,3 +1,15 @@
+## 0.3.1 (2025-10-06)
+
+### 🩹 Fixes
+
+- **scaffold-mcp:** build-output Change build output to cjs ([7b4dc81](https://github.com/AgiFlow/aicode-toolkit/commit/7b4dc81))
+- **scaffold-mcp:** templates-path Use TemplatesManager to find the correct workspace path ([f03d3e6](https://github.com/AgiFlow/aicode-toolkit/commit/f03d3e6))
+- **scaffold-mcp:** mcp transport 1. HTTP Transport: Updated to use server factory pattern, creates new MCP server per ([825001c](https://github.com/AgiFlow/aicode-toolkit/commit/825001c))
+
+### ❤️ Thank You
+
+- Vuong Ngo @AgiFlow
+
 ## 0.3.0 (2025-10-06)
 
 ### 🚀 Features
