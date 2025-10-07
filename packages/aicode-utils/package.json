@@ -1,24 +1,21 @@
 {
-  "name": "@agiflowai/scaffold-generator",
-  "description": "Shared utilities and types for scaffold generators",
-  "version": "0.3.3",
+  "name": "@agiflowai/aicode-utils",
+  "description": "Utility functions and helpers for AI-powered code generation and analysis",
+  "version": "0.1.0",
   "license": "AGPL-3.0",
   "author": "AgiflowIO",
   "repository": {
     "type": "git",
     "url": "https://github.com/AgiFlow/aicode-toolkit.git",
-    "directory": "packages/scaffold-generator"
+    "directory": "packages/aicode-utils"
   },
   "homepage": "https://github.com/AgiFlow/aicode-toolkit#readme",
   "bugs": {
     "url": "https://github.com/AgiFlow/aicode-toolkit/issues"
   },
   "keywords": [
-    "scaffold",
-    "generator",
-    "template",
-    "boilerplate",
-    "code-generation"
+    "typescript",
+    "library"
   ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -33,10 +30,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "fs-extra": "11.3.2"
+    "fs-extra": "11.3.2",
+    "js-yaml": "4.1.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
     "@vitest/coverage-v8": "^3.0.0",
     "tsdown": "^0.15.6",

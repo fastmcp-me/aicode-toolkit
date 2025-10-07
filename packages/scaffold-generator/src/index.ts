@@ -1,3 +1,2 @@
-export * from './file';
-export * from './ScaffoldProcessingService';
+export * from './services';
 export * from './types';

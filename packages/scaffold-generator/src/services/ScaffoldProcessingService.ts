@@ -1,5 +1,5 @@
 import path from 'node:path';
-import type { IFileSystemService, IVariableReplacementService } from './types';
+import type { IFileSystemService, IVariableReplacementService } from '../types';
 
 /**
  * Shared service for common scaffolding operations like processing templates and tracking files

@@ -1,6 +1,6 @@
+import { TemplatesManagerService } from '@agiflowai/aicode-utils';
 import { Command } from 'commander';
 import { BoilerplateService } from '../services/BoilerplateService';
-import { TemplatesManager } from '../services/TemplatesManager';
 import { icons, messages, print, sections } from '../utils';
 
 /**
@@ -16,7 +16,7 @@ boilerplateCommand
   .description('List all available boilerplate templates')
   .action(async () => {
     try {
-      const templatesDir = await TemplatesManager.findTemplatesPath();
+      const templatesDir = await TemplatesManagerService.findTemplatesPath();
       const boilerplateService = new BoilerplateService(templatesDir);
       const { boilerplates } = await boilerplateService.listBoilerplates();
 
@@ -57,7 +57,7 @@ boilerplateCommand
   .option('--verbose', 'Enable verbose logging')
   .action(async (boilerplateName, options) => {
     try {
-      const templatesDir = await TemplatesManager.findTemplatesPath();
+      const templatesDir = await TemplatesManagerService.findTemplatesPath();
       const boilerplateService = new BoilerplateService(templatesDir);
 
       // Parse variables if provided
@@ -163,7 +163,7 @@ boilerplateCommand
   .description('Show detailed information about a boilerplate template')
   .action(async (boilerplateName) => {
     try {
-      const templatesDir = await TemplatesManager.findTemplatesPath();
+      const templatesDir = await TemplatesManagerService.findTemplatesPath();
       const boilerplateService = new BoilerplateService(templatesDir);
       const bp = await boilerplateService.getBoilerplate(boilerplateName);
 
