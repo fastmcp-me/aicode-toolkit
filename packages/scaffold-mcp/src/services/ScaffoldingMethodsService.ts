@@ -2,6 +2,7 @@ import path from 'node:path';
 import yaml from 'js-yaml';
 import type { IFileSystemService } from '../types/interfaces';
 import type { ScaffoldResult } from '../types/scaffold';
+import { log } from '../utils/logger';
 import { TemplateService } from './TemplateService';
 
 export interface ScaffoldMethod {
@@ -168,7 +169,7 @@ export class ScaffoldingMethodsService {
             }
           }
         } catch (error) {
-          console.warn(`Failed to read scaffold.yaml at ${scaffoldYamlPath}:`, error);
+          log.warn(`Failed to read scaffold.yaml at ${scaffoldYamlPath}:`, error);
         }
       }
     }
@@ -219,11 +220,11 @@ export class ScaffoldingMethodsService {
             }
           }
         } catch (error) {
-          console.warn(`Failed to read subdirectories in ${itemPath}:`, error);
+          log.warn(`Failed to read subdirectories in ${itemPath}:`, error);
         }
       }
     } catch (error) {
-      console.warn(`Failed to read templates root directory ${this.templatesRootPath}:`, error);
+      log.warn(`Failed to read templates root directory ${this.templatesRootPath}:`, error);
     }
 
     return templateDirs;

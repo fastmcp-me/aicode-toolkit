@@ -2,13 +2,13 @@ import path from 'node:path';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import {
-  icons,
-  logger,
-  messages,
-  sections,
   cloneRepository,
   cloneSubdirectory,
+  icons,
+  messages,
   parseGitHubUrl,
+  print,
+  sections,
 } from '../utils';
 
 /**
@@ -41,9 +41,7 @@ export const addCommand = new Command('add')
         process.exit(1);
       }
 
-      logger.info(
-        `${icons.download} Downloading template '${templateName}' from ${templateUrl}...`,
-      );
+      print.info(`${icons.download} Downloading template '${templateName}' from ${templateUrl}...`);
 
       await fs.ensureDir(path.dirname(targetFolder));
 
@@ -54,7 +52,7 @@ export const addCommand = new Command('add')
       try {
         if (parsedUrl.isSubdirectory && parsedUrl.branch && parsedUrl.subdirectory) {
           // Clone subdirectory using sparse checkout
-          logger.info(
+          print.info(
             `${icons.folder} Detected subdirectory: ${parsedUrl.subdirectory} (branch: ${parsedUrl.branch})`,
           );
           await cloneSubdirectory(
@@ -69,8 +67,8 @@ export const addCommand = new Command('add')
         }
 
         messages.success(`Template '${templateName}' added successfully!`);
-        logger.header(`\n${icons.folder} Template location:`);
-        logger.indent(targetFolder);
+        print.header(`\n${icons.folder} Template location:`);
+        print.indent(targetFolder);
 
         // Check for configuration file
         const configFiles = [
@@ -81,8 +79,8 @@ export const addCommand = new Command('add')
         let hasConfig = false;
         for (const configFile of configFiles) {
           if (await fs.pathExists(configFile)) {
-            logger.header(`\n${icons.config} Configuration file found:`);
-            logger.indent(path.basename(configFile));
+            print.header(`\n${icons.config} Configuration file found:`);
+            print.indent(path.basename(configFile));
             hasConfig = true;
             break;
           }
@@ -92,7 +90,7 @@ export const addCommand = new Command('add')
           messages.warning(
             'Warning: No configuration file found (boilerplate.yaml or scaffold.yaml)',
           );
-          logger.indent('You may need to create one manually.');
+          print.indent('You may need to create one manually.');
         }
 
         sections.nextSteps([

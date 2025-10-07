@@ -1,40 +1,40 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { logger, messages, sections, icons } from '../../src/utils/console';
+import { icons, messages, print, sections } from '../../src/utils/print';
 
 // Mock console methods
 const mockLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 const mockError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-describe('console utils', () => {
+describe('print utils', () => {
   beforeEach(() => {
     mockLog.mockClear();
     mockError.mockClear();
   });
 
-  describe('logger', () => {
+  describe('print', () => {
     it('should log info messages', () => {
-      logger.info('test message');
+      print.info('test message');
 
       expect(mockLog).toHaveBeenCalledTimes(1);
       expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('test message'));
     });
 
     it('should log success messages', () => {
-      logger.success('success message');
+      print.success('success message');
 
       expect(mockLog).toHaveBeenCalledTimes(1);
       expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('success message'));
     });
 
     it('should log warning messages', () => {
-      logger.warning('warning message');
+      print.warning('warning message');
 
       expect(mockLog).toHaveBeenCalledTimes(1);
       expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('warning message'));
     });
 
     it('should log error messages', () => {
-      logger.error('error message');
+      print.error('error message');
 
       expect(mockError).toHaveBeenCalledTimes(1);
       expect(mockError).toHaveBeenCalledWith(expect.stringContaining('error message'));
@@ -42,7 +42,7 @@ describe('console utils', () => {
 
     it('should log error with Error object', () => {
       const error = new Error('test error');
-      logger.error('error occurred', error);
+      print.error('error occurred', error);
 
       expect(mockError).toHaveBeenCalledTimes(1);
       expect(mockError).toHaveBeenCalledWith(
@@ -52,7 +52,7 @@ describe('console utils', () => {
     });
 
     it('should log error with error string', () => {
-      logger.error('error occurred', 'error details');
+      print.error('error occurred', 'error details');
 
       expect(mockError).toHaveBeenCalledTimes(1);
       expect(mockError).toHaveBeenCalledWith(
@@ -62,42 +62,42 @@ describe('console utils', () => {
     });
 
     it('should log debug messages', () => {
-      logger.debug('debug message');
+      print.debug('debug message');
 
       expect(mockLog).toHaveBeenCalledTimes(1);
       expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('debug message'));
     });
 
     it('should log header messages', () => {
-      logger.header('Header Title');
+      print.header('Header Title');
 
       expect(mockLog).toHaveBeenCalledTimes(1);
       expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('Header Title'));
     });
 
     it('should log list items with prefix', () => {
-      logger.item('list item');
+      print.item('list item');
 
       expect(mockLog).toHaveBeenCalledTimes(1);
       expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('- list item'));
     });
 
     it('should log indented text', () => {
-      logger.indent('indented text');
+      print.indent('indented text');
 
       expect(mockLog).toHaveBeenCalledTimes(1);
       expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('indented text'));
     });
 
     it('should log highlighted text', () => {
-      logger.highlight('important text');
+      print.highlight('important text');
 
       expect(mockLog).toHaveBeenCalledTimes(1);
       expect(mockLog).toHaveBeenCalledWith(expect.stringContaining('important text'));
     });
 
     it('should log newlines', () => {
-      logger.newline();
+      print.newline();
 
       expect(mockLog).toHaveBeenCalledTimes(1);
       expect(mockLog).toHaveBeenCalledWith();

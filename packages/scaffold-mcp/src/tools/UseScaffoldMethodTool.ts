@@ -90,11 +90,23 @@ IMPORTANT:
         variables,
       });
 
+      // Append instructions for LLM to review and implement the scaffolded files
+      const enhancedMessage = `${result.message}
+
+IMPORTANT - Next Steps:
+1. READ the generated files to understand their structure and template placeholders
+2. IMPLEMENT the actual business logic according to the feature's purpose (replace TODOs and template variables)
+3. REGISTER the feature in the appropriate files (e.g., import and register tools in server/index.ts, export from index.ts)
+4. TEST the implementation to ensure it works correctly
+5. Only after completing the implementation should you move to other tasks
+
+Do not skip the implementation step - the scaffolded files contain templates that need actual code.`;
+
       return {
         content: [
           {
             type: 'text',
-            text: result.message,
+            text: enhancedMessage,
           },
         ],
       };

@@ -4,7 +4,7 @@ import chalk from 'chalk';
  * Themed console utilities for consistent CLI output
  */
 
-export const logger = {
+export const print = {
   /**
    * Log info message (cyan)
    */
@@ -112,42 +112,42 @@ export const messages = {
    * Display an info message with icon
    */
   info: (message: string) => {
-    logger.info(`${icons.info} ${message}`);
+    print.info(`${icons.info} ${message}`);
   },
 
   /**
    * Display a success message with icon
    */
   success: (message: string) => {
-    logger.success(`${icons.check} ${message}`);
+    print.success(`${icons.check} ${message}`);
   },
 
   /**
    * Display an error message with icon
    */
   error: (message: string, error?: Error | string) => {
-    logger.error(`${icons.cross} ${message}`, error);
+    print.error(`${icons.cross} ${message}`, error);
   },
 
   /**
    * Display a warning message with icon
    */
   warning: (message: string) => {
-    logger.warning(`${icons.warning} ${message}`);
+    print.warning(`${icons.warning} ${message}`);
   },
 
   /**
    * Display a hint/tip message with icon
    */
   hint: (message: string) => {
-    logger.warning(`${icons.bulb} ${message}`);
+    print.warning(`${icons.bulb} ${message}`);
   },
 
   /**
    * Display a loading/processing message with icon
    */
   loading: (message: string) => {
-    logger.info(`${icons.rocket} ${message}`);
+    print.info(`${icons.rocket} ${message}`);
   },
 };
 
@@ -159,36 +159,36 @@ export const sections = {
    * Print a header section
    */
   header: (title: string) => {
-    logger.newline();
-    logger.header(`${title}`);
-    logger.newline();
+    print.newline();
+    print.header(`${title}`);
+    print.newline();
   },
 
   /**
    * Print a list section with title
    */
   list: (title: string, items: string[]) => {
-    logger.header(`\n${title}\n`);
-    items.forEach((item) => logger.item(item));
+    print.header(`\n${title}\n`);
+    items.forEach((item) => print.item(item));
   },
 
   /**
    * Print next steps section
    */
   nextSteps: (steps: string[]) => {
-    logger.header(`\n${icons.clipboard} Next steps:`);
-    steps.forEach((step) => logger.indent(step));
+    print.header(`\n${icons.clipboard} Next steps:`);
+    steps.forEach((step) => print.indent(step));
   },
 
   /**
    * Print created files section
    */
   createdFiles: (files: string[], maxShow: number = 10) => {
-    logger.header(`\n${icons.folder} Created files:`);
+    print.header(`\n${icons.folder} Created files:`);
     const filesToShow = files.slice(0, maxShow);
-    filesToShow.forEach((file) => logger.item(file));
+    filesToShow.forEach((file) => print.item(file));
     if (files.length > maxShow) {
-      logger.indent(`... and ${files.length - maxShow} more files`);
+      print.indent(`... and ${files.length - maxShow} more files`);
     }
   },
 
@@ -196,7 +196,7 @@ export const sections = {
    * Print warnings section
    */
   warnings: (warnings: string[]) => {
-    logger.warning(`\n${icons.warning} Warnings:`);
-    warnings.forEach((warning) => logger.item(warning));
+    print.warning(`\n${icons.warning} Warnings:`);
+    warnings.forEach((warning) => print.item(warning));
   },
 };

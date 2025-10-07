@@ -1,5 +1,6 @@
 import path from 'node:path';
 import type { IFileSystemService, IVariableReplacementService } from '../types/interfaces';
+import { log } from '../utils/logger';
 
 /**
  * Shared service for common scaffolding operations like processing templates and tracking files
@@ -116,7 +117,7 @@ export class ScaffoldProcessingService {
     try {
       items = await this.fileSystem.readdir(dirPath);
     } catch (error) {
-      console.warn(`Cannot read directory ${dirPath}: ${error}`);
+      log.warn(`Cannot read directory ${dirPath}: ${error}`);
       return;
     }
 
@@ -134,7 +135,7 @@ export class ScaffoldProcessingService {
           createdFiles.push(itemPath);
         }
       } catch (error) {
-        console.warn(`Cannot stat ${itemPath}: ${error}`);
+        log.warn(`Cannot stat ${itemPath}: ${error}`);
       }
     }
   }
@@ -150,7 +151,7 @@ export class ScaffoldProcessingService {
     try {
       items = await this.fileSystem.readdir(dirPath);
     } catch (error) {
-      console.warn(`Cannot read directory ${dirPath}: ${error}`);
+      log.warn(`Cannot read directory ${dirPath}: ${error}`);
       return;
     }
 
@@ -168,7 +169,7 @@ export class ScaffoldProcessingService {
           existingFiles.push(itemPath);
         }
       } catch (error) {
-        console.warn(`Cannot stat ${itemPath}: ${error}`);
+        log.warn(`Cannot stat ${itemPath}: ${error}`);
       }
     }
   }

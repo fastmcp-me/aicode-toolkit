@@ -1,0 +1,28 @@
+/**
+ * HTTP Transport
+ * 
+ * DESIGN PATTERNS:
+ * - Express server setup
+ * - SSE endpoint configuration
+ * 
+ * CODING STANDARDS:
+ * - Configure CORS properly
+ * - Log server startup
+ */
+
+import express from 'express';
+import { handleSSEConnection } from './sse';
+
+export async function startHttpTransport(port: number): Promise<void> {
+  const app = express();
+
+  app.use(express.json());
+
+  app.get('/sse', async (req, res) => {
+    await handleSSEConnection(req, res);
+  });
+
+  app.listen(port, () => {
+    console.log(`MCP server listening on port ${port}`);
+  });
+}

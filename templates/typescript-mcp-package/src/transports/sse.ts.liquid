@@ -1,0 +1,21 @@
+/**
+ * SSE Transport
+ * 
+ * DESIGN PATTERNS:
+ * - Server-Sent Events for real-time communication
+ * - Express-based HTTP server
+ * 
+ * CODING STANDARDS:
+ * - Handle CORS for cross-origin requests
+ * - Implement proper error handling
+ */
+
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse';
+import type { Request, Response } from 'express';
+import { createServer } from '../server/index';
+
+export async function handleSSEConnection(req: Request, res: Response): Promise<void> {
+  const server = createServer();
+  const transport = new SSEServerTransport('/message', res);
+  await server.connect(transport);
+}
