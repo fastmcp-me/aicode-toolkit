@@ -1,3 +1,4 @@
+import { TemplatesManagerService } from '@agiflowai/aicode-utils';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
   CallToolRequestSchema,
@@ -11,7 +12,6 @@ import {
   ScaffoldApplicationPrompt,
   ScaffoldFeaturePrompt,
 } from '../prompts';
-import { TemplatesManager } from '../services/TemplatesManager';
 import {
   GenerateBoilerplateFileTool,
   GenerateBoilerplateTool,
@@ -31,7 +31,7 @@ export function createServer(options: ServerOptions = {}) {
   const { adminEnabled = false } = options;
 
   // Find templates folder by searching upwards from current directory
-  const templatesPath = TemplatesManager.findTemplatesPathSync();
+  const templatesPath = TemplatesManagerService.findTemplatesPathSync();
 
   // Initialize tools
   const listBoilerplatesTool = new ListBoilerplatesTool(templatesPath);

@@ -1,7 +1,31 @@
+/**
+ * TemplatesManagerService
+ *
+ * DESIGN PATTERNS:
+ * - Class-based service pattern for encapsulating business logic
+ * - Static methods for utility-like functionality
+ * - File system traversal for workspace detection
+ * - Configuration-driven template path resolution
+ *
+ * CODING STANDARDS:
+ * - Service class names use PascalCase with 'Service' suffix
+ * - Method names use camelCase with descriptive verbs
+ * - Return types should be explicit (never use implicit any)
+ * - Use async/await for asynchronous operations
+ * - Handle errors with try-catch and throw descriptive Error objects
+ * - Document public methods with JSDoc comments
+ *
+ * AVOID:
+ * - Side effects in constructors (keep them lightweight)
+ * - Mixing concerns (keep services focused on single domain)
+ * - Direct coupling to other services (use dependency injection)
+ * - Exposing internal implementation details
+ */
+
 import path from 'node:path';
 import * as fs from 'fs-extra';
 
-export class TemplatesManager {
+export class TemplatesManagerService {
   private static SCAFFOLD_CONFIG_FILE = 'scaffold.yaml';
   private static TEMPLATES_FOLDER = 'templates';
   private static TOOLKIT_CONFIG_FILE = 'toolkit.yaml';
@@ -23,10 +47,10 @@ export class TemplatesManager {
    */
   static async findTemplatesPath(startPath: string = process.cwd()): Promise<string> {
     // First, find the workspace root
-    const workspaceRoot = await TemplatesManager.findWorkspaceRoot(startPath);
+    const workspaceRoot = await TemplatesManagerService.findWorkspaceRoot(startPath);
 
     // Check if toolkit.yaml exists
-    const toolkitConfigPath = path.join(workspaceRoot, TemplatesManager.TOOLKIT_CONFIG_FILE);
+    const toolkitConfigPath = path.join(workspaceRoot, TemplatesManagerService.TOOLKIT_CONFIG_FILE);
 
     if (await fs.pathExists(toolkitConfigPath)) {
       // Read toolkit.yaml to get templatesPath
@@ -50,7 +74,7 @@ export class TemplatesManager {
     }
 
     // Default to templates folder in workspace root
-    const templatesPath = path.join(workspaceRoot, TemplatesManager.TEMPLATES_FOLDER);
+    const templatesPath = path.join(workspaceRoot, TemplatesManagerService.TEMPLATES_FOLDER);
 
     if (await fs.pathExists(templatesPath)) {
       return templatesPath;
@@ -97,10 +121,10 @@ export class TemplatesManager {
    */
   static findTemplatesPathSync(startPath: string = process.cwd()): string {
     // First, find the workspace root
-    const workspaceRoot = TemplatesManager.findWorkspaceRootSync(startPath);
+    const workspaceRoot = TemplatesManagerService.findWorkspaceRootSync(startPath);
 
     // Check if toolkit.yaml exists
-    const toolkitConfigPath = path.join(workspaceRoot, TemplatesManager.TOOLKIT_CONFIG_FILE);
+    const toolkitConfigPath = path.join(workspaceRoot, TemplatesManagerService.TOOLKIT_CONFIG_FILE);
 
     if (fs.pathExistsSync(toolkitConfigPath)) {
       // Read toolkit.yaml to get templatesPath
@@ -124,7 +148,7 @@ export class TemplatesManager {
     }
 
     // Default to templates folder in workspace root
-    const templatesPath = path.join(workspaceRoot, TemplatesManager.TEMPLATES_FOLDER);
+    const templatesPath = path.join(workspaceRoot, TemplatesManagerService.TEMPLATES_FOLDER);
 
     if (fs.pathExistsSync(templatesPath)) {
       return templatesPath;
@@ -179,13 +203,13 @@ export class TemplatesManager {
    * Get the scaffold config file name
    */
   static getConfigFileName(): string {
-    return TemplatesManager.SCAFFOLD_CONFIG_FILE;
+    return TemplatesManagerService.SCAFFOLD_CONFIG_FILE;
   }
 
   /**
    * Get the templates folder name
    */
   static getTemplatesFolderName(): string {
-    return TemplatesManager.TEMPLATES_FOLDER;
+    return TemplatesManagerService.TEMPLATES_FOLDER;
   }
 }

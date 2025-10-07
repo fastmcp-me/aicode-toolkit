@@ -39,6 +39,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@agiflowai/aicode-utils": "workspace:*",
     "@agiflowai/scaffold-generator": "workspace:*",
     "@composio/json-schema-to-zod": "0.1.15",
     "@modelcontextprotocol/sdk": "1.19.1",

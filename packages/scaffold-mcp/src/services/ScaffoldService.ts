@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { TemplatesManagerService } from '@agiflowai/aicode-utils';
 import type {
   IFileSystemService,
   IScaffoldConfigLoader,
@@ -14,7 +15,6 @@ import type {
 } from '../types/scaffold';
 import { log } from '../utils/logger';
 import { ScaffoldProcessingService } from './ScaffoldProcessingService';
-import { TemplatesManager } from './TemplatesManager';
 
 export class ScaffoldService implements IScaffoldService {
   private readonly templatesRootPath: string;
@@ -26,7 +26,7 @@ export class ScaffoldService implements IScaffoldService {
     private variableReplacer: IVariableReplacementService,
     templatesRootPath?: string,
   ) {
-    this.templatesRootPath = templatesRootPath || TemplatesManager.findTemplatesPathSync();
+    this.templatesRootPath = templatesRootPath || TemplatesManagerService.findTemplatesPathSync();
     this.processingService = new ScaffoldProcessingService(fileSystem, variableReplacer);
   }
 
