@@ -12,6 +12,7 @@ import type {
   ParsedInclude,
   ScaffoldResult,
 } from '../types/scaffold';
+import { log } from '../utils/logger';
 import { ScaffoldProcessingService } from './ScaffoldProcessingService';
 import { TemplatesManager } from './TemplatesManager';
 
@@ -221,10 +222,10 @@ export class ScaffoldService implements IScaffoldService {
     const { config, targetPath, templatePath, allVariables, scaffoldType } = params;
 
     // Check if config has a custom generator
-    console.log('Config generator:', config.generator);
-    console.log('Config:', JSON.stringify(config, null, 2));
+    log.debug('Config generator:', config.generator);
+    log.debug('Config:', JSON.stringify(config, null, 2));
     if (config.generator) {
-      console.log('Using custom generator:', config.generator);
+      log.info('Using custom generator:', config.generator);
       try {
         // Dynamically import the custom generator from the template's generators folder
         const generatorPath = path.join(templatePath, 'generators', config.generator);

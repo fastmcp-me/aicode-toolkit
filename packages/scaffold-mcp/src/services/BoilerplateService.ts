@@ -10,6 +10,7 @@ import type {
   UseBoilerplateRequest,
 } from '../types/boilerplateTypes';
 import type { ScaffoldResult } from '../types/scaffold';
+import { log } from '../utils/logger';
 import { FileSystemService } from './FileSystemService';
 import { ScaffoldConfigLoader } from './ScaffoldConfigLoader';
 import { ScaffoldService } from './ScaffoldService';
@@ -63,7 +64,7 @@ export class BoilerplateService {
             for (const boilerplate of scaffoldConfig.boilerplate) {
               // targetFolder must be specified in scaffold.yaml
               if (!boilerplate.targetFolder) {
-                console.warn(
+                log.warn(
                   `Skipping boilerplate '${boilerplate.name}' in ${templatePath}: ` +
                     `targetFolder is required in scaffold.yaml`,
                 );
@@ -82,7 +83,7 @@ export class BoilerplateService {
             }
           }
         } catch (error) {
-          console.warn(`Failed to load scaffold.yaml for ${templatePath}:`, error);
+          log.warn(`Failed to load scaffold.yaml for ${templatePath}:`, error);
         }
       }
     }
@@ -314,7 +315,7 @@ export class BoilerplateService {
       // Write back to file
       fs.writeFileSync(projectJsonPath, `${JSON.stringify(projectJson, null, 2)}\n`, 'utf8');
     } catch (error) {
-      console.warn(`Failed to update project.json with sourceTemplate: ${error}`);
+      log.warn(`Failed to update project.json with sourceTemplate: ${error}`);
     }
   }
 }

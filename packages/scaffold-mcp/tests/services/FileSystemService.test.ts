@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import fs from 'fs-extra';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileSystemService } from '../../src/services/FileSystemService';
 
 // Mock fs-extra

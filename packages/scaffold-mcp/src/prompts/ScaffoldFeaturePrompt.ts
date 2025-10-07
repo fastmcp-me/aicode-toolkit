@@ -109,13 +109,29 @@ Use the \`use-scaffold-method\` tool with:
 - The tool will create files in the appropriate locations automatically
 - After creation, inform the user what files were created
 
+## Step 5: Review and Implement Generated Files
+After scaffolding completes, **you MUST**:
+1. **READ** all generated files to understand their structure
+2. **IMPLEMENT** the actual business logic:
+   - Replace TODO comments with real code
+   - Replace template placeholders with actual implementation
+   - Add the specific functionality described in the user's request
+3. **REGISTER** the feature in appropriate files:
+   - Import and register tools in \`src/server/index.ts\`
+   - Export new modules from \`index.ts\` files
+   - Update any necessary configuration files
+4. **TEST** to ensure the implementation works correctly
+5. **DO NOT SKIP** this step - scaffolded files are templates that need actual code
+
 ## Example Workflow:
 1. Identify project path (provided or ask user)
 2. Call \`list-scaffolding-methods\` → See available features for this project
 3. Ask user which feature to add (or infer from request)
 4. Collect required variables based on schema
 5. Call \`use-scaffold-method\` with projectPath, scaffold_feature_name, and variables
-6. Report success and list created files`,
+6. **READ the generated files and IMPLEMENT the actual logic**
+7. **REGISTER the feature in server/index.ts and other config files**
+8. Report success and list created files with implementation details`,
         },
       },
     ];

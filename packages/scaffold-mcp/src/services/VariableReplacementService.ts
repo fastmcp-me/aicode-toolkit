@@ -4,6 +4,7 @@ import type {
   ITemplateService,
   IVariableReplacementService,
 } from '../types/interfaces';
+import { log } from '../utils/logger';
 
 export class VariableReplacementService implements IVariableReplacementService {
   private readonly binaryExtensions = [
@@ -40,7 +41,7 @@ export class VariableReplacementService implements IVariableReplacementService {
       items = await this.fileSystem.readdir(dirPath);
     } catch (error) {
       // If we can't read the directory, skip it
-      console.warn(`Skipping directory ${dirPath}: ${error}`);
+      log.warn(`Skipping directory ${dirPath}: ${error}`);
       return;
     }
 
@@ -58,7 +59,7 @@ export class VariableReplacementService implements IVariableReplacementService {
           await this.replaceVariablesInFile(itemPath, variables);
         }
       } catch (error) {
-        console.warn(`Skipping item ${itemPath}: ${error}`);
+        log.warn(`Skipping item ${itemPath}: ${error}`);
       }
     }
   }
@@ -78,7 +79,7 @@ export class VariableReplacementService implements IVariableReplacementService {
       await this.fileSystem.writeFile(filePath, renderedContent, 'utf8');
     } catch (error) {
       // If we can't read the file as text, skip it (likely binary)
-      console.warn(`Skipping file ${filePath}: ${error}`);
+      log.warn(`Skipping file ${filePath}: ${error}`);
     }
   }
 

@@ -84,12 +84,27 @@ Use the \`use-boilerplate\` tool with:
 - The tool will create the project in the appropriate directory automatically
 - After creation, inform the user where the project was created
 
+## Step 4: Review and Add Features (If Needed)
+After the boilerplate is created, **consider if additional features are needed**:
+1. **READ** the generated project structure to understand what was created
+2. **REVIEW** the user's request to see if they asked for specific features (e.g., "with tool for X", "with prompt for Y")
+3. **If features are needed**:
+   - Use \`list-scaffolding-methods\` with the new project path
+   - Use \`use-scaffold-method\` to add tools, services, prompts, etc.
+   - **IMPLEMENT** the actual logic in the scaffolded feature files
+   - **REGISTER** the features in \`src/server/index.ts\`
+4. **Install dependencies**: Remind user to run \`pnpm install\`
+5. **Report** the complete setup including any features added
+
 ## Example Workflow:
 1. Call \`list-boilerplates\` → See available templates
 2. Ask user which template to use (or infer from request)
 3. Collect required variables based on schema
 4. Call \`use-boilerplate\` with boilerplateName and variables
-5. Report success and next steps to the user`,
+5. **Review if user requested specific features (tools, prompts, etc.)**
+6. **If features needed**: Add them using \`list-scaffolding-methods\` and \`use-scaffold-method\`
+7. **READ and IMPLEMENT** the scaffolded feature files with actual logic
+8. Report success and next steps to the user`,
         },
       },
     ];

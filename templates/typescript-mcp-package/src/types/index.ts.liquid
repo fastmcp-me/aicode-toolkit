@@ -1,0 +1,33 @@
+/**
+ * Shared TypeScript Types
+ * 
+ * DESIGN PATTERNS:
+ * - Type-first development
+ * - Interface segregation
+ * 
+ * CODING STANDARDS:
+ * - Export all shared types from this file
+ * - Use descriptive names for types and interfaces
+ */
+
+/**
+ * Base tool interface
+ */
+export interface Tool<TInput = unknown, TOutput = unknown> {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+  execute(input: TInput): Promise<TOutput>;
+}
+
+/**
+ * Tool execution result
+ */
+export interface ToolResult<T = unknown> {
+  content: Array<{
+    type: 'text';
+    text: string;
+  }>;
+  isError?: boolean;
+  data?: T;
+}

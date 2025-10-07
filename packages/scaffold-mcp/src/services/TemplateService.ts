@@ -1,4 +1,5 @@
 import { Liquid } from 'liquidjs';
+import { log } from '../utils/logger';
 
 export interface ITemplateService {
   renderString(template: string, variables: Record<string, any>): string;
@@ -17,6 +18,8 @@ export class TemplateService implements ITemplateService {
 
     // Add custom filters for common transformations
     this.setupCustomFilters();
+
+    log.info('TemplateService initialized');
   }
 
   private toPascalCase(str: string): string {
@@ -99,14 +102,26 @@ export class TemplateService implements ITemplateService {
         return str;
       }
     });
+
+    // Strip whitespace from beginning and end
+    this.liquid.registerFilter('strip', (str: string) => {
+      return str.trim();
+    });
   }
 
   renderString(template: string, variables: Record<string, any>): string {
     try {
+      log.debug('Rendering template', { variables, templatePreview: template.substring(0, 100) });
       // LiquidJS parseAndRenderSync is synchronous
-      return this.liquid.parseAndRenderSync(template, variables);
+      const result = this.liquid.parseAndRenderSync(template, variables);
+      log.debug('Rendered template', { resultPreview: result.substring(0, 100) });
+      return result;
     } catch (error) {
-      console.warn(`LiquidJS rendering error: ${error}`);
+      log.error('LiquidJS rendering error', {
+        error: error instanceof Error ? error.message : String(error),
+        templatePreview: template.substring(0, 200),
+        variables,
+      });
       return template; // Return original template if rendering fails
     }
   }

@@ -4,7 +4,7 @@ import * as fs from 'fs-extra';
 import { FileSystemService } from '../services/FileSystemService';
 import { ScaffoldingMethodsService } from '../services/ScaffoldingMethodsService';
 import { TemplatesManager } from '../services/TemplatesManager';
-import { icons, logger, messages } from '../utils';
+import { icons, messages, print } from '../utils';
 
 /**
  * Scaffold CLI command
@@ -41,18 +41,18 @@ scaffoldCommand
         return;
       }
 
-      logger.header(`\n${icons.wrench} Available Scaffolding Methods for ${projectPath}:\n`);
+      print.header(`\n${icons.wrench} Available Scaffolding Methods for ${projectPath}:\n`);
 
       for (const method of methods) {
-        logger.highlight(`  ${method.name}`);
-        logger.debug(
+        print.highlight(`  ${method.name}`);
+        print.debug(
           `    ${method.instruction || method.description || 'No description available'}`,
         );
 
         if (method.variables_schema.required && method.variables_schema.required.length > 0) {
-          logger.debug(`    Required: ${method.variables_schema.required.join(', ')}`);
+          print.debug(`    Required: ${method.variables_schema.required.join(', ')}`);
         }
-        logger.newline();
+        print.newline();
       }
     } catch (error) {
       messages.error('Error listing scaffolding methods:', error as Error);
@@ -105,8 +105,8 @@ scaffoldCommand
 
       if (!method) {
         messages.error(`Scaffold method '${featureName}' not found.`);
-        logger.warning(`Available methods: ${methods.map((m) => m.name).join(', ')}`);
-        logger.debug(
+        print.warning(`Available methods: ${methods.map((m) => m.name).join(', ')}`);
+        print.debug(
           `Run 'scaffold-mcp scaffold list ${options.project}' to see all available methods`,
         );
         process.exit(1);
@@ -137,19 +137,19 @@ scaffoldCommand
             exampleVars[key] = `<${key}>`;
           }
         }
-        logger.debug(
+        print.debug(
           `Example: scaffold-mcp scaffold add ${featureName} --project ${options.project} --vars '${JSON.stringify(exampleVars)}'`,
         );
         process.exit(1);
       }
 
       if (options.verbose) {
-        logger.info(`🔧 Feature: ${featureName}`);
-        logger.info(`📊 Variables: ${JSON.stringify(variables, null, 2)}`);
-        logger.info(`📁 Project Path: ${projectPath}`);
+        print.info(`🔧 Feature: ${featureName}`);
+        print.info(`📊 Variables: ${JSON.stringify(variables, null, 2)}`);
+        print.info(`📁 Project Path: ${projectPath}`);
       }
 
-      logger.info(`🚀 Adding '${featureName}' to project...`);
+      print.info(`🚀 Adding '${featureName}' to project...`);
 
       const result = await scaffoldingMethodsService.useScaffoldMethod({
         projectPath,
@@ -162,19 +162,19 @@ scaffoldCommand
         console.log(result.message);
 
         if (result.createdFiles && result.createdFiles.length > 0) {
-          logger.header('\n📁 Created files:');
-          result.createdFiles.forEach((file) => logger.debug(`   - ${file}`));
+          print.header('\n📁 Created files:');
+          result.createdFiles.forEach((file) => print.debug(`   - ${file}`));
         }
 
         if (result.warnings && result.warnings.length > 0) {
           messages.warning('\n⚠️  Warnings:');
-          result.warnings.forEach((warning) => logger.debug(`   - ${warning}`));
+          result.warnings.forEach((warning) => print.debug(`   - ${warning}`));
         }
 
-        logger.header('\n📋 Next steps:');
-        logger.debug('   - Review the generated files');
-        logger.debug('   - Update imports if necessary');
-        logger.debug('   - Run tests to ensure everything works');
+        print.header('\n📋 Next steps:');
+        print.debug('   - Review the generated files');
+        print.debug('   - Update imports if necessary');
+        print.debug('   - Run tests to ensure everything works');
       } else {
         messages.error(`❌ Failed to add feature: ${result.message}`);
         process.exit(1);
@@ -217,21 +217,21 @@ scaffoldCommand
         process.exit(1);
       }
 
-      logger.header(`\n🔧 Scaffold Method: ${method.name}\n`);
-      logger.debug(`Description: ${method.description}`);
+      print.header(`\n🔧 Scaffold Method: ${method.name}\n`);
+      print.debug(`Description: ${method.description}`);
 
-      logger.header('\n📝 Variables Schema:');
+      print.header('\n📝 Variables Schema:');
       console.log(JSON.stringify(method.variables_schema, null, 2));
 
       const includes = 'includes' in method ? (method.includes as string[]) : [];
       if (includes && includes.length > 0) {
-        logger.header('\n📁 Files to be created:');
+        print.header('\n📁 Files to be created:');
         includes.forEach((include: string) => {
           const parts = include.split('>>');
           if (parts.length === 2) {
-            logger.debug(`  - ${parts[1].trim()}`);
+            print.debug(`  - ${parts[1].trim()}`);
           } else {
-            logger.debug(`  - ${include}`);
+            print.debug(`  - ${include}`);
           }
         });
       }

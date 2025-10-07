@@ -1,0 +1,60 @@
+/**
+ * MCP Server Setup
+ *
+ * DESIGN PATTERNS:
+ * - Factory pattern for server creation
+ * - Tool registration pattern
+ *
+ * CODING STANDARDS:
+ * - Register all tools, resources, and prompts here
+ * - Keep server setup modular and extensible
+ * - Import tools from ../tools/ and register them in the handlers
+ */
+
+import { Server } from '@modelcontextprotocol/sdk/server/index';
+import type { Tool } from '../types/index';
+
+// TODO: Import your tools here
+// import { MyTool } from '../tools/MyTool';
+
+export function createServer(): Server {
+  const server = new Server(
+    {
+      name: '{{ packageName }}',
+      version: '0.1.0',
+    },
+    {
+      capabilities: {
+        tools: {},
+      },
+    }
+  );
+
+  // TODO: Initialize your tools here
+  // const tools: Tool[] = [
+  //   new MyTool(),
+  // ];
+
+  const tools: Tool[] = [];
+
+  server.setRequestHandler('tools/list', async () => ({
+    tools: tools.map(tool => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: tool.inputSchema,
+    })),
+  }));
+
+  server.setRequestHandler('tools/call', async (request) => {
+    const { name, arguments: args } = request.params;
+
+    const tool = tools.find(t => t.name === name);
+    if (!tool) {
+      throw new Error(`Unknown tool: ${name}`);
+    }
+
+    return await tool.execute(args);
+  });
+
+  return server;
+}

@@ -2,12 +2,12 @@ import path from 'node:path';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import {
-  icons,
-  logger,
-  messages,
-  sections,
   cloneSubdirectory,
   fetchGitHubDirectoryContents,
+  icons,
+  messages,
+  print,
+  sections,
 } from '../utils';
 
 /**
@@ -47,7 +47,7 @@ const DEFAULT_TEMPLATE_REPO = {
  */
 async function downloadTemplates(templatesPath: string): Promise<void> {
   try {
-    logger.info(
+    print.info(
       `${icons.download} Fetching templates from ${DEFAULT_TEMPLATE_REPO.owner}/${DEFAULT_TEMPLATE_REPO.repo}...`,
     );
 
@@ -67,7 +67,7 @@ async function downloadTemplates(templatesPath: string): Promise<void> {
       return;
     }
 
-    logger.info(`${icons.folder} Found ${templateDirs.length} template(s)`);
+    print.info(`${icons.folder} Found ${templateDirs.length} template(s)`);
 
     // Download each template
     for (const template of templateDirs) {
@@ -75,20 +75,20 @@ async function downloadTemplates(templatesPath: string): Promise<void> {
 
       // Skip if already exists
       if (await fs.pathExists(targetFolder)) {
-        logger.info(`${icons.skip} Skipping ${template.name} (already exists)`);
+        print.info(`${icons.skip} Skipping ${template.name} (already exists)`);
         continue;
       }
 
-      logger.info(`${icons.download} Downloading ${template.name}...`);
+      print.info(`${icons.download} Downloading ${template.name}...`);
 
       const repoUrl = `https://github.com/${DEFAULT_TEMPLATE_REPO.owner}/${DEFAULT_TEMPLATE_REPO.repo}.git`;
 
       await cloneSubdirectory(repoUrl, DEFAULT_TEMPLATE_REPO.branch, template.path, targetFolder);
 
-      logger.success(`${icons.check} Downloaded ${template.name}`);
+      print.success(`${icons.check} Downloaded ${template.name}`);
     }
 
-    logger.success(`\n${icons.check} All templates downloaded successfully!`);
+    print.success(`\n${icons.check} All templates downloaded successfully!`);
   } catch (error) {
     throw new Error(`Failed to download templates: ${(error as Error).message}`);
   }
@@ -108,7 +108,7 @@ export const initCommand = new Command('init')
         ? path.join(workspaceRoot, options.path)
         : path.join(workspaceRoot, 'templates');
 
-      logger.info(`${icons.rocket} Initializing templates folder at: ${templatesPath}`);
+      print.info(`${icons.rocket} Initializing templates folder at: ${templatesPath}`);
 
       // Create templates directory
       await fs.ensureDir(templatesPath);
@@ -151,17 +151,17 @@ See existing templates for examples and documentation for more details.
 
       await fs.writeFile(path.join(templatesPath, 'README.md'), readme);
 
-      logger.success(`${icons.check} Templates folder created!`);
+      print.success(`${icons.check} Templates folder created!`);
 
       // Download templates if not skipped
       if (options.download !== false) {
         await downloadTemplates(templatesPath);
       } else {
-        logger.info(`${icons.skip} Skipping template download (use --download to enable)`);
+        print.info(`${icons.skip} Skipping template download (use --download to enable)`);
       }
 
-      logger.header(`\n${icons.folder} Templates location:`);
-      logger.indent(templatesPath);
+      print.header(`\n${icons.folder} Templates location:`);
+      print.indent(templatesPath);
 
       const nextSteps = [];
       if (options.download === false) {

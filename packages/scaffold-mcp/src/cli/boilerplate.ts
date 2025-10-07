@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { BoilerplateService } from '../services/BoilerplateService';
 import { TemplatesManager } from '../services/TemplatesManager';
-import { icons, logger, messages, sections } from '../utils';
+import { icons, messages, print, sections } from '../utils';
 
 /**
  * Boilerplate CLI command
@@ -25,12 +25,12 @@ boilerplateCommand
         return;
       }
 
-      logger.header(`\n${icons.package} Available Boilerplate Templates:\n`);
+      print.header(`\n${icons.package} Available Boilerplate Templates:\n`);
 
       for (const bp of boilerplates) {
-        logger.highlight(`  ${bp.name}`);
-        logger.debug(`    ${bp.description}`);
-        logger.debug(`    Target: ${bp.target_folder}`);
+        print.highlight(`  ${bp.name}`);
+        print.debug(`    ${bp.description}`);
+        print.debug(`    Target: ${bp.target_folder}`);
 
         const required =
           typeof bp.variables_schema === 'object' &&
@@ -39,9 +39,9 @@ boilerplateCommand
             ? (bp.variables_schema.required as string[])
             : [];
         if (required && required.length > 0) {
-          logger.debug(`    Required: ${required.join(', ')}`);
+          print.debug(`    Required: ${required.join(', ')}`);
         }
-        logger.newline();
+        print.newline();
       }
     } catch (error) {
       messages.error('Error listing boilerplates:', error as Error);
@@ -79,7 +79,7 @@ boilerplateCommand
       if (!boilerplate) {
         const { boilerplates } = await boilerplateService.listBoilerplates();
         messages.error(`Boilerplate '${boilerplateName}' not found.`);
-        logger.warning(`Available boilerplates: ${boilerplates.map((b) => b.name).join(', ')}`);
+        print.warning(`Available boilerplates: ${boilerplates.map((b) => b.name).join(', ')}`);
         process.exit(1);
       }
 
@@ -108,15 +108,15 @@ boilerplateCommand
             exampleVars[key] = `<${key}>`;
           }
         }
-        logger.debug(
+        print.debug(
           `Example: scaffold-mcp boilerplate create ${boilerplateName} --vars '${JSON.stringify(exampleVars)}'`,
         );
         process.exit(1);
       }
 
       if (options.verbose) {
-        logger.info(`${icons.wrench} Boilerplate: ${boilerplateName}`);
-        logger.info(`${icons.chart} Variables: ${JSON.stringify(variables, null, 2)}`);
+        print.info(`${icons.wrench} Boilerplate: ${boilerplateName}`);
+        print.info(`${icons.chart} Variables: ${JSON.stringify(variables, null, 2)}`);
       }
 
       messages.loading(`Creating project from boilerplate '${boilerplateName}'...`);
@@ -128,7 +128,7 @@ boilerplateCommand
 
       if (result.success) {
         messages.success('Project created successfully!');
-        logger.info(result.message);
+        print.info(result.message);
 
         if (result.createdFiles && result.createdFiles.length > 0) {
           sections.createdFiles(result.createdFiles);
@@ -172,12 +172,12 @@ boilerplateCommand
         process.exit(1);
       }
 
-      logger.header(`\n${icons.package} Boilerplate: ${bp.name}\n`);
-      logger.debug(`Description: ${bp.description}`);
-      logger.debug(`Template Path: ${bp.template_path}`);
-      logger.debug(`Target Folder: ${bp.target_folder}`);
+      print.header(`\n${icons.package} Boilerplate: ${bp.name}\n`);
+      print.debug(`Description: ${bp.description}`);
+      print.debug(`Template Path: ${bp.template_path}`);
+      print.debug(`Target Folder: ${bp.target_folder}`);
 
-      logger.header(`\n${icons.config} Variables Schema:`);
+      print.header(`\n${icons.config} Variables Schema:`);
       console.log(JSON.stringify(bp.variables_schema, null, 2));
 
       if (bp.includes && bp.includes.length > 0) {
