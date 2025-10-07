@@ -6,7 +6,6 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import express, { type Request, type Response } from 'express';
 import type {
   HttpTransportHandler as IHttpTransportHandler,
-  SessionManager,
   TransportConfig,
 } from './types.js';
 

@@ -1,40 +1,41 @@
 #!/usr/bin/env node
 /**
  * MCP Server Entry Point
- * 
+ *
  * DESIGN PATTERNS:
  * - CLI pattern with Commander for argument parsing
+ * - Command pattern for organizing CLI commands
  * - Transport abstraction for multiple communication methods
- * 
+ *
  * CODING STANDARDS:
  * - Use async/await for asynchronous operations
  * - Handle errors gracefully with try-catch
  * - Log important events for debugging
+ * - Register all commands in main entry point
+ *
+ * AVOID:
+ * - Hardcoding command logic in index.ts (use separate command files)
+ * - Missing error handling for command execution
  */
 import { Command } from 'commander';
-import { startStdioTransport } from './transports/stdio';{% if withHttpTransport %}
-import { startHttpTransport } from './transports/http';{% endif %}
+import { mcpServeCommand } from './cli/mcp-serve';
 
-const program = new Command();
+/**
+ * Main entry point
+ */
+async function main() {
+  const program = new Command();
 
-program
-  .name('{{ packageName }}')
-  .description('{{ description }}')
-  .version('0.1.0');
+  program
+    .name('{% if binName %}{{ binName }}{% else %}{{ packageName }}{% endif %}')
+    .description('{{ description }}')
+    .version('0.1.0');
 
-program
-  .command('stdio')
-  .description('Start MCP server with stdio transport')
-  .action(async () => {
-    await startStdioTransport();
-  });
-{% if withHttpTransport %}
-program
-  .command('http')
-  .option('-p, --port <port>', 'Port to listen on', '3000')
-  .description('Start MCP server with HTTP transport')
-  .action(async (options) => {
-    await startHttpTransport(Number.parseInt(options.port));
-  });
-{% endif %}
-program.parse();
+  // Add all commands
+  program.addCommand(mcpServeCommand);
+
+  // Parse arguments
+  await program.parseAsync(process.argv);
+}
+
+main();

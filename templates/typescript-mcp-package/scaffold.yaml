@@ -33,6 +33,7 @@ boilerplate:
       - .gitignore
       - README.md
       - src/index.ts
+      - src/cli/mcp-serve.ts
       - src/server/index.ts
       - src/types/index.ts
       - src/transports/stdio.ts
@@ -45,7 +46,8 @@ boilerplate:
       File purposes:
       - package.json: NPM package configuration with MCP SDK, TypeScript, Vitest, and build tools
       - tsconfig.json: TypeScript configuration with strict mode and ESNext module support
-      - src/index.ts: CLI entry point with transport selection and server initialization
+      - src/index.ts: Main CLI entry point that sets up Commander and registers all commands
+      - src/cli/mcp-serve.ts: MCP server command with transport selection (stdio, http, sse)
       - src/server/index.ts: MCP server setup with tool, resource, and prompt registration
       - src/types/index.ts: Shared TypeScript types and interfaces
       - src/tools/: Directory for tool implementations (use scaffold-mcp-tool to add tools)
@@ -62,19 +64,21 @@ boilerplate:
       3. Add new services: Use scaffold-mcp-service feature (scaffold-mcp scaffold <project> scaffold-mcp-service)
       4. Register tools: Import and add to server in src/server/index.ts
       5. Define types: Add shared types in src/types/index.ts
-      6. Run dev mode: pnpm dev (uses stdio transport)
-      7. Run tests: pnpm test
-      8. Build package: pnpm build
-      9. Test in Claude Code: Configure in Claude Code settings to use the built package
-      10. Publish: Update package.json version and run pnpm publish
+      6. Run dev mode: pnpm dev mcp-serve (uses stdio transport by default)
+      7. Run with HTTP: pnpm dev mcp-serve --type http --port 3000
+      8. Run with SSE: pnpm dev mcp-serve --type sse --port 3000
+      9. Run tests: pnpm test
+      10. Build package: pnpm build
+      11. Test in Claude Code: Configure in Claude Code settings to use the built package
+      12. Publish: Update package.json version and run pnpm publish
 
       Design patterns to follow:
-      - Tool Pattern: Each tool is a class with name, description, inputSchema, and execute method
+      - Tool Pattern: Each tool is a class with static TOOL_NAME constant, getDefinition() method, and execute() method returning CallToolResult
       - Service Layer: Business logic separated from tool implementations for reusability
       - Transport Abstraction: Support multiple transport types (stdio, SSE, HTTP) via transport modules
-      - Schema Validation: Use Zod or JSON Schema for input validation in tools
+      - Schema Validation: Use JSON Schema for input validation in tools (defined in getDefinition())
       - Error Handling: Consistent error responses with proper error types and messages
-      - Type Safety: Full TypeScript coverage with strict mode enabled
+      - Type Safety: Full TypeScript coverage with strict mode enabled, using CallToolResult from MCP SDK
       - Modular Architecture: Clear separation between tools, services, types, and transports
       - Testing: Unit tests for tools and services, integration tests for server behavior
 features:
@@ -172,15 +176,15 @@ features:
       - src/services/ExampleService.ts->src/services/{{ serviceName }}.ts?serviceName
       - tests/tools/ExampleTool.test.ts->tests/tools/{{ toolName }}.test.ts?withTest=true
     instruction: |-
-      MCP tools follow a class-based pattern with name, description, inputSchema, and execute method. Each tool implements the Tool interface for type safety.
+      MCP tools follow a class-based pattern with static TOOL_NAME, getDefinition() method, and execute() method. Each tool implements the Tool interface for type safety.
 
-      Pattern explanation: Tools are TypeScript classes that implement the Tool interface. They define their input schema using JSON Schema, validate inputs, and return ToolResult format. Tools should delegate business logic to services for better testability and reusability.
+      Pattern explanation: Tools are TypeScript classes that implement the Tool interface. They have a static TOOL_NAME constant, a getDefinition() method that returns ToolDefinition with name/description/inputSchema, and an execute() method that returns CallToolResult. Tools should delegate business logic to services for better testability and reusability.
 
       File organization: Tools live in src/tools/{ToolName}.ts. Optional services go in src/services/{ToolName}Service.ts. Tests go in tests/tools/{ToolName}.test.ts. Export tools from src/tools/index.ts for barrel imports.
 
-      Naming conventions: Tool classes use PascalCase with 'Tool' suffix (e.g., FileReadTool). Tool names (exported as 'name' property) use snake_case (e.g., 'file_read'). Service classes use PascalCase with 'Service' suffix.
+      Naming conventions: Tool classes use PascalCase with 'Tool' suffix (e.g., FileReadTool). Tool names (in TOOL_NAME constant) use snake_case (e.g., 'file_read'). Service classes use PascalCase with 'Service' suffix.
 
-      Usage guidelines: Import Tool and ToolResult types from ../types. Define inputSchema using JSON Schema. Implement execute method to handle tool logic. Return ToolResult with content array. Handle errors gracefully with isError flag.
+      Usage guidelines: Import Tool, ToolDefinition from ../types and CallToolResult from @modelcontextprotocol/sdk/types.js. Define inputSchema in getDefinition() using JSON Schema. Implement execute method to handle tool logic. Return CallToolResult with content array. Handle errors gracefully with isError flag.
 
       IMPORTANT - Service Reuse:
       1. BEFORE creating a new tool, check src/services/ for existing services that may already provide the logic you need
@@ -189,9 +193,10 @@ features:
       4. Avoid duplicating business logic across services - reuse and compose existing services when possible
 
       Registration steps:
-      1. Import your tool: import { MyTool } from '../tools/MyTool.js';
-      2. Add to tools array: const tools: Tool[] = [new MyTool()];
-      3. The server will automatically register it in tools/list and tools/call handlers
+      1. Import your tool: import { MyTool } from '../tools/MyTool';
+      2. Instantiate: const myTool = new MyTool();
+      3. In ListToolsRequestSchema handler: Add myTool.getDefinition() to tools array
+      4. In CallToolRequestSchema handler: if (name === MyTool.TOOL_NAME) return await myTool.execute(args as any);
 
       Testing approach: Write unit tests with mocked services. Test input validation, success cases, and error handling. Use Vitest for testing framework.
     patterns:
@@ -235,10 +240,52 @@ features:
       Usage guidelines: Define prompt metadata (name, description). Add optional arguments array with schema for customization. Return messages array with role and content. IMPORTANT: Register prompt in src/server/index.ts by importing and adding to prompts/list and prompts/get handlers.
 
       Registration steps:
-      1. Import your prompt: import { myPrompt } from '../prompts/MyPrompt.js';
+      1. Import your prompt: import { myPrompt } from '../prompts/MyPrompt';
       2. Add to prompts/list handler to return prompt metadata
       3. Add to prompts/get handler to return prompt messages based on arguments
 
       Testing approach: Write unit tests for prompt generation with various argument combinations. Verify message structure, content, and metadata. Ensure arguments are properly validated. Use Vitest for testing framework.
     patterns:
       - src/prompts/**/*.ts
+  - name: scaffold-cli-command
+    description: Generate a new CLI command for MCP packages using Commander.js pattern. Creates a command file with options, argument parsing, and action handler with proper error handling. Perfect for adding new CLI commands to extend MCP server functionality with custom operations and workflows.
+    variables_schema:
+      type: object
+      properties:
+        commandName:
+          type: string
+          description: Name of the CLI command in kebab-case (e.g., 'health-check', 'status')
+        commandDescription:
+          type: string
+          description: Description of what the command does
+        withOptions:
+          type: boolean
+          description: Include example CLI options
+          default: true
+        withTest:
+          type: boolean
+          description: Generate a Vitest test file
+          default: true
+      required:
+        - commandName
+        - commandDescription
+      additionalProperties: false
+    includes:
+      - src/cli/example.ts->src/cli/{{ commandName }}.ts
+      - tests/cli/example.test.ts->tests/cli/{{ commandName }}.test.ts?withTest=true
+    instruction: |-
+      CLI commands follow the Commander.js pattern with a Command instance exported from each command file. Each command is registered in src/index.ts.
+
+      Pattern explanation: Commands are separate TypeScript modules that export a Commander Command instance. They define the command name, description, options/arguments, and an action handler. Commands are added to the main program in src/index.ts using program.addCommand().
+
+      File organization: CLI commands live in src/cli/{commandName}.ts. Test files go in tests/cli/{commandName}.test.ts. The main entry point (src/index.ts) imports and registers all commands.
+
+      Naming conventions: Command files use kebab-case (e.g., health-check.ts). Export variable should be camelCase with 'Command' suffix (e.g., healthCheckCommand). Command names in Commander use kebab-case.
+
+      Usage guidelines: Import Command from 'commander'. Export a new Command instance with name, description, options, and action handler. Use async action handlers for asynchronous operations. Handle errors with try-catch and process.exit() for failures. Register in src/index.ts by importing and calling program.addCommand().
+
+      Registration steps:
+      1. Import your command: import { myCommand } from './cli/my-command';
+      2. Register: program.addCommand(myCommand);
+
+      Testing approach: Write unit tests that verify command options, argument parsing, and action handler behavior. Mock external dependencies. Test error handling paths. Use Vitest for testing framework.
