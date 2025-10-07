@@ -1,3 +1,13 @@
+## 0.3.3 (2025-10-07)
+
+### 🩹 Fixes
+
+- **scaffold-mcp:** logger Change file logging to write sync ([72fd733](https://github.com/AgiFlow/aicode-toolkit/commit/72fd733))
+
+### ❤️ Thank You
+
+- Vuong Ngo @AgiFlow
+
 ## 0.3.1 (2025-10-06)
 
 ### 🩹 Fixes
