@@ -5,7 +5,8 @@ import pino from 'pino';
 // Create logs directory path in OS temp directory
 const logsDir = path.join(os.tmpdir(), 'scaffold-mcp-logs');
 
-// Create a pino logger that writes to file
+// Create a pino logger that writes to file synchronously
+// Using sync: true to avoid "sonic boom is not ready yet" errors on quick exits
 export const logger = pino(
   {
     level: process.env.LOG_LEVEL || 'debug',
@@ -14,7 +15,7 @@ export const logger = pino(
   pino.destination({
     dest: path.join(logsDir, 'scaffold-mcp.log'),
     mkdir: true,
-    sync: false,
+    sync: true, // Synchronous writes for CLI reliability
   }),
 );
 
