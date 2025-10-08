@@ -1,4 +1,4 @@
-import { ProjectFinderService } from '@agiflowai/aicode-utils';
+import { ProjectFinderService, TemplatesManagerService } from '@agiflowai/aicode-utils';
 import * as fs from 'fs/promises';
 import * as yaml from 'js-yaml';
 import { minimatch } from 'minimatch';
@@ -26,12 +26,13 @@ export class RuleFinder {
     }
 
     try {
-      const globalRulesPath = path.join(this.workspaceRoot, 'templates/RULES.yaml');
+      const templatesRoot = await TemplatesManagerService.findTemplatesPath(this.workspaceRoot);
+      const globalRulesPath = path.join(templatesRoot, 'RULES.yaml');
       const globalRulesContent = await fs.readFile(globalRulesPath, 'utf-8');
       this.globalRulesCache = yaml.load(globalRulesContent) as RulesYamlConfig;
       return this.globalRulesCache;
     } catch (error) {
-      console.warn('Could not load global rules:', error);
+      // Global rules are optional
       return null;
     }
   }
@@ -175,33 +176,28 @@ export class RuleFinder {
     // Check cache
     if (this.rulesCache.has(sourceTemplate)) {
       const cached = this.rulesCache.get(sourceTemplate)!;
-      const templatePath = path.join(this.workspaceRoot, 'templates/apps', sourceTemplate);
+      const templatesRoot = await TemplatesManagerService.findTemplatesPath(this.workspaceRoot);
+      const templatePath = path.join(templatesRoot, sourceTemplate);
       return { rulesConfig: cached, templatePath };
     }
 
-    // Try different template locations
-    const possiblePaths = [
-      path.join(this.workspaceRoot, 'templates/apps', sourceTemplate),
-      path.join(this.workspaceRoot, 'templates/backend', sourceTemplate),
-      path.join(this.workspaceRoot, 'templates/packages', sourceTemplate),
-    ];
+    try {
+      // Use TemplatesManagerService to find the templates directory
+      const templatesRoot = await TemplatesManagerService.findTemplatesPath(this.workspaceRoot);
+      const templatePath = path.join(templatesRoot, sourceTemplate);
+      const rulesPath = path.join(templatePath, 'RULES.yaml');
 
-    for (const templatePath of possiblePaths) {
-      try {
-        const rulesPath = path.join(templatePath, 'RULES.yaml');
-        const rulesContent = await fs.readFile(rulesPath, 'utf-8');
-        const rulesConfig = yaml.load(rulesContent) as RulesYamlConfig;
+      const rulesContent = await fs.readFile(rulesPath, 'utf-8');
+      const rulesConfig = yaml.load(rulesContent) as RulesYamlConfig;
 
-        // Cache the result
-        this.rulesCache.set(sourceTemplate, rulesConfig);
+      // Cache the result
+      this.rulesCache.set(sourceTemplate, rulesConfig);
 
-        return { rulesConfig, templatePath };
-      } catch {
-        // Continue to next path
-      }
+      return { rulesConfig, templatePath };
+    } catch {
+      // RULES.yaml is optional for templates
+      return { rulesConfig: null, templatePath: null };
     }
-
-    return { rulesConfig: null, templatePath: null };
   }
 
   /**

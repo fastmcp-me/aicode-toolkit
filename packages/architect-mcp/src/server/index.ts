@@ -19,6 +19,7 @@ import {
 import { GetFileDesignPatternTool } from '../tools/GetFileDesignPatternTool';
 import { ReviewCodeChangeTool } from '../tools/ReviewCodeChangeTool';
 import { AddDesignPatternTool } from '../tools/AddDesignPatternTool';
+import { AddRuleTool } from '../tools/AddRuleTool';
 
 export function createServer(options?: { llmTool?: 'claude-code' }): Server {
   const server = new Server(
@@ -37,12 +38,14 @@ export function createServer(options?: { llmTool?: 'claude-code' }): Server {
   const getFileDesignPatternTool = new GetFileDesignPatternTool({ llmTool: options?.llmTool });
   const reviewCodeChangeTool = new ReviewCodeChangeTool();
   const addDesignPatternTool = new AddDesignPatternTool();
+  const addRuleTool = new AddRuleTool();
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
       getFileDesignPatternTool.getDefinition(),
       reviewCodeChangeTool.getDefinition(),
       addDesignPatternTool.getDefinition(),
+      addRuleTool.getDefinition(),
     ],
   }));
 
@@ -59,6 +62,10 @@ export function createServer(options?: { llmTool?: 'claude-code' }): Server {
 
     if (name === AddDesignPatternTool.TOOL_NAME) {
       return await addDesignPatternTool.execute(args as any);
+    }
+
+    if (name === AddRuleTool.TOOL_NAME) {
+      return await addRuleTool.execute(args as any);
     }
 
     throw new Error(`Unknown tool: ${name}`);

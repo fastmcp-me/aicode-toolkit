@@ -4,10 +4,7 @@ import type { Server as McpServer } from '@modelcontextprotocol/sdk/server/index
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import express, { type Request, type Response } from 'express';
-import type {
-  HttpTransportHandler as IHttpTransportHandler,
-  TransportConfig,
-} from './types.js';
+import type { HttpTransportHandler as IHttpTransportHandler, TransportConfig } from './types.js';
 
 /**
  * Session data for HTTP connections

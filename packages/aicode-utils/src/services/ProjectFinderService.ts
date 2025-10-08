@@ -39,7 +39,9 @@ export class ProjectFinderService {
    */
   async findProjectForFile(filePath: string): Promise<ProjectConfig | null> {
     // Normalize the file path
-    const normalizedPath = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath);
+    const normalizedPath = path.isAbsolute(filePath)
+      ? filePath
+      : path.join(this.workspaceRoot, filePath);
 
     // Start from the file's directory and walk up
     let currentDir = path.dirname(normalizedPath);
@@ -70,7 +72,9 @@ export class ProjectFinderService {
    */
   findProjectForFileSync(filePath: string): ProjectConfig | null {
     // Normalize the file path
-    const normalizedPath = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath);
+    const normalizedPath = path.isAbsolute(filePath)
+      ? filePath
+      : path.join(this.workspaceRoot, filePath);
 
     // Start from the file's directory and walk up
     let currentDir = path.dirname(normalizedPath);

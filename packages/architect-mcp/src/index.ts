@@ -20,7 +20,9 @@
 import { Command } from 'commander';
 import { mcpServeCommand } from './cli/mcp-serve';
 import { addPatternCommand } from './cli/add-pattern';
+import { addRuleCommand } from './cli/add-rule';
 import { getFileDesignPatternCommand } from './cli/get-file-design-pattern';
+import { reviewCodeChangeCommand } from './cli/review-code-change';
 
 /**
  * Main entry point
@@ -36,7 +38,9 @@ async function main() {
   // Add all commands
   program.addCommand(mcpServeCommand);
   program.addCommand(addPatternCommand);
+  program.addCommand(addRuleCommand);
   program.addCommand(getFileDesignPatternCommand);
+  program.addCommand(reviewCodeChangeCommand);
 
   // Parse arguments
   await program.parseAsync(process.argv);

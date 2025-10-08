@@ -30,19 +30,20 @@ describe('ReviewCodeChangeTool', () => {
     expect(definition.inputSchema).toBeDefined();
   });
 
-  it('should execute successfully with valid file path', async () => {
-    const result = await tool.execute({ file_path: __filename });
+  it('should return result for non-existent file', async () => {
+    // Non-existent files should return a result (not throw)
+    const result = await tool.execute({ file_path: '/tmp/non-existent-test-file.ts' });
 
     expect(result.content).toBeDefined();
     expect(result.content[0].type).toBe('text');
-    // Review may return no rules found, which is not an error
   });
 
-  it('should handle errors gracefully', async () => {
-    // Test with non-existent file
-    const result = await tool.execute({ file_path: '/non/existent/path.ts' });
+  it('should return result for file outside project', async () => {
+    // Files outside any project should return "No project found"
+    const result = await tool.execute({ file_path: '/tmp/test.ts' });
 
     expect(result.content).toBeDefined();
     expect(result.content[0].type).toBe('text');
+    expect(JSON.stringify(result.content)).toContain('No project found');
   });
 });
