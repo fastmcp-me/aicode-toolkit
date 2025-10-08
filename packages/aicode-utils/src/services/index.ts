@@ -15,4 +15,6 @@
  * - Re-exporting types (types should come from '../types')
  */
 
+export * from './ProjectFinderService';
+export * from './ScaffoldProcessingService';
 export * from './TemplatesManagerService';

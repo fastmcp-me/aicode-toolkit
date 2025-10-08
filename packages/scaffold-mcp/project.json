@@ -1,8 +1,9 @@
 {
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "name": "@agiflowai/scaffold-mcp",
-  "projectType": "library",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/scaffold-mcp/src",
+  "projectType": "library",
+  "sourceTemplate": "typescript-mcp-package",
   "targets": {
     "build": {
       "executor": "nx:run-script",

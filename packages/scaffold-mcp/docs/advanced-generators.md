@@ -75,7 +75,7 @@ Create a `package.json` in the `generators/` folder:
 {
   "type": "module",
   "dependencies": {
-    "@agiflowai/scaffold-generator": "workspace:*"
+    "@agiflowai/aicode-utils": "workspace:*"
   }
 }
 ```
@@ -122,7 +122,7 @@ features:
 Every generator must export a default function with this signature:
 
 ```typescript
-import { GeneratorContext, ScaffoldResult } from '@agiflowai/scaffold-generator';
+import { GeneratorContext, ScaffoldResult } from '@agiflowai/aicode-utils';
 
 const generate = async (context: GeneratorContext): Promise<ScaffoldResult> => {
   // Your implementation
@@ -218,7 +218,7 @@ return {
 Always define and use typed variables:
 
 ```typescript
-import { GeneratorContext, ScaffoldResult } from '@agiflowai/scaffold-generator';
+import { GeneratorContext, ScaffoldResult } from '@agiflowai/aicode-utils';
 
 interface MyFeatureVariables {
   appPath: string;
@@ -246,7 +246,7 @@ The recommended way to copy and process template files:
 
 ```typescript
 import path from 'node:path';
-import { ScaffoldProcessingService } from '@agiflowai/scaffold-generator';
+import { ScaffoldProcessingService } from '@agiflowai/aicode-utils';
 
 const generate = async (context: GeneratorContext): Promise<ScaffoldResult> => {
   const { fileSystem, variableReplacer, variables, templatePath, targetPath } = context;
@@ -448,7 +448,7 @@ import {
   ParsedInclude,
   ScaffoldResult,
   ScaffoldProcessingService
-} from '@agiflowai/scaffold-generator';
+} from '@agiflowai/aicode-utils';
 
 interface ViteReactRouteVariables {
   appPath: string;
@@ -816,7 +816,7 @@ export { generate };
 
 ### Type Import Errors
 
-**Error:** `Cannot find module '@agiflowai/scaffold-generator'`
+**Error:** `Cannot find module '@agiflowai/aicode-utils'`
 
 **Solutions:**
 1. Create `package.json` in `generators/` folder:
@@ -824,7 +824,7 @@ export { generate };
    {
      "type": "module",
      "dependencies": {
-       "@agiflowai/scaffold-generator": "workspace:*"
+       "@agiflowai/aicode-utils": "workspace:*"
      }
    }
    ```

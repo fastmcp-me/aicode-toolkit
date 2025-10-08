@@ -157,6 +157,164 @@ scaffold-mcp add \
 
 ---
 
+## Development Workflow
+
+The AI Code Toolkit packages work together to create a complete development workflow for AI coding agents. Here's how they integrate:
+
+### Complete Workflow: From Project Creation to Code Review
+
+```
+1. Bootstrap Project (scaffold-mcp)
+   ↓
+   scaffold-mcp boilerplate create → Creates project with template
+   ↓
+   Result: Project with architect.yaml + RULES.yaml from template
+
+2. Get Design Guidance (architect-mcp)
+   ↓
+   architect-mcp get-file-design-pattern → Shows patterns for file
+   ↓
+   Result: AI agent understands architectural patterns to follow
+
+3. Write Code (AI Agent)
+   ↓
+   Agent writes code following design patterns
+   ↓
+   Result: Code implementation
+
+4. Review Code (architect-mcp)
+   ↓
+   architect-mcp review-code-change → Validates against rules
+   ↓
+   Result: Violations identified, feedback provided
+
+5. Add Features (scaffold-mcp)
+   ↓
+   scaffold-mcp scaffold add → Adds new features/components
+   ↓
+   Result: Consistent code following patterns
+```
+
+### How They Work Together
+
+**scaffold-mcp** and **architect-mcp** are complementary:
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| **scaffold-mcp** | Generate code from templates | Creating new projects, adding standard features (routes, components) |
+| **architect-mcp** | Guide and validate code | Understanding patterns, reviewing code quality |
+
+**Integration Points:**
+
+1. **Shared Templates**: Both use the same template structure
+   ```
+   templates/nextjs-15/
+   ├── scaffold.yaml         ← scaffold-mcp: Defines boilerplates/features
+   ├── architect.yaml        ← architect-mcp: Defines design patterns
+   └── RULES.yaml            ← architect-mcp: Defines coding rules
+   ```
+
+2. **Project Configuration**: Projects reference templates via `project.json`
+   ```json
+   {
+     "name": "my-app",
+     "sourceTemplate": "nextjs-15"
+   }
+   ```
+
+3. **Workflow Stages**:
+   - **Pre-coding**: scaffold-mcp generates boilerplate → architect-mcp shows patterns
+   - **During coding**: architect-mcp provides guidance → AI agent writes code
+   - **Post-coding**: architect-mcp reviews code → Identifies violations
+   - **Iteration**: scaffold-mcp adds features → architect-mcp validates
+
+### Example: Building a Next.js Application
+
+**Step 1: Create Project**
+```bash
+scaffold-mcp boilerplate create scaffold-nextjs-app \
+  --vars '{"appName":"my-store","withDrizzle":true}'
+```
+Result: Project created with Next.js structure, architect.yaml, and RULES.yaml
+
+**Step 2: Understand Patterns** (Before writing custom code)
+```bash
+architect-mcp get-file-design-pattern apps/my-store/src/app/products/page.tsx
+```
+Result: Shows "Next.js App Router Pattern" and applicable rules
+
+**Step 3: Add Feature** (Standard features)
+```bash
+scaffold-mcp scaffold add scaffold-nextjs-route \
+  --project apps/my-store \
+  --vars '{"routePath":"products","pageTitle":"Products"}'
+```
+Result: Route created following template patterns
+
+**Step 4: Write Custom Code** (AI agent writes business logic)
+```typescript
+// AI agent adds product fetching logic following patterns shown
+export default async function ProductsPage() {
+  const products = await fetchProducts(); // Custom logic
+  return <div>{/* render products */}</div>;
+}
+```
+
+**Step 5: Review Code**
+```bash
+architect-mcp review-code-change apps/my-store/src/app/products/page.tsx
+```
+Result: Validates against RULES.yaml (named exports, error handling, etc.)
+
+### Why This Approach Works
+
+1. **Templates as Single Source of Truth**: Both tools read from same template definitions
+2. **Separation of Concerns**:
+   - scaffold-mcp: Generates repetitive code
+   - architect-mcp: Guides unique code
+3. **Progressive Enhancement**:
+   - Start with scaffolding (fast, consistent)
+   - Add custom logic (AI-assisted, pattern-guided)
+   - Validate output (automated review)
+4. **Feedback Loop**: Reviews inform future scaffolding and patterns
+
+### Using with AI Coding Agents
+
+**Claude Desktop Configuration** (Both MCP servers):
+```json
+{
+  "mcpServers": {
+    "scaffold-mcp": {
+      "command": "npx",
+      "args": ["-y", "@agiflowai/scaffold-mcp", "mcp-serve", "--admin-enable"]
+    },
+    "architect-mcp": {
+      "command": "npx",
+      "args": [
+        "-y", "@agiflowai/architect-mcp", "mcp-serve",
+        "--admin-enable",
+        "--design-pattern-tool", "claude-code",
+        "--review-tool", "claude-code"
+      ]
+    }
+  }
+}
+```
+
+**Agent Instructions** (in CLAUDE.md or similar):
+```markdown
+When creating new features:
+1. Use scaffold-mcp to generate boilerplate if standard feature exists
+2. Use architect-mcp to understand patterns before writing custom code
+3. Use architect-mcp to review code before committing
+
+When updating patterns:
+1. Use architect-mcp admin tools to update architect.yaml and RULES.yaml
+2. Use scaffold-mcp admin tools to update scaffold.yaml templates
+```
+
+---
+
 ## Packages
 
 ### [@agiflowai/scaffold-mcp](./packages/scaffold-mcp)
@@ -174,11 +332,21 @@ MCP server for scaffolding applications with boilerplate templates and feature g
 
 [View full documentation →](./packages/scaffold-mcp/README.md)
 
-### [@agiflowai/scaffold-generator](./packages/scaffold-generator)
+### [@agiflowai/architect-mcp](./packages/architect-mcp)
 
-Core utilities and types for scaffold generators. Internal library used by `scaffold-mcp`.
+MCP server for software architecture design, code quality enforcement, and design pattern guidance.
 
-[View source →](./packages/scaffold-generator)
+**Key Features:**
+- 🎨 Design pattern guidance for specific files
+- ✅ Code review against template-specific rules
+- 📐 Architecture patterns (architect.yaml)
+- 📋 Coding standards and rules (RULES.yaml)
+- 🤖 Optional LLM-powered analysis with Claude Code CLI
+- 🌐 Multiple transport modes: stdio, HTTP, SSE
+- 💻 Standalone CLI mode
+- 🔧 Admin tools for pattern and rule management
+
+[View full documentation →](./packages/architect-mcp/README.md)
 
 ---
 
@@ -286,8 +454,16 @@ pnpm release
 
 ## Documentation
 
+### Scaffold MCP
 - **[Scaffold MCP Guide](./packages/scaffold-mcp/README.md)** - Complete guide to the scaffolding MCP server
 - **[How to Use Prompts](./packages/scaffold-mcp/docs/how-to.md)** - Step-by-step guide for using slash command prompts
+
+### Architect MCP
+- **[Architect MCP Guide](./packages/architect-mcp/README.md)** - Complete guide to the architecture and rules MCP server
+- **[Design Pattern Overview](./packages/architect-mcp/docs/design-pattern-overview.md)** - High-level explanation of the design pattern system
+- **[Rules Overview](./packages/architect-mcp/docs/rules-overview.md)** - Detailed guide to the coding rules system
+
+### General
 - **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute to this project
 - **[Publishing Guide](./PUBLISHING.md)** - Release and versioning workflow
 

@@ -1,0 +1,636 @@
+features:
+  - name: nextjs-page-pattern
+    design_pattern: Next.js Page Component Pattern
+    includes:
+      - src/app/**/page.tsx
+    description: |-
+      ## Pattern Overview
+      Design pattern for Next.js 15 App Router page components using Server Components by default with proper metadata, data fetching, and error handling.
+
+      ## What TO DO ✅
+
+      - Export async Server Components by default for data fetching
+      - Export metadata or generateMetadata() for SEO
+      - Use proper TypeScript types for params and searchParams
+      - Fetch data at the component level using async/await
+      - Use Suspense boundaries for loading states
+      - Handle errors with error.tsx boundary files
+      - Keep components simple and delegate UI to separate components
+      - Use absolute imports with @/ alias
+      - Follow proper naming: page.tsx exports default function Page()
+
+      ## What NOT TO DO ❌
+
+      - Don't add 'use client' unless absolutely necessary (interactivity needed)
+      - Don't fetch data in useEffect hooks in Server Components
+      - Don't mix server and client logic in the same component
+      - Don't forget to export metadata for SEO
+      - Don't use useState/useEffect in Server Components
+      - Don't access searchParams synchronously (must be awaited in Next.js 15)
+      - Don't put complex UI logic directly in page.tsx
+
+      ## Examples
+
+      ### Basic Page with Data Fetching
+      ```typescript
+      import type { Metadata } from 'next';
+      import { db } from '@/db/drizzle';
+      import { users } from '@/db/schema';
+
+      export const metadata: Metadata = {
+        title: 'Users',
+        description: 'User list page',
+      };
+
+      export default async function UsersPage() {
+        const userList = await db.select().from(users);
+        return (
+          <main>
+            <h1>Users</h1>
+            <UserList users={userList} />
+          </main>
+        );
+      }
+      ```
+
+      ### Dynamic Page with Params
+      ```typescript
+      interface PageProps {
+        params: Promise<{ id: string }>;
+      }
+
+      export async function generateMetadata({ params }: PageProps) {
+        const { id } = await params;
+        return { title: `Post: ${id}` };
+      }
+
+      export default async function PostPage({ params }: PageProps) {
+        const { id } = await params;
+        return <article>{/* content */}</article>;
+      }
+      ```
+  - name: nextjs-layout-pattern
+    design_pattern: Next.js Layout Component Pattern
+    includes:
+      - src/app/**/layout.tsx
+    description: |-
+      ## Pattern Overview
+      Design pattern for Next.js 15 App Router layout components that wrap child pages with shared UI, metadata, and behavior.
+
+      ## What TO DO ✅
+
+      - Accept children prop and render it in the layout
+      - Export metadata at root layout (app/layout.tsx) for site-wide defaults
+      - Use Server Components by default
+      - Add route group protection logic (auth checks) at layout level
+      - Keep layouts focused on structural UI (navigation, sidebars, headers)
+      - Use proper TypeScript types for props
+      - Apply global styles in root layout only
+      - Define font variables in root layout
+      - Nest layouts for progressive enhancement
+
+      ## What NOT TO DO ❌
+
+      - Don't forget to render {children} prop
+      - Don't add 'use client' unless client-side state is required
+      - Don't fetch the same data in both layout and page (hoist to layout)
+      - Don't apply global styles in nested layouts
+      - Don't create unnecessary layout nesting
+      - Don't forget route group redirects for protected routes
+      - Don't use layouts for one-off page wrapping (use page composition instead)
+
+      ## Examples
+
+      ### Root Layout
+      ```typescript
+      import type { Metadata } from 'next';
+      import { Inter } from 'next/font/google';
+      import '@/app/globals.css';
+
+      const inter = Inter({ subsets: ['latin'] });
+
+      export const metadata: Metadata = {
+        title: { default: 'My App', template: '%s | My App' },
+        description: 'App description',
+      };
+
+      export default function RootLayout({ children }: { children: React.ReactNode }) {
+        return (
+          <html lang="en">
+            <body className={inter.className}>{children}</body>
+          </html>
+        );
+      }
+      ```
+
+      ### Protected Layout with Auth
+      ```typescript
+      import { auth } from '@/lib/auth';
+      import { redirect } from 'next/navigation';
+      import { headers } from 'next/headers';
+
+      export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session) redirect('/sign-in');
+
+        return (
+          <div>
+            <nav>{/* Nav */}</nav>
+            <main>{children}</main>
+          </div>
+        );
+      }
+      ```
+  - name: nextjs-api-route-pattern
+    design_pattern: Next.js API Route Handler Pattern
+    includes:
+      - src/app/api/**/route.ts
+    description: |-
+      ## Pattern Overview
+      Design pattern for Next.js 15 App Router API routes using Web Request/Response API with proper validation, error handling, and service delegation.
+
+      ## What TO DO ✅
+
+      - Export async functions named after HTTP methods (GET, POST, PUT, DELETE, PATCH)
+      - Use NextResponse.json() for JSON responses with proper status codes
+      - Validate input with Zod schemas before processing
+      - Delegate business logic to services (never access db directly)
+      - Handle errors with try-catch and return appropriate status codes
+      - Add authentication/authorization checks when needed
+      - Use proper TypeScript types for request/response
+      - Return consistent response format { success, data?, error? }
+      - Add CORS headers for public APIs if needed
+      - Use revalidatePath/revalidateTag for cache invalidation
+
+      ## What NOT TO DO ❌
+
+      - Don't put business logic directly in route handlers
+      - Don't access database directly (use services instead)
+      - Don't forget input validation
+      - Don't return raw errors to client (sanitize error messages)
+      - Don't forget authentication checks for protected routes
+      - Don't use res/req from Next.js 12 (use Request/Response)
+      - Don't mix route.ts with page.ts in same segment
+      - Don't forget to handle different HTTP methods separately
+
+      ## Examples
+
+      ### POST Route with Validation
+      ```typescript
+      import { NextResponse } from 'next/server';
+      import { z } from 'zod';
+      import { UserService } from '@/services/UserService';
+
+      const schema = z.object({
+        email: z.string().email(),
+        name: z.string().min(2),
+      });
+
+      export async function POST(request: Request) {
+        try {
+          const body = await request.json();
+          const data = schema.parse(body);
+          const user = await new UserService().create(data);
+          return NextResponse.json({ success: true, data: user }, { status: 201 });
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            return NextResponse.json({ success: false, error: error.errors }, { status: 400 });
+          }
+          return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 });
+        }
+      }
+      ```
+
+      ### Protected Route with Auth
+      ```typescript
+      import { NextResponse } from 'next/server';
+      import { auth } from '@/lib/auth';
+      import { headers } from 'next/headers';
+
+      export async function GET() {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session) {
+          return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+        return NextResponse.json({ success: true, data: { user: session.user } });
+      }
+      ```
+  - name: react-component-pattern
+    design_pattern: React Component Pattern with Tailwind CSS
+    includes:
+      - src/components/**/*.tsx
+      - src/app/**/_ui/components/**/*.tsx
+    description: |-
+      ## Pattern Overview
+      Design pattern for React components with TypeScript, Tailwind CSS, and proper composition patterns. Includes both client and server components with Storybook integration.
+
+      ## What TO DO ✅
+
+      - Use TypeScript with proper interface definitions
+      - Export component as default for simpler imports
+      - Use cn() utility from @/lib/utils for className merging
+      - Add 'use client' directive only when client interactivity is needed
+      - Use React.forwardRef for components that need ref access
+      - Extend React.ComponentPropsWithoutRef or ComponentPropsWithRef for prop inheritance
+      - Keep components focused and single-purpose
+      - Use composition over prop drilling
+      - Create Storybook stories for component documentation
+      - Use Tailwind utility classes for styling
+      - Provide sensible prop defaults
+
+      ## What NOT TO DO ❌
+
+      - Don't use inline styles unless absolutely necessary
+      - Don't forget 'use client' for components with hooks/events
+      - Don't create overly complex prop interfaces
+      - Don't mix server and client component logic
+      - Don't forget to forward refs when wrapping native elements
+      - Don't use CSS modules (use Tailwind instead)
+      - Don't create components without TypeScript types
+      - Don't skip Storybook stories for reusable components
+
+      ## Examples
+
+      ### Client Component
+      ```typescript
+      'use client';
+
+      import { cn } from '@/lib/utils';
+
+      interface ButtonProps extends React.ComponentPropsWithoutRef<'button'> {
+        variant?: 'primary' | 'secondary';
+      }
+
+      export default function Button({ variant = 'primary', className, children, ...props }: ButtonProps) {
+        return (
+          <button
+            className={cn(
+              'rounded px-4 py-2 font-medium transition-colors',
+              variant === 'primary' && 'bg-blue-600 text-white hover:bg-blue-700',
+              variant === 'secondary' && 'bg-gray-200 text-gray-900 hover:bg-gray-300',
+              className
+            )}
+            {...props}
+          >
+            {children}
+          </button>
+        );
+      }
+      ```
+
+      ### Component with ForwardRef
+      ```typescript
+      'use client';
+
+      import { forwardRef } from 'react';
+      import { cn } from '@/lib/utils';
+
+      interface InputProps extends React.ComponentPropsWithRef<'input'> {
+        error?: string;
+      }
+
+      const Input = forwardRef<HTMLInputElement, InputProps>(({ error, className, ...props }, ref) => (
+        <div>
+          <input
+            ref={ref}
+            className={cn('w-full rounded border px-3 py-2', error ? 'border-red-500' : 'border-gray-300', className)}
+            {...props}
+          />
+          {error && <p className="text-sm text-red-600">{error}</p>}
+        </div>
+      ));
+
+      Input.displayName = 'Input';
+      export default Input;
+      ```
+  - name: server-action-pattern
+    design_pattern: Next.js Server Action Pattern
+    includes:
+      - src/actions/**/*.ts
+      - src/app/**/_ui/actions/**/*.ts
+    description: |-
+      ## Pattern Overview
+      Design pattern for Next.js server actions with 'use server' directive, Zod validation, service delegation, and proper error handling.
+
+      ## What TO DO ✅
+
+      - Add 'use server' directive at the top of the file
+      - Export async functions that return result objects
+      - Validate input with Zod schemas before processing
+      - Delegate business logic to services (NEVER access db directly)
+      - Return consistent format: { success: boolean, data?: T, error?: string }
+      - Use revalidatePath() or revalidateTag() for cache invalidation
+      - Add authentication/authorization checks when needed
+      - Handle errors with try-catch blocks
+      - Use TypeScript types for inputs and outputs
+      - Keep actions thin - validate, call service, revalidate cache
+
+      ## What NOT TO DO ❌
+
+      - Don't access database directly in actions (use services)
+      - Don't put complex business logic in actions
+      - Don't forget input validation
+      - Don't return raw error objects to client
+      - Don't skip cache revalidation after mutations
+      - Don't forget 'use server' directive
+      - Don't expose sensitive data in return values
+      - Don't use actions for data fetching (use Server Components instead)
+      - Don't trust client-provided data without validation
+
+      ## Examples
+
+      ### Basic Server Action
+      ```typescript
+      'use server';
+
+      import { z } from 'zod';
+      import { revalidatePath } from 'next/cache';
+      import { UserService } from '@/services/UserService';
+
+      const schema = z.object({
+        email: z.string().email(),
+        name: z.string().min(2),
+      });
+
+      export async function createUser(input: z.infer<typeof schema>) {
+        try {
+          const data = schema.parse(input);
+          const user = await new UserService().create(data);
+          revalidatePath('/users');
+          return { success: true, data: user };
+        } catch (error) {
+          return { success: false, error: error instanceof z.ZodError ? 'Invalid input' : 'Failed to create user' };
+        }
+      }
+      ```
+
+      ### Protected Server Action
+      ```typescript
+      'use server';
+
+      import { auth } from '@/lib/auth';
+      import { headers } from 'next/headers';
+      import { revalidatePath } from 'next/cache';
+      import { ProductService } from '@/services/ProductService';
+
+      export async function updateProduct(id: string, data: { name: string; price: number }) {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session) return { success: false, error: 'Unauthorized' };
+
+        const product = await new ProductService().update(id, data);
+        revalidatePath('/products');
+        return { success: true, data: product };
+      }
+      ```
+  - name: service-layer-pattern
+    design_pattern: Service Layer Pattern with Drizzle ORM
+    includes:
+      - src/services/**/*.ts
+    description: |-
+      ## Pattern Overview
+      Design pattern for service classes that encapsulate business logic and database operations using Drizzle ORM with proper separation of concerns and dependency injection.
+
+      ## What TO DO ✅
+
+      - Create class-based services with clear single responsibility
+      - Import db from '@/db/drizzle' for database access
+      - Define service interfaces in src/services/types.ts
+      - Use async/await for all database operations
+      - Return typed results from service methods
+      - Handle errors with try-catch and return error objects
+      - Use Drizzle query builder for type-safe queries
+      - Name methods with clear verbs (getById, create, update, delete, findBy...)
+      - Keep services focused on single entity or domain
+      - Use dependency injection for composing services
+      - Export both interface and implementation
+
+      ## What NOT TO DO ❌
+
+      - Don't create static-only utility classes (use functions instead)
+      - Don't mix multiple unrelated concerns in one service
+      - Don't forget error handling
+      - Don't expose Drizzle internals to callers
+      - Don't use synchronous operations for database access
+      - Don't create services without interfaces
+      - Don't put UI logic or validation in services
+      - Don't forget to export service interfaces from types.ts
+
+      ## Examples
+
+      ### Basic Service with CRUD
+      ```typescript
+      import { db } from '@/db/drizzle';
+      import { users } from '@/db/schema';
+      import { eq } from 'drizzle-orm';
+
+      export class UserService {
+        async getById(id: string) {
+          const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+          return user || null;
+        }
+
+        async getAll() {
+          return await db.select().from(users);
+        }
+
+        async create(data: { email: string; name: string }) {
+          const [user] = await db.insert(users).values(data).returning();
+          return user;
+        }
+
+        async update(id: string, data: Partial<{ email: string; name: string }>) {
+          const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+          return user || null;
+        }
+      }
+      ```
+
+      ### Service with Complex Query
+      ```typescript
+      import { db } from '@/db/drizzle';
+      import { products, categories } from '@/db/schema';
+      import { eq, and, gte, lte, desc } from 'drizzle-orm';
+
+      export class ProductService {
+        async getById(id: string) {
+          const [result] = await db
+            .select()
+            .from(products)
+            .leftJoin(categories, eq(products.categoryId, categories.id))
+            .where(eq(products.id, id))
+            .limit(1);
+          return result || null;
+        }
+
+        async findByPriceRange(min: number, max: number) {
+          return await db
+            .select()
+            .from(products)
+            .where(and(gte(products.price, min), lte(products.price, max)))
+            .orderBy(desc(products.price));
+        }
+      }
+      ```
+  - name: drizzle-schema-pattern
+    design_pattern: Drizzle ORM Database Schema Pattern
+    includes:
+      - src/db/**/*.ts
+      - drizzle.config.ts
+    description: |-
+      ## Pattern Overview
+      Design pattern for defining database schemas using Drizzle ORM with PostgreSQL, including proper column types, constraints, relationships, and indexing.
+
+      ## What TO DO ✅
+
+      - Import table builder from 'drizzle-orm/pg-core'
+      - Use pgTable() to define tables with clear, descriptive names
+      - Add timestamps (createdAt, updatedAt) to all tables
+      - Use UUID or serial for primary keys
+      - Define foreign key relationships with references()
+      - Add proper indexes for frequently queried columns
+      - Use TypeScript types for schema inference
+      - Export schema types using typeof and InferSelectModel/InferInsertModel
+      - Keep auth-related tables in separate schema file (auth-schema.ts)
+      - Use descriptive column names in camelCase
+      - Add default values where appropriate
+      - Use correct PostgreSQL column types (uuid, timestamp, text, varchar, integer, boolean)
+
+      ## What NOT TO DO ❌
+
+      - Don't forget to export schemas from main schema.ts
+      - Don't skip timestamps on tables
+      - Don't use generic names like 'data' or 'info'
+      - Don't forget to add indexes for foreign keys
+      - Don't mix auth schema with application schema
+      - Don't use incorrect column types (use varchar with length, not unlimited text for names)
+      - Don't forget to run migrations after schema changes
+      - Don't create circular dependencies between tables
+
+      ## Examples
+
+      ### Basic Table Schema
+      ```typescript
+      import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+
+      export const users = pgTable('users', {
+        id: uuid('id').defaultRandom().primaryKey(),
+        email: varchar('email', { length: 255 }).notNull().unique(),
+        name: varchar('name', { length: 255 }).notNull(),
+        createdAt: timestamp('created_at').defaultNow().notNull(),
+        updatedAt: timestamp('updated_at').defaultNow().notNull(),
+      });
+
+      export type User = typeof users.$inferSelect;
+      export type InsertUser = typeof users.$inferInsert;
+      ```
+
+      ### Table with Foreign Key & Index
+      ```typescript
+      import { pgTable, text, timestamp, uuid, varchar, index } from 'drizzle-orm/pg-core';
+      import { users } from './schema';
+
+      export const posts = pgTable(
+        'posts',
+        {
+          id: uuid('id').defaultRandom().primaryKey(),
+          title: varchar('title', { length: 255 }).notNull(),
+          content: text('content').notNull(),
+          userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+          createdAt: timestamp('created_at').defaultNow().notNull(),
+          updatedAt: timestamp('updated_at').defaultNow().notNull(),
+        },
+        (table) => ({ userIdx: index('user_idx').on(table.userId) })
+      );
+
+      export type Post = typeof posts.$inferSelect;
+      ```
+  - name: better-auth-pattern
+    design_pattern: Better Auth Configuration Pattern
+    includes:
+      - src/lib/auth.ts
+      - src/lib/auth-client.ts
+      - src/db/auth-schema.ts
+      - middleware.ts
+    description: |-
+      ## Pattern Overview
+      Design pattern for implementing Better Auth authentication with Drizzle adapter, proper server/client separation, and route protection patterns.
+
+      ## What TO DO ✅
+
+      - Separate server auth (auth.ts) from client auth (auth-client.ts)
+      - Use Drizzle adapter with PostgreSQL
+      - Configure auth providers in server auth only
+      - Export typed client hooks from auth-client.ts
+      - Add auth schema to separate file (auth-schema.ts)
+      - Export auth tables from main schema.ts file
+      - Use middleware.ts for route protection
+      - Add session checks in protected layouts
+      - Use headers() from next/headers for server-side session access
+      - Configure BETTER_AUTH_SECRET and BETTER_AUTH_URL in environment
+      - Add provider credentials for OAuth (GOOGLE_CLIENT_ID, etc.)
+
+      ## What NOT TO DO ❌
+
+      - Don't configure auth providers in client file
+      - Don't access auth directly from client components (use hooks)
+      - Don't forget to export auth schema from main schema
+      - Don't skip database migration after adding auth schema
+      - Don't hardcode secrets in code
+      - Don't forget to protect routes with middleware or layout checks
+      - Don't mix server and client auth code
+      - Don't expose auth secrets to client
+
+      ## Examples
+
+      ### Server Auth (auth.ts)
+      ```typescript
+      import { betterAuth } from 'better-auth';
+      import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+      import { db } from '@/db/drizzle';
+      import * as schema from '@/db/schema';
+
+      export const auth = betterAuth({
+        database: drizzleAdapter(db, { provider: 'pg', schema }),
+        emailAndPassword: { enabled: true },
+        socialProviders: {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+          },
+        },
+        secret: process.env.BETTER_AUTH_SECRET!,
+        baseURL: process.env.BETTER_AUTH_URL!,
+      });
+      ```
+
+      ### Client Auth (auth-client.ts)
+      ```typescript
+      'use client';
+
+      import { createAuthClient } from 'better-auth/react';
+
+      export const authClient = createAuthClient({
+        baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL!,
+      });
+
+      export const { useSession, signIn, signOut } = authClient;
+      ```
+
+      ### Protected Layout
+      ```typescript
+      import { auth } from '@/lib/auth';
+      import { redirect } from 'next/navigation';
+      import { headers } from 'next/headers';
+
+      export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session) redirect('/sign-in');
+
+        return (
+          <div>
+            <nav><p>Welcome, {session.user.name}</p></nav>
+            <main>{children}</main>
+          </div>
+        );
+      }
+      ```

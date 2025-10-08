@@ -1,0 +1,338 @@
+version: '1.0'
+template: typescript-lib
+description: Rules and patterns for typescript-lib template
+rules:
+  - pattern: src/services/**/*.ts
+    description: Service Layer Implementation Standards
+    inherits:
+      - export-standards
+      - error-handling
+      - type-safety
+      - async-await-patterns
+    must_do:
+      - rule: Create class-based services with single responsibility
+        codeExample: |-
+          export class DataProcessorService {
+            async processData(input: string): Promise<ProcessedData> {
+              // Implementation
+            }
+          }
+      - rule: Use dependency injection for composability
+        codeExample: |-
+          export class UserService {
+            constructor(
+              private readonly apiClient: ApiClient,
+              private readonly cache: CacheService
+            ) {}
+          }
+      - rule: Return typed results - never use any
+        codeExample: |-
+          async getData(): Promise<DataResult> {
+            return { success: true, data: [] };
+          }
+      - rule: Handle errors with try-catch
+        codeExample: |-
+          async fetchData(id: string): Promise<Data> {
+            try {
+              return await this.api.get(id);
+            } catch (error) {
+              throw new Error(`Failed to fetch: ${error.message}`);
+            }
+          }
+    must_not_do:
+      - rule: Create static-only utility classes - use functions
+        codeExample: |-
+          // ❌ BAD
+          export class Utils {
+            static format(s: string) {}
+          }
+
+          // ✅ GOOD
+          export function format(s: string): string {}
+      - rule: Mix multiple unrelated concerns in one service
+        codeExample: |-
+          // ❌ BAD
+          export class AppService {
+            parseData() {}
+            sendEmail() {}
+            saveToDb() {}
+          }
+      - rule: Use synchronous blocking operations for I/O
+  - pattern: src/utils/**/*.ts
+    description: Utility Functions Standards
+    inherits:
+      - export-standards
+      - type-safety
+      - documentation-standards
+    must_do:
+      - rule: Use pure functions - no side effects
+        codeExample: |-
+          export function formatDate(date: Date): string {
+            return date.toISOString();
+          }
+
+          export function calculateTotal(items: Item[]): number {
+            return items.reduce((sum, item) => sum + item.price, 0);
+          }
+      - rule: Add JSDoc for complex utilities
+        codeExample: |-
+          /**
+           * Formats a number as currency
+           * @param amount - The amount to format
+           * @param currency - Currency code (default: USD)
+           * @returns Formatted currency string
+           */
+          export function formatCurrency(amount: number, currency = 'USD'): string {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+          }
+      - rule: Keep functions small and focused - single purpose
+        codeExample: |-
+          // ✅ GOOD - Focused functions
+          export function trim(str: string): string
+          export function capitalize(str: string): string
+          export function slugify(str: string): string
+    must_not_do:
+      - rule: Create utility classes - use functions instead
+        codeExample: |-
+          // ❌ BAD
+          export class StringUtils {
+            static trim(s: string) {}
+          }
+
+          // ✅ GOOD
+          export function trim(s: string): string {}
+      - rule: Use any type - always specify types
+        codeExample: |-
+          // ❌ BAD
+          export function process(data: any) {}
+
+          // ✅ GOOD
+          export function process<T>(data: T): T {}
+      - rule: Add side effects in utility functions
+        codeExample: |-
+          // ❌ BAD - Side effect (modifies global state)
+          export function log(msg: string) {
+            console.log(msg); // Side effect!
+          }
+
+          // ✅ GOOD - Pure function
+          export function formatMessage(msg: string): string {
+            return `[LOG] ${msg}`;
+          }
+  - pattern: src/types/**/*.ts
+    description: Type Definitions Standards
+    inherits:
+      - export-standards
+      - type-safety
+      - documentation-standards
+    must_do:
+      - rule: Define clear interfaces for all data structures
+        codeExample: |-
+          export interface User {
+            id: string;
+            email: string;
+            name: string;
+            createdAt: Date;
+          }
+
+          export interface ApiResponse<T> {
+            success: boolean;
+            data?: T;
+            error?: string;
+          }
+      - rule: Use TypeScript utility types for transformations
+        codeExample: |-
+          export type PartialUser = Partial<User>;
+          export type RequiredUser = Required<User>;
+          export type UserKeys = keyof User;
+          export type UserProfile = Pick<User, 'name' | 'email'>;
+      - rule: Add JSDoc for complex types
+        codeExample: |-
+          /**
+           * Configuration options for the library
+           * @property timeout - Request timeout in ms
+           * @property retries - Number of retry attempts
+           */
+          export interface Config {
+            timeout: number;
+            retries: number;
+          }
+    must_not_do:
+      - rule: Use any type - use unknown or proper types
+        codeExample: |-
+          // ❌ BAD
+          export interface Result {
+            data: any;
+          }
+
+          // ✅ GOOD
+          export interface Result<T = unknown> {
+            data: T;
+          }
+      - rule: Create types without exports
+        codeExample: |-
+          // ❌ BAD
+          interface Config {} // Not exported
+
+          // ✅ GOOD
+          export interface Config {}
+      - rule: Mix implementation with types
+        codeExample: |-
+          // ❌ BAD
+          export class MyClass {}
+          export interface MyInterface {}
+
+          // ✅ GOOD - Only types
+          export interface MyInterface {}
+          export type MyType = {};
+  - pattern: tests/**/*.test.ts
+    description: Test Standards with Vitest
+    inherits:
+      - type-safety
+    must_do:
+      - rule: Use descriptive test names with 'should' pattern
+        codeExample: |-
+          import { describe, it, expect } from 'vitest';
+
+          describe('formatCurrency', () => {
+            it('should format number as USD currency', () => {
+              expect(formatCurrency(1000)).toBe('$1,000.00');
+            });
+
+            it('should handle zero amount', () => {
+              expect(formatCurrency(0)).toBe('$0.00');
+            });
+          });
+      - rule: Test both success and error paths
+        codeExample: |-
+          it('should return data on success', async () => {
+            const result = await service.getData();
+            expect(result.success).toBe(true);
+          });
+
+          it('should handle errors gracefully', async () => {
+            await expect(service.getData()).rejects.toThrow('Error');
+          });
+      - rule: Mock external dependencies
+        codeExample: |-
+          import { vi } from 'vitest';
+
+          const mockApi = {
+            fetch: vi.fn().mockResolvedValue({ data: 'test' })
+          };
+
+          const service = new MyService(mockApi);
+    must_not_do:
+      - rule: Test implementation details - test behavior
+        codeExample: |-
+          // ❌ BAD - Testing implementation
+          expect(service.privateMethod).toBeDefined();
+
+          // ✅ GOOD - Testing behavior
+          expect(service.process(input)).toBe(expected);
+      - rule: Use hardcoded values - use test data
+        codeExample: |-
+          // ❌ BAD
+          const userId = '123';
+
+          // ✅ GOOD
+          const userId = faker.string.uuid();
+      - rule: Skip edge cases and error scenarios
+  - pattern: src/services/index.ts
+    description: Service Layer Barrel Export Standards
+    must_do:
+      - rule: Export all services from index.ts using barrel exports
+        codeExample: |-
+          export { UserService } from './UserService.js';
+          export { ProductService } from './ProductService.js';
+          export { OrderService } from './OrderService.js';
+      - rule: Group related services together in exports
+        codeExample: |-
+          // Domain services
+          export { UserService } from './UserService.js';
+          export { OrderService } from './OrderService.js';
+
+          // Utility services
+          export { EmailService } from './EmailService.js';
+          export { CacheService } from './CacheService.js';
+    must_not_do:
+      - rule: Include service implementation in index.ts - only exports
+        codeExample: |-
+          // ❌ BAD - Implementation in barrel file
+          export class UserService { async getAll() {} }
+
+          // ✅ GOOD - Only exports
+          export { UserService } from './UserService.js';
+      - rule: Use wildcard exports - be explicit
+        codeExample: |-
+          // ❌ BAD
+          export * from './UserService.js';
+
+          // ✅ GOOD
+          export { UserService } from './UserService.js';
+  - pattern: src/utils/index.ts
+    description: Utility Functions Barrel Export Standards
+    must_do:
+      - rule: Export all utility functions from index.ts using barrel exports
+        codeExample: |-
+          export { formatDate, parseDate } from './dateUtils.js';
+          export { validateEmail, sanitizeInput } from './validationUtils.js';
+          export { chunk, debounce, throttle } from './arrayUtils.js';
+      - rule: Group utilities by category in exports
+        codeExample: |-
+          // Date utilities
+          export { formatDate, parseDate } from './dateUtils.js';
+
+          // Validation utilities
+          export { validateEmail, sanitizeInput } from './validationUtils.js';
+
+          // Array utilities
+          export { chunk, debounce, throttle } from './arrayUtils.js';
+    must_not_do:
+      - rule: Include utility implementation in index.ts - only exports
+        codeExample: |-
+          // ❌ BAD - Implementation in barrel file
+          export function formatDate(date: Date) { return date.toISOString(); }
+
+          // ✅ GOOD - Only exports
+          export { formatDate } from './dateUtils.js';
+      - rule: Use wildcard exports - be explicit
+        codeExample: |-
+          // ❌ BAD
+          export * from './dateUtils.js';
+
+          // ✅ GOOD
+          export { formatDate, parseDate } from './dateUtils.js';
+  - pattern: src/types/index.ts
+    description: Type Definitions Barrel Export Standards
+    must_do:
+      - rule: Export all types, interfaces, and type utilities from index.ts
+        codeExample: |-
+          export type { User, UserRole, UserPermissions } from './user.js';
+          export type { Product, ProductCategory } from './product.js';
+          export type { ApiResponse, ApiError } from './api.js';
+      - rule: Group related types together in exports
+        codeExample: |-
+          // User types
+          export type { User, UserRole, UserPermissions } from './user.js';
+
+          // Product types
+          export type { Product, ProductCategory } from './product.js';
+
+          // API types
+          export type { ApiResponse, ApiError } from './api.js';
+    must_not_do:
+      - rule: Include type definitions in index.ts - only exports
+        codeExample: |-
+          // ❌ BAD - Definition in barrel file
+          export type User = { id: string; name: string; };
+
+          // ✅ GOOD - Only exports
+          export type { User } from './user.js';
+      - rule: Use wildcard type exports - be explicit
+        codeExample: |-
+          // ❌ BAD
+          export * from './user.js';
+
+          // ✅ GOOD
+          export type { User, UserRole } from './user.js';

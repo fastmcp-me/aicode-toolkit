@@ -1,0 +1,478 @@
+version: '1.0'
+template: nextjs-15-drizzle
+description: Rules and patterns for nextjs-15-drizzle template
+rules:
+  - pattern: validation-standards
+    description: Zod validation standards for input validation
+    must_do:
+      - rule: Validate input with Zod schemas before processing
+        codeExample: |-
+          const schema = z.object({
+            email: z.string().email(),
+            name: z.string().min(2)
+          });
+
+          export async function processData(input: z.infer<typeof schema>) {
+            const data = schema.parse(input);
+            // ...
+          }
+    must_not_do:
+      - rule: Never skip input validation
+        codeExample: |-
+          // ❌ BAD - No validation
+          export async function processData(input: any) {
+            return await service.process(input); // Unsafe!
+          }
+
+          // ✅ GOOD - Validate first
+          export async function processData(input: unknown) {
+            const data = schema.parse(input);
+            return await service.process(data);
+          }
+  - pattern: service-delegation-standards
+    description: Service delegation standards - never access DB directly
+    must_do:
+      - rule: Delegate business logic to services
+        codeExample: |-
+          export async function processData(data: ProcessInput) {
+            const result = await new DataService().process(data);
+            return { success: true, data: result };
+          }
+    must_not_do:
+      - rule: Never access database directly - use services
+        codeExample: |-
+          // ❌ BAD - Direct DB access
+          import { db } from '@/db/drizzle';
+
+          export async function createUser(data: any) {
+            const user = await db.insert(users).values(data); // Don't do this!
+          }
+
+          // ✅ GOOD - Use service
+          export async function createUser(data: CreateUserInput) {
+            const user = await new UserService().create(data);
+          }
+  - pattern: src/app/**/page.tsx
+    description: Next.js 15 Page Component Standards
+    inherits:
+      - export-standards
+    must_do:
+      - rule: Export async Server Components by default
+        codeExample: |-
+          export default async function UsersPage() {
+            const users = await db.select().from(users);
+            return <main><UserList users={users} /></main>;
+          }
+      - rule: Export metadata or generateMetadata() for SEO
+        codeExample: |-
+          export const metadata: Metadata = {
+            title: 'Users',
+            description: 'User list page'
+          };
+
+          // OR for dynamic metadata
+          export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+            const { id } = await params;
+            return { title: `Post: ${id}` };
+          }
+      - rule: Await params and searchParams (Next.js 15 requirement)
+        codeExample: |-
+          interface PageProps {
+            params: Promise<{ id: string }>;
+            searchParams: Promise<{ q?: string }>;
+          }
+
+          export default async function Page({ params, searchParams }: PageProps) {
+            const { id } = await params;
+            const { q } = await searchParams;
+            // Use id and q
+          }
+    must_not_do:
+      - rule: Never add 'use client' to Server Components
+        codeExample: |-
+          // ❌ BAD - Don't use client directive on pages that fetch data
+          'use client';
+          export default async function UsersPage() {
+            const users = await db.select().from(users); // This will error!
+          }
+      - rule: Never fetch data in useEffect for server-fetched data
+        codeExample: |-
+          // ❌ BAD - Use Server Components instead
+          'use client';
+          export default function UsersPage() {
+            const [users, setUsers] = useState([]);
+            useEffect(() => {
+              fetch('/api/users').then(r => r.json()).then(setUsers);
+            }, []);
+          }
+      - rule: Never access params/searchParams synchronously
+        codeExample: |-
+          // ❌ BAD - Must await in Next.js 15
+          export default function Page({ params }: { params: { id: string } }) {
+            return <div>{params.id}</div>; // Error in Next.js 15
+          }
+  - pattern: src/actions/**/*.ts
+    description: Server Action Standards with Zod Validation
+    inherits:
+      - export-standards
+      - validation-standards
+      - service-delegation-standards
+    must_do:
+      - rule: Add 'use server' directive at the top of file
+        codeExample: |-
+          'use server';
+
+          import { z } from 'zod';
+          import { UserService } from '@/services/UserService';
+      - rule: Return consistent result format { success, data?, error? }
+        codeExample: |-
+          export async function createUser(input: CreateUserInput) {
+            try {
+              const user = await new UserService().create(input);
+              return { success: true, data: user };
+            } catch (error) {
+              return { success: false, error: 'Failed to create user' };
+            }
+          }
+      - rule: Revalidate cache after mutations
+        codeExample: |-
+          import { revalidatePath } from 'next/cache';
+
+          export async function updateUser(id: string, data: UpdateUserInput) {
+            const user = await new UserService().update(id, data);
+            revalidatePath('/users');
+            revalidatePath(`/users/${id}`);
+            return { success: true, data: user };
+          }
+    must_not_do:
+      - rule: Never forget cache revalidation after mutations
+        codeExample: |-
+          // ❌ BAD - No revalidation
+          export async function updateUser(id: string, data: any) {
+            return await new UserService().update(id, data);
+            // Missing revalidatePath()!
+          }
+  - pattern: src/app/api/**/route.ts
+    description: API Route Handler Standards
+    inherits:
+      - validation-standards
+      - service-delegation-standards
+    must_do:
+      - rule: Export async HTTP method handlers (GET, POST, PUT, DELETE)
+        codeExample: |-
+          import { NextResponse } from 'next/server';
+
+          export async function GET() {
+            // handler logic
+          }
+
+          export async function POST(request: Request) {
+            // handler logic
+          }
+      - rule: Use NextResponse.json() with proper status codes
+        codeExample: |-
+          export async function POST(request: Request) {
+            const user = await service.create(data);
+            return NextResponse.json(
+              { success: true, data: user },
+              { status: 201 }
+            );
+          }
+    must_not_do:
+      - rule: Never put business logic in route handlers
+        codeExample: |-
+          // ❌ BAD - Business logic in route
+          export async function POST(request: Request) {
+            const data = await request.json();
+            const user = await db.insert(users).values(data);
+            await sendEmail(user.email);
+            await logAudit(user.id);
+          }
+
+          // ✅ GOOD - Delegate to service
+          export async function POST(request: Request) {
+            const data = await request.json();
+            const user = await new UserService().create(data);
+            return NextResponse.json({ success: true, data: user });
+          }
+      - rule: Never use old Next.js 12 req/res pattern
+        codeExample: |-
+          // ❌ BAD - Old pattern
+          export default function handler(req, res) {
+            res.json({ data: 'hello' });
+          }
+
+          // ✅ GOOD - Next.js 13+ pattern
+          export async function GET() {
+            return NextResponse.json({ data: 'hello' });
+          }
+  - pattern: src/db/schema.ts
+    description: Drizzle ORM Schema Standards
+    inherits:
+      - export-standards
+    must_do:
+      - rule: Use pgTable() with descriptive table names
+        codeExample: |-
+          import { pgTable, uuid, varchar, timestamp } from 'drizzle-orm/pg-core';
+
+          export const users = pgTable('users', {
+            id: uuid('id').defaultRandom().primaryKey(),
+            email: varchar('email', { length: 255 }).notNull().unique(),
+            createdAt: timestamp('created_at').defaultNow().notNull(),
+          });
+      - rule: Add timestamps (createdAt, updatedAt) to all tables
+        codeExample: |-
+          export const posts = pgTable('posts', {
+            id: uuid('id').defaultRandom().primaryKey(),
+            title: varchar('title', { length: 255 }).notNull(),
+            createdAt: timestamp('created_at').defaultNow().notNull(),
+            updatedAt: timestamp('updated_at').defaultNow().notNull(),
+          });
+      - rule: Define foreign keys with references() and onDelete
+        codeExample: |-
+          export const posts = pgTable('posts', {
+            id: uuid('id').defaultRandom().primaryKey(),
+            userId: uuid('user_id')
+              .notNull()
+              .references(() => users.id, { onDelete: 'cascade' }),
+          });
+      - rule: Export type inference using $inferSelect and $inferInsert
+        codeExample: |-
+          export const users = pgTable('users', { /* ... */ });
+
+          export type User = typeof users.$inferSelect;
+          export type InsertUser = typeof users.$inferInsert;
+    must_not_do:
+      - rule: Never skip timestamps on tables
+        codeExample: |-
+          // ❌ BAD - No timestamps
+          export const products = pgTable('products', {
+            id: uuid('id').primaryKey(),
+            name: varchar('name', { length: 255 }),
+            // Missing createdAt and updatedAt!
+          });
+      - rule: Never use unlimited text for names - use varchar with length
+        codeExample: |-
+          // ❌ BAD - Unlimited text
+          export const users = pgTable('users', {
+            name: text('name'),
+            email: text('email'),
+          });
+
+          // ✅ GOOD - varchar with length
+          export const users = pgTable('users', {
+            name: varchar('name', { length: 255 }).notNull(),
+            email: varchar('email', { length: 255 }).notNull(),
+          });
+      - rule: Never forget to add indexes for foreign keys
+        codeExample: |-
+          // ❌ BAD - No index
+          export const posts = pgTable('posts', {
+            userId: uuid('user_id').references(() => users.id),
+          });
+
+          // ✅ GOOD - With index
+          export const posts = pgTable(
+            'posts',
+            {
+              userId: uuid('user_id').references(() => users.id),
+            },
+            (table) => ({ userIdx: index('user_idx').on(table.userId) })
+          );
+  - pattern: src/services/**/*.ts
+    description: Service Layer Standards with Drizzle ORM
+    inherits:
+      - export-standards
+    must_do:
+      - rule: Create class-based services with single responsibility
+        codeExample: |-
+          import { db } from '@/db/drizzle';
+          import { users } from '@/db/schema';
+          import { eq } from 'drizzle-orm';
+
+          export class UserService {
+            async getById(id: string) {
+              const [user] = await db.select().from(users).where(eq(users.id, id));
+              return user || null;
+            }
+          }
+      - rule: Use async/await for all database operations
+        codeExample: |-
+          export class UserService {
+            async getAll() {
+              return await db.select().from(users);
+            }
+
+            async create(data: { email: string; name: string }) {
+              const [user] = await db.insert(users).values(data).returning();
+              return user;
+            }
+          }
+      - rule: Import db from '@/db/drizzle' for database access
+        codeExample: |-
+          import { db } from '@/db/drizzle';
+          import { users } from '@/db/schema';
+
+          export class UserService {
+            // Use db for queries
+          }
+      - rule: Handle errors with try-catch and throw/return errors
+        codeExample: |-
+          export class UserService {
+            async create(data: CreateUserData) {
+              try {
+                const [user] = await db.insert(users).values(data).returning();
+                return user;
+              } catch (error) {
+                console.error('Failed to create user:', error);
+                throw new Error('Failed to create user');
+              }
+            }
+          }
+    must_not_do:
+      - rule: Never create static-only utility classes
+        codeExample: |-
+          // ❌ BAD - Static utilities
+          export class UserUtils {
+            static async getUser(id: string) { /* ... */ }
+            static async createUser(data: any) { /* ... */ }
+          }
+
+          // ✅ GOOD - Instance-based service
+          export class UserService {
+            async getById(id: string) { /* ... */ }
+            async create(data: CreateUserData) { /* ... */ }
+          }
+      - rule: Never mix multiple unrelated concerns in one service
+        codeExample: |-
+          // ❌ BAD - Mixed concerns
+          export class AppService {
+            async getUsers() { /* ... */ }
+            async createOrder() { /* ... */ }
+            async sendEmail() { /* ... */ }
+          }
+
+          // ✅ GOOD - Separate services
+          export class UserService { /* user operations */ }
+          export class OrderService { /* order operations */ }
+          export class EmailService { /* email operations */ }
+      - rule: Never put validation or UI logic in services
+        codeExample: |-
+          // ❌ BAD - Validation in service
+          export class UserService {
+            async create(data: any) {
+              if (!data.email || !data.name) {
+                throw new Error('Invalid data'); // Don't validate here!
+              }
+              return await db.insert(users).values(data);
+            }
+          }
+
+          // ✅ GOOD - Services assume validated data
+          export class UserService {
+            async create(data: { email: string; name: string }) {
+              return await db.insert(users).values(data).returning();
+            }
+          }
+  - pattern: src/actions/index.ts
+    description: Server Actions Barrel Export Standards
+    inherits:
+      - export-standards
+    must_do:
+      - rule: Export all server actions from index.ts using barrel exports
+        codeExample: |-
+          export { createUser } from './createUser.js';
+          export { updateUser } from './updateUser.js';
+          export { deleteUser } from './deleteUser.js';
+      - rule: Use named exports for all actions
+        codeExample: |-
+          // ✅ GOOD - Named exports
+          export { createPost } from './createPost.js';
+          export { updatePost } from './updatePost.js';
+
+          // ❌ BAD - Default exports
+          export { default as createPost } from './createPost.js';
+    must_not_do:
+      - rule: Include action implementation in index.ts - only exports
+        codeExample: |-
+          // ❌ BAD - Implementation in barrel file
+          'use server';
+          export async function createUser(data: any) { }
+
+          // ✅ GOOD - Only exports
+          export { createUser } from './createUser.js';
+      - rule: Use wildcard exports - be explicit
+        codeExample: |-
+          // ❌ BAD
+          export * from './userActions.js';
+
+          // ✅ GOOD
+          export { createUser, updateUser, deleteUser } from './userActions.js';
+  - pattern: src/components/index.ts
+    description: React Components Barrel Export Standards
+    inherits:
+      - export-standards
+    must_do:
+      - rule: Export all components from index.ts using barrel exports
+        codeExample: |-
+          export { Button } from './Button/index.js';
+          export { Input } from './Input/index.js';
+          export { Card } from './Card/index.js';
+      - rule: Group related components together in exports
+        codeExample: |-
+          // Form components
+          export { Button } from './Button/index.js';
+          export { Input } from './Input/index.js';
+
+          // Layout components
+          export { Card } from './Card/index.js';
+          export { Container } from './Container/index.js';
+    must_not_do:
+      - rule: Include component implementation in index.ts - only exports
+        codeExample: |-
+          // ❌ BAD - Implementation in barrel file
+          export function Button() { return <button />; }
+
+          // ✅ GOOD - Only exports
+          export { Button } from './Button/index.js';
+      - rule: Use wildcard exports - be explicit
+        codeExample: |-
+          // ❌ BAD
+          export * from './Button/index.js';
+
+          // ✅ GOOD
+          export { Button, ButtonProps } from './Button/index.js';
+  - pattern: src/services/index.ts
+    description: Service Layer Barrel Export Standards
+    inherits:
+      - export-standards
+    must_do:
+      - rule: Export all services from index.ts using barrel exports
+        codeExample: |-
+          export { UserService } from './UserService.js';
+          export { ProductService } from './ProductService.js';
+          export { OrderService } from './OrderService.js';
+      - rule: Group related services together in exports
+        codeExample: |-
+          // Domain services
+          export { UserService } from './UserService.js';
+          export { OrderService } from './OrderService.js';
+
+          // Utility services
+          export { EmailService } from './EmailService.js';
+          export { CacheService } from './CacheService.js';
+    must_not_do:
+      - rule: Include service implementation in index.ts - only exports
+        codeExample: |-
+          // ❌ BAD - Implementation in barrel file
+          export class UserService { async getAll() {} }
+
+          // ✅ GOOD - Only exports
+          export { UserService } from './UserService.js';
+      - rule: Use wildcard exports - be explicit
+        codeExample: |-
+          // ❌ BAD
+          export * from './UserService.js';
+
+          // ✅ GOOD
+          export { UserService } from './UserService.js';

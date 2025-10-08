@@ -1,0 +1,7 @@
+{
+  "name": "@agiflowai/architect-mcp",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/architect-mcp",
+  "projectType": "application",
+  "sourceTemplate": "typescript-mcp-package"
+}
