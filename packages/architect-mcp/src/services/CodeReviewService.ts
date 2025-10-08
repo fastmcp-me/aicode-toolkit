@@ -4,14 +4,24 @@ import * as path from 'path';
 import { RuleFinder } from './RuleFinder.js';
 import type { CodeReviewResult, RuleSection, RulesYamlConfig } from '../types';
 
-export class CodeReviewService {
-  private claudeService: ClaudeCodeLLMService;
-  private ruleFinder: RuleFinder;
+interface CodeReviewServiceOptions {
+  llmTool?: string;
+}
 
-  constructor() {
-    this.claudeService = new ClaudeCodeLLMService({
-      defaultTimeout: 120000, // 2 minutes for code review
-    });
+export class CodeReviewService {
+  private claudeService?: ClaudeCodeLLMService;
+  private ruleFinder: RuleFinder;
+  private llmTool?: string;
+
+  constructor(options?: CodeReviewServiceOptions) {
+    this.llmTool = options?.llmTool;
+
+    // Only initialize Claude service if llmTool is 'claude-code'
+    if (this.llmTool === 'claude-code') {
+      this.claudeService = new ClaudeCodeLLMService({
+        defaultTimeout: 120000, // 2 minutes for code review
+      });
+    }
     this.ruleFinder = new RuleFinder();
   }
 
@@ -53,6 +63,19 @@ export class CodeReviewService {
       };
     }
 
+    // If llmTool is not 'claude-code', return rules for agent to review
+    if (this.llmTool !== 'claude-code') {
+      return {
+        file_path: filePath,
+        project_name: project.name,
+        source_template: project.sourceTemplate,
+        review_feedback: 'Rules provided for agent review. LLM-based review not enabled.',
+        severity: 'LOW',
+        issues_found: [],
+        rules: matchedRule, // Include the rules for the agent to use
+      };
+    }
+
     // Read the file content
     const normalizedPath = path.isAbsolute(filePath) ? filePath : path.join(process.cwd(), filePath);
     let fileContent: string;
@@ -82,6 +105,10 @@ export class CodeReviewService {
     rules: RuleSection,
     rulesConfig: RulesYamlConfig,
   ): Promise<Pick<CodeReviewResult, 'review_feedback' | 'severity' | 'issues_found'>> {
+    if (!this.claudeService) {
+      throw new Error('Claude service not initialized. Use llmTool="claude-code" to enable LLM-based review.');
+    }
+
     // Build the review prompt
     const systemPrompt = this.buildSystemPrompt(rulesConfig);
     const userPrompt = this.buildUserPrompt(fileContent, filePath, rules);

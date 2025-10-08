@@ -25,9 +25,11 @@
   "dependencies": {
     "@agiflowai/aicode-utils": "workspace:^",
     "@modelcontextprotocol/sdk": "1.19.1",
+    "@types/express": "^5.0.3",
     "chalk": "5.6.2",
     "commander": "14.0.1",
     "execa": "^9.5.2",
+    "express": "^4.21.2",
     "js-yaml": "4.1.0",
     "minimatch": "^10.0.3",
     "uuid": "^11.0.5"

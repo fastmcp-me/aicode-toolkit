@@ -150,4 +150,5 @@ export interface CodeReviewResult {
     rule: string;
     violation?: string;
   }>;
+  rules?: RuleSection; // Rules for agent to review by itself (when llmTool is not 'claude-code')
 }

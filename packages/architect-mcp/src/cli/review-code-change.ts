@@ -26,6 +26,7 @@ import { ReviewCodeChangeTool } from '../tools/ReviewCodeChangeTool';
 interface ReviewCodeChangeOptions {
   verbose?: boolean;
   json?: boolean;
+  llmTool?: string;
 }
 
 /**
@@ -36,14 +37,24 @@ export const reviewCodeChangeCommand = new Command('review-code-change')
   .argument('<file-path>', 'Path to the file to review')
   .option('-v, --verbose', 'Enable verbose output', false)
   .option('-j, --json', 'Output as JSON', false)
+  .option('--llm-tool <tool>', 'LLM tool to use for code review (currently only "claude-code" is supported)', 'claude-code')
   .action(async (filePath: string, options: ReviewCodeChangeOptions) => {
     try {
       if (options.verbose) {
         console.log('Reviewing file:', filePath);
+        console.log('Using LLM tool:', options.llmTool);
+      }
+
+      // Validate llm-tool option
+      if (options.llmTool && options.llmTool !== 'claude-code') {
+        console.error('❌ Error: Only "claude-code" is currently supported for --llm-tool');
+        process.exit(1);
       }
 
       // Create tool instance
-      const tool = new ReviewCodeChangeTool();
+      const tool = new ReviewCodeChangeTool({
+        llmTool: options.llmTool,
+      });
 
       // Execute the tool
       const result = await tool.execute({

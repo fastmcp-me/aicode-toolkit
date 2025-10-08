@@ -21,7 +21,11 @@ import { ReviewCodeChangeTool } from '../tools/ReviewCodeChangeTool';
 import { AddDesignPatternTool } from '../tools/AddDesignPatternTool';
 import { AddRuleTool } from '../tools/AddRuleTool';
 
-export function createServer(options?: { llmTool?: 'claude-code' }): Server {
+export function createServer(options?: {
+  designPatternTool?: 'claude-code';
+  reviewTool?: 'claude-code';
+  adminEnabled?: boolean;
+}): Server {
   const server = new Server(
     {
       name: 'architect-mcp',
@@ -34,20 +38,29 @@ export function createServer(options?: { llmTool?: 'claude-code' }): Server {
     }
   );
 
-  // Initialize tools with optional LLM support
-  const getFileDesignPatternTool = new GetFileDesignPatternTool({ llmTool: options?.llmTool });
-  const reviewCodeChangeTool = new ReviewCodeChangeTool();
-  const addDesignPatternTool = new AddDesignPatternTool();
-  const addRuleTool = new AddRuleTool();
+  // Initialize core tools with optional LLM support
+  const getFileDesignPatternTool = new GetFileDesignPatternTool({ llmTool: options?.designPatternTool });
+  const reviewCodeChangeTool = new ReviewCodeChangeTool({ llmTool: options?.reviewTool });
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: [
+  // Initialize admin tools if enabled
+  const adminEnabled = options?.adminEnabled ?? false;
+  const addDesignPatternTool = adminEnabled ? new AddDesignPatternTool() : null;
+  const addRuleTool = adminEnabled ? new AddRuleTool() : null;
+
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    const tools = [
       getFileDesignPatternTool.getDefinition(),
       reviewCodeChangeTool.getDefinition(),
-      addDesignPatternTool.getDefinition(),
-      addRuleTool.getDefinition(),
-    ],
-  }));
+    ];
+
+    // Add admin tools if enabled
+    if (adminEnabled && addDesignPatternTool && addRuleTool) {
+      tools.push(addDesignPatternTool.getDefinition());
+      tools.push(addRuleTool.getDefinition());
+    }
+
+    return { tools };
+  });
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
@@ -60,12 +73,15 @@ export function createServer(options?: { llmTool?: 'claude-code' }): Server {
       return await reviewCodeChangeTool.execute(args as any);
     }
 
-    if (name === AddDesignPatternTool.TOOL_NAME) {
-      return await addDesignPatternTool.execute(args as any);
-    }
+    // Admin tools
+    if (adminEnabled) {
+      if (name === AddDesignPatternTool.TOOL_NAME && addDesignPatternTool) {
+        return await addDesignPatternTool.execute(args as any);
+      }
 
-    if (name === AddRuleTool.TOOL_NAME) {
-      return await addRuleTool.execute(args as any);
+      if (name === AddRuleTool.TOOL_NAME && addRuleTool) {
+        return await addRuleTool.execute(args as any);
+      }
     }
 
     throw new Error(`Unknown tool: ${name}`);

@@ -27,13 +27,17 @@ interface ReviewCodeChangeToolInput {
   file_path: string;
 }
 
+interface ReviewCodeChangeToolOptions {
+  llmTool?: string;
+}
+
 export class ReviewCodeChangeTool implements Tool<ReviewCodeChangeToolInput> {
   static readonly TOOL_NAME = 'review-code-change';
 
   private codeReviewService: CodeReviewService;
 
-  constructor() {
-    this.codeReviewService = new CodeReviewService();
+  constructor(options?: ReviewCodeChangeToolOptions) {
+    this.codeReviewService = new CodeReviewService(options);
   }
 
   getDefinition(): ToolDefinition {
