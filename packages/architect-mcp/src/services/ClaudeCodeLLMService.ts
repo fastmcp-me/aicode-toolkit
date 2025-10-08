@@ -1,24 +1,6 @@
-/**
- * ClaudeCodeLLMService
- *
- * DESIGN PATTERNS:
- * - Service pattern for LLM integration
- * - SDK-based API client pattern
- * - Promise-based async/await pattern
- *
- * CODING STANDARDS:
- * - Use @anthropic-ai/sdk for Claude API access
- * - Provide both complete() and ask() methods
- * - Handle errors with proper error messages
- * - Calculate token costs for usage tracking
- *
- * AVOID:
- * - Subprocess management (use SDK instead)
- * - Missing error handling
- * - Hardcoded API keys (use environment variables)
- */
-
-import Anthropic from '@anthropic-ai/sdk';
+import { execa } from 'execa';
+import * as readline from 'readline';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Standard LLM request interface
@@ -54,85 +36,227 @@ export interface LLMResponse {
 }
 
 /**
- * Claude SDK LLM Service - Direct API integration using @anthropic-ai/sdk
+ * Internal message types for parsing stream-json output
+ */
+interface ClaudeStreamMessage {
+  type: 'system' | 'assistant' | 'user' | 'result';
+  message?: {
+    id?: string;
+    model?: string;
+    content?: Array<{
+      type: 'text' | 'tool_use';
+      text?: string;
+    }>;
+    stop_reason?: string | null;
+    usage?: {
+      input_tokens: number;
+      cache_creation_input_tokens?: number;
+      cache_read_input_tokens?: number;
+      output_tokens: number;
+    };
+  };
+  model?: string;
+  session_id?: string;
+  duration_ms?: number;
+  total_cost_usd?: number;
+  usage?: any;
+}
+
+const claudeCodeBuiltinTools = [
+  'Task',
+  'Bash',
+  'Glob',
+  'Grep',
+  'LS',
+  'exit_plan_mode',
+  'Read',
+  'Edit',
+  'MultiEdit',
+  'Write',
+  'NotebookRead',
+  'NotebookEdit',
+  'WebFetch',
+  'TodoRead',
+  'TodoWrite',
+  'WebSearch',
+].join(',');
+
+/**
+ * Claude Code LLM Service - Provides a standard LLM interface using Claude Code CLI
  */
 export class ClaudeCodeLLMService {
-  private readonly client: Anthropic;
+  private readonly claudePath: string;
+  private readonly defaultTimeout: number;
   private readonly defaultModel: string;
-  private readonly defaultMaxTokens: number;
+  private readonly defaultEnv: Record<string, string>;
 
   constructor(options?: {
-    apiKey?: string;
-    defaultModel?: string;
-    defaultMaxTokens?: number;
+    claudePath?: string;
     defaultTimeout?: number;
-    maxRetries?: number;
+    defaultModel?: string;
+    defaultEnv?: Record<string, string>;
   }) {
-    this.client = new Anthropic({
-      apiKey: options?.apiKey || process.env['ANTHROPIC_API_KEY'],
-      timeout: options?.defaultTimeout || 60000,
-      maxRetries: options?.maxRetries || 3,
-    });
-
-    this.defaultModel = options?.defaultModel || 'claude-sonnet-4-5-20250929';
-    this.defaultMaxTokens = options?.defaultMaxTokens || 4096;
+    this.claudePath = options?.claudePath || 'claude';
+    this.defaultTimeout = options?.defaultTimeout || 60000; // 1 minute default
+    this.defaultModel = options?.defaultModel || 'claude-sonnet-4-20250514';
+    this.defaultEnv = options?.defaultEnv || {
+      DISABLE_TELEMETRY: '1',
+      DISABLE_AUTOUPDATER: '1',
+      IS_SANDBOX: '1',
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1',
+    };
   }
 
   /**
-   * Send a request to Claude API and get a single response
+   * Send a request to Claude Code and get a single response
+   * Similar to standard LLM APIs like OpenAI's chat completion
    */
   async complete(request: LLMRequest): Promise<LLMResponse> {
-    const sessionId = request.sessionId || crypto.randomUUID();
+    const sessionId = request.sessionId || uuidv4();
     const startTime = Date.now();
 
+    // Build command arguments - single turn only
+    // Note: stream-json requires --verbose flag
+    const args = ['--max-turns', '0', '--output-format', 'stream-json', '--verbose', '--session-id', sessionId];
+
+    args.push('--disallowedTools', claudeCodeBuiltinTools);
+
+    if (request.model) {
+      args.push('--model', request.model);
+    }
+
+    if (request.systemPrompt) {
+      args.push('--system-prompt', request.systemPrompt);
+    }
+
+    // Execute Claude CLI
+    const child = execa(this.claudePath, args, {
+      stdin: 'pipe',
+      stdout: 'pipe',
+      stderr: 'pipe',
+      timeout: this.defaultTimeout,
+      maxBuffer: 1024 * 1024 * 100, // 100MB buffer
+      env: {
+        ...process.env,
+        ...this.defaultEnv,
+        ...(request.maxTokens && {
+          CLAUDE_CODE_MAX_OUTPUT_TOKENS: request.maxTokens.toString(),
+        }),
+      },
+    });
+
+    // Write prompt to stdin and close it
+    child.stdin!.write(request.prompt);
+    child.stdin!.end();
+
+    // Create readline interface for streaming output
+    const rl = readline.createInterface({
+      input: child.stdout!,
+    });
+
+    // Collect response data
+    let responseContent = '';
+    let model = request.model || this.defaultModel;
+    const usage = {
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      cacheCreationTokens: 0,
+      cacheReadTokens: 0,
+    };
+    let cost = 0;
+    let finishReason: string | null = null;
+    let partialData = '';
+
     try {
-      const message = await this.client.messages.create({
-        model: request.model || this.defaultModel,
-        max_tokens: request.maxTokens || this.defaultMaxTokens,
-        messages: [
-          {
-            role: 'user',
-            content: request.prompt,
-          },
-        ],
-        ...(request.systemPrompt && { system: request.systemPrompt }),
-        ...(request.temperature !== undefined && { temperature: request.temperature }),
-      });
+      // Process streaming output
+      for await (const line of rl) {
+        if (!line.trim()) continue;
+
+        let message: ClaudeStreamMessage;
+        try {
+          message = JSON.parse(line);
+        } catch {
+          // Handle partial JSON
+          partialData += line;
+          try {
+            message = JSON.parse(partialData);
+            partialData = '';
+          } catch {
+            continue;
+          }
+        }
+
+        // Process different message types
+        if (message.type === 'system' && message.model) {
+          model = message.model;
+        } else if (message.type === 'assistant' && message.message) {
+          // Extract text content from assistant messages
+          const textContent =
+            message.message.content
+              ?.filter((c) => c.type === 'text')
+              .map((c) => c.text)
+              .filter(Boolean)
+              .join('') || '';
+
+          responseContent += textContent;
+
+          // Update usage stats
+          if (message.message.usage) {
+            usage.inputTokens = message.message.usage.input_tokens || 0;
+            usage.outputTokens = message.message.usage.output_tokens || 0;
+            usage.cacheCreationTokens = message.message.usage.cache_creation_input_tokens || 0;
+            usage.cacheReadTokens = message.message.usage.cache_read_input_tokens || 0;
+            usage.totalTokens = usage.inputTokens + usage.outputTokens;
+          }
+
+          if (message.message.stop_reason) {
+            finishReason = message.message.stop_reason;
+          }
+        } else if (message.type === 'result') {
+          // Final result with cost and duration info
+          cost = message.total_cost_usd || 0;
+
+          // Update final usage if available
+          if (message.usage) {
+            usage.inputTokens = message.usage.input_tokens || usage.inputTokens;
+            usage.outputTokens = message.usage.output_tokens || usage.outputTokens;
+            usage.cacheCreationTokens = message.usage.cache_creation_input_tokens || usage.cacheCreationTokens;
+            usage.cacheReadTokens = message.usage.cache_read_input_tokens || usage.cacheReadTokens;
+            usage.totalTokens = usage.inputTokens + usage.outputTokens;
+          }
+        }
+      }
+
+      // Wait for process to complete
+      const { exitCode } = await child;
+      if (exitCode !== 0) {
+        throw new Error(`Claude Code process exited with code ${exitCode}`);
+      }
 
       const duration = Date.now() - startTime;
 
-      // Extract text content
-      const content = message.content
-        .filter((block) => block.type === 'text')
-        .map((block) => (block.type === 'text' ? block.text : ''))
-        .join('');
-
-      // Calculate approximate cost (prices as of Jan 2025 for Claude Sonnet 4.5)
-      // Input: $3.00 per million tokens
-      // Output: $15.00 per million tokens
-      const inputCost = (message.usage.input_tokens / 1_000_000) * 3.0;
-      const outputCost = (message.usage.output_tokens / 1_000_000) * 15.0;
-      const cost = inputCost + outputCost;
-
+      // Return standard LLM response
       return {
-        content,
-        model: message.model,
-        usage: {
-          inputTokens: message.usage.input_tokens,
-          outputTokens: message.usage.output_tokens,
-          totalTokens: message.usage.input_tokens + message.usage.output_tokens,
-          cacheCreationTokens: message.usage.cache_creation_input_tokens ?? undefined,
-          cacheReadTokens: message.usage.cache_read_input_tokens ?? undefined,
-        },
+        content: responseContent.trim(),
+        model,
+        usage,
         metadata: {
           sessionId,
           duration,
           cost,
-          finishReason: message.stop_reason,
+          finishReason,
         },
       };
     } catch (error) {
-      throw new Error(`Claude API error: ${error instanceof Error ? error.message : String(error)}`);
+      // Clean up on error
+      rl.close();
+      if (!child.killed) {
+        child.kill();
+      }
+      throw error;
+    } finally {
+      rl.close();
     }
   }
 
@@ -142,30 +266,5 @@ export class ClaudeCodeLLMService {
   async ask(prompt: string, systemPrompt?: string): Promise<string> {
     const response = await this.complete({ prompt, systemPrompt });
     return response.content;
-  }
-
-  /**
-   * Stream a response from Claude API
-   */
-  async *completeStream(request: LLMRequest): AsyncGenerator<string> {
-    const stream = await this.client.messages.create({
-      model: request.model || this.defaultModel,
-      max_tokens: request.maxTokens || this.defaultMaxTokens,
-      messages: [
-        {
-          role: 'user',
-          content: request.prompt,
-        },
-      ],
-      ...(request.systemPrompt && { system: request.systemPrompt }),
-      ...(request.temperature !== undefined && { temperature: request.temperature }),
-      stream: true,
-    });
-
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        yield event.delta.text;
-      }
-    }
   }
 }

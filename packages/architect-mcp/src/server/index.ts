@@ -20,7 +20,7 @@ import { GetFileDesignPatternTool } from '../tools/GetFileDesignPatternTool';
 import { ReviewCodeChangeTool } from '../tools/ReviewCodeChangeTool';
 import { AddDesignPatternTool } from '../tools/AddDesignPatternTool';
 
-export function createServer(): Server {
+export function createServer(options?: { llmTool?: 'claude-code' }): Server {
   const server = new Server(
     {
       name: 'architect-mcp',
@@ -33,8 +33,8 @@ export function createServer(): Server {
     }
   );
 
-  // Initialize tools
-  const getFileDesignPatternTool = new GetFileDesignPatternTool();
+  // Initialize tools with optional LLM support
+  const getFileDesignPatternTool = new GetFileDesignPatternTool({ llmTool: options?.llmTool });
   const reviewCodeChangeTool = new ReviewCodeChangeTool();
   const addDesignPatternTool = new AddDesignPatternTool();
 

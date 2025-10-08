@@ -51,12 +51,20 @@ async function startServer(handler: any) {
 export const mcpServeCommand = new Command('mcp-serve')
   .description('Start MCP server with specified transport')
   .option('-t, --type <type>', 'Transport type: stdio', 'stdio')
+  .option('--llm-tool <tool>', 'Enable LLM filtering for design patterns (claude-code)', undefined)
   .action(async (options) => {
     try {
       const transportType = options.type.toLowerCase();
+      const llmTool = options.llmTool as 'claude-code' | undefined;
+
+      // Validate llm-tool option
+      if (llmTool && llmTool !== 'claude-code') {
+        console.error(`Invalid LLM tool: ${llmTool}. Currently only "claude-code" is supported.`);
+        process.exit(1);
+      }
 
       if (transportType === 'stdio') {
-        const server = createServer();
+        const server = createServer({ llmTool });
         const handler = new StdioTransportHandler(server);
         await startServer(handler);
       } else {

@@ -26,6 +26,7 @@ import { GetFileDesignPatternTool } from '../tools/GetFileDesignPatternTool';
 interface GetFileDesignPatternOptions {
   verbose?: boolean;
   json?: boolean;
+  llmTool?: string;
 }
 
 /**
@@ -36,14 +37,25 @@ export const getFileDesignPatternCommand = new Command('get-file-design-pattern'
   .argument('<file-path>', 'Path to the file to analyze')
   .option('-v, --verbose', 'Enable verbose output', false)
   .option('-j, --json', 'Output as JSON', false)
+  .option('--llm-tool <tool>', 'Use LLM to filter relevant patterns (claude-code)', undefined)
   .action(async (filePath: string, options: GetFileDesignPatternOptions) => {
     try {
       if (options.verbose) {
         console.log('Analyzing file:', filePath);
+        if (options.llmTool) {
+          console.log('Using LLM tool:', options.llmTool);
+        }
       }
 
-      // Create tool instance
-      const tool = new GetFileDesignPatternTool();
+      // Validate llm-tool option
+      const llmTool = options.llmTool as 'claude-code' | undefined;
+      if (llmTool && llmTool !== 'claude-code') {
+        console.error(`Invalid LLM tool: ${llmTool}. Currently only "claude-code" is supported.`);
+        process.exit(1);
+      }
+
+      // Create tool instance with optional LLM support
+      const tool = new GetFileDesignPatternTool({ llmTool });
 
       // Execute the tool
       const result = await tool.execute({
@@ -63,43 +75,44 @@ export const getFileDesignPatternCommand = new Command('get-file-design-pattern'
         // Output raw JSON
         console.log(JSON.stringify(data, null, 2));
       } else {
-        // Pretty print the results
-        console.log('\n📄 File:', data.file_path);
+        // Lead developer style: concise, direct, actionable
+        console.log(`\n## ${data.file_path}`);
 
         if (data.project_name) {
-          console.log('📦 Project:', data.project_name);
+          console.log(`Project: ${data.project_name}`);
         }
 
         if (data.source_template) {
-          console.log('🎨 Template:', data.source_template);
+          console.log(`Template: ${data.source_template}`);
         }
 
         if (data.matched_patterns && data.matched_patterns.length > 0) {
-          console.log('\n✨ Matched Patterns:\n');
+          console.log('\n### Design Patterns\n');
 
           for (const pattern of data.matched_patterns) {
-            console.log(`  ${pattern.name} (${pattern.confidence})`);
-            console.log(`  Pattern: ${pattern.design_pattern}`);
-            console.log(`  Source: ${pattern.source}`);
+            console.log(`**${pattern.design_pattern}** (${pattern.confidence})`);
 
             if (pattern.description) {
-              console.log(`\n${pattern.description}\n`);
+              // Clean up description formatting
+              const cleanDescription = pattern.description
+                .replace(/\n\n/g, '\n')
+                .trim();
+              console.log(cleanDescription);
             }
 
-            console.log('  ' + '─'.repeat(60));
+            console.log('');
           }
         } else {
-          console.log('\n⚠️  No design patterns matched for this file.');
+          console.log('\n⚠️ No design patterns matched.');
         }
 
         if (data.recommendations && data.recommendations.length > 0) {
-          console.log('\n💡 Recommendations:\n');
+          console.log('### Action Items\n');
           for (const rec of data.recommendations) {
-            console.log(`  • ${rec}`);
+            console.log(`- ${rec}`);
           }
+          console.log();
         }
-
-        console.log();
       }
 
     } catch (error) {
