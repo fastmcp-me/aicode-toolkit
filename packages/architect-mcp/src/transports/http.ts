@@ -178,7 +178,7 @@ export class HttpTransportHandler implements IHttpTransportHandler {
       try {
         this.server = this.app.listen(this.config.port, this.config.host, () => {
           console.error(
-            `Scaffolding MCP server started on http://${this.config.host}:${this.config.port}/mcp`,
+            `Architect MCP server started on http://${this.config.host}:${this.config.port}/mcp`,
           );
           console.error(`Health check: http://${this.config.host}:${this.config.port}/health`);
           resolve();

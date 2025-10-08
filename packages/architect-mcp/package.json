@@ -9,9 +9,9 @@
     "typescript"
   ],
   "bin": {
-    "architect-mcp": "./dist/index.js"
+    "architect-mcp": "./dist/index.cjs"
   },
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "files": [
     "dist",
     "README.md"

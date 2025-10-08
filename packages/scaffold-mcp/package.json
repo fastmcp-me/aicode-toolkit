@@ -25,9 +25,9 @@
     "vite"
   ],
   "bin": {
-    "scaffold-mcp": "./dist/index.js"
+    "scaffold-mcp": "./dist/index.cjs"
   },
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "files": [
     "dist",
     "README.md"
@@ -62,5 +62,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "type": "module"
 }

@@ -33,7 +33,7 @@ async function main() {
   program
     .name('architect-mcp')
     .description('MCP server for software architecture design and planning')
-    .version('0.1.0');
+    .version('0.4.0');
 
   // Add all commands
   program.addCommand(mcpServeCommand);

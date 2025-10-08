@@ -15,7 +15,7 @@ async function main() {
   program
     .name('scaffold-mcp')
     .description('MCP server for scaffolding applications with boilerplate templates')
-    .version('1.0.0');
+    .version('0.4.0');
 
   // Add all commands
   program.addCommand(mcpServeCommand);

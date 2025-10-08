@@ -14,7 +14,7 @@ describe('Server', () => {
 
       expect(server).toBeDefined();
       expect(server.name).toBe('scaffold-mcp');
-      expect(server.version).toBe('1.0.0');
+      expect(server.version).toBe('0.4.0');
     });
 
     it('should create server with admin enabled', () => {

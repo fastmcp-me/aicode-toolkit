@@ -121,7 +121,7 @@ Example workflow for feature:
   const server = new Server(
     {
       name: 'scaffold-mcp',
-      version: '1.0.0',
+      version: '0.4.0',
     },
     {
       instructions,

@@ -158,7 +158,7 @@ export class SseTransportHandler implements IHttpTransportHandler {
       try {
         this.server = this.app.listen(this.config.port, this.config.host, () => {
           console.error(
-            `Scaffolding MCP server started with SSE transport on http://${this.config.host}:${this.config.port}`,
+            `Architect MCP server started with SSE transport on http://${this.config.host}:${this.config.port}`,
           );
           console.error(`SSE endpoint: http://${this.config.host}:${this.config.port}/sse`);
           console.error(

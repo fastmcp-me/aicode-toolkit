@@ -19,7 +19,7 @@ export class StdioTransportHandler implements TransportHandler {
 
     await this.server.connect(this.transport);
 
-    console.error('Scaffolding MCP server started on stdio');
+    console.error('Architect MCP server started on stdio');
   }
 
   async stop(): Promise<void> {
