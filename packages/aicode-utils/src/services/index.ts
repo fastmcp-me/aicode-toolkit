@@ -15,4 +15,5 @@
  * - Re-exporting types (types should come from '../types')
  */
 
-export * from './TemplatesManagerService';
+export * from './ProjectFinderService.js';
+export * from './TemplatesManagerService.js';

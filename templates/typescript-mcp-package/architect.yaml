@@ -1,0 +1,74 @@
+features:
+  - name: mcp-tool-pattern
+    design_pattern: Tool Implementation Pattern
+    includes:
+      - src/tools/**/*.ts
+    description: |-
+      Design pattern for implementing MCP tools with proper separation of concerns.
+
+      ✅ **What TO DO:**
+      - Implement the Tool interface with getDefinition() and execute() methods
+      - Use static TOOL_NAME constant for tool identification
+      - Delegate business logic to services
+      - Return CallToolResult with content array
+      - Handle errors gracefully with isError flag
+
+      ❌ **What NOT TO DO:**
+      - Don't put business logic in execute() method
+      - Don't forget error handling
+      - Don't use hardcoded values
+      - Don't mix tool and service concerns
+
+      **Example:**
+      ```typescript
+      export class MyTool implements Tool<MyToolInput> {
+        static readonly TOOL_NAME = 'my-tool';
+        
+        getDefinition(): ToolDefinition {
+          return {
+            name: MyTool.TOOL_NAME,
+            description: 'Tool description',
+            inputSchema: { /* JSON schema */ }
+          };
+        }
+        
+        async execute(input: MyToolInput): Promise<CallToolResult> {
+          // Delegate to service
+        }
+      }
+      ```
+  - name: mcp-service-pattern
+    design_pattern: Service Layer Pattern
+    includes:
+      - src/services/**/*.ts
+    description: |-
+      Design pattern for implementing service classes that encapsulate business logic.
+
+      ✅ **What TO DO:**
+      - Create service classes with clear responsibilities
+      - Use dependency injection for other services
+      - Implement async/await for I/O operations
+      - Return typed results
+      - Add proper error handling with try-catch
+
+      ❌ **What NOT TO DO:**
+      - Don't create static-only utility classes (use functions instead)
+      - Don't mix multiple concerns in one service
+      - Don't forget to handle edge cases
+      - Don't use synchronous blocking operations
+
+      **Example:**
+      ```typescript
+      export class MyService {
+        constructor(private dependency: OtherService) {}
+        
+        async processData(input: string): Promise<Result> {
+          try {
+            const data = await this.dependency.fetch(input);
+            return { success: true, data };
+          } catch (error) {
+            return { success: false, error: error.message };
+          }
+        }
+      }
+      ```

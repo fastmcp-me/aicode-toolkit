@@ -18,5 +18,12 @@
  * - Coupling types to implementation details
  */
 
-// Add your type definitions here
-export type Example = {};
+/**
+ * Project configuration from project.json
+ */
+export interface ProjectConfig {
+  name: string;
+  root: string;
+  sourceTemplate?: string;
+  projectType?: string;
+}

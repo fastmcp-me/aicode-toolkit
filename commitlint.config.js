@@ -8,6 +8,7 @@ module.exports = {
         'scaffold-generator',
         'scaffold-mcp',
         'aicode-utils',
+        'architect-mcp',
         'release', // Allow 'release' scope for nx release commits
       ],
     ],
