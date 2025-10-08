@@ -31,32 +31,19 @@ features:
 
       ## Examples
 
-      ### Basic Page with Metadata
+      ### Basic Page with Data Fetching
       ```typescript
       import type { Metadata } from 'next';
-
-      export const metadata: Metadata = {
-        title: 'Dashboard',
-        description: 'User dashboard page',
-      };
-
-      export default function DashboardPage() {
-        return (
-          <main>
-            <h1>Dashboard</h1>
-          </main>
-        );
-      }
-      ```
-
-      ### Page with Data Fetching
-      ```typescript
       import { db } from '@/db/drizzle';
       import { users } from '@/db/schema';
 
+      export const metadata: Metadata = {
+        title: 'Users',
+        description: 'User list page',
+      };
+
       export default async function UsersPage() {
         const userList = await db.select().from(users);
-        
         return (
           <main>
             <h1>Users</h1>
@@ -68,24 +55,17 @@ features:
 
       ### Dynamic Page with Params
       ```typescript
-      import type { Metadata } from 'next';
-
       interface PageProps {
-        params: Promise<{ slug: string }>;
-        searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+        params: Promise<{ id: string }>;
       }
 
-      export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-        const { slug } = await params;
-        return {
-          title: `Post: ${slug}`,
-        };
+      export async function generateMetadata({ params }: PageProps) {
+        const { id } = await params;
+        return { title: `Post: ${id}` };
       }
 
-      export default async function PostPage({ params, searchParams }: PageProps) {
-        const { slug } = await params;
-        const filters = await searchParams;
-        
+      export default async function PostPage({ params }: PageProps) {
+        const { id } = await params;
         return <article>{/* content */}</article>;
       }
       ```
@@ -121,7 +101,7 @@ features:
 
       ## Examples
 
-      ### Root Layout with Global Styles
+      ### Root Layout
       ```typescript
       import type { Metadata } from 'next';
       import { Inter } from 'next/font/google';
@@ -130,18 +110,11 @@ features:
       const inter = Inter({ subsets: ['latin'] });
 
       export const metadata: Metadata = {
-        title: {
-          default: 'My App',
-          template: '%s | My App',
-        },
+        title: { default: 'My App', template: '%s | My App' },
         description: 'App description',
       };
 
-      export default function RootLayout({
-        children,
-      }: {
-        children: React.ReactNode;
-      }) {
+      export default function RootLayout({ children }: { children: React.ReactNode }) {
         return (
           <html lang="en">
             <body className={inter.className}>{children}</body>
@@ -150,44 +123,19 @@ features:
       }
       ```
 
-      ### Protected Route Layout with Auth
+      ### Protected Layout with Auth
       ```typescript
       import { auth } from '@/lib/auth';
       import { redirect } from 'next/navigation';
       import { headers } from 'next/headers';
 
-      export default async function ProtectedLayout({
-        children,
-      }: {
-        children: React.ReactNode;
-      }) {
-        const session = await auth.api.getSession({
-          headers: await headers(),
-        });
-
-        if (!session) {
-          redirect('/sign-in');
-        }
+      export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session) redirect('/sign-in');
 
         return (
           <div>
-            <nav>{/* Protected nav */}</nav>
-            <main>{children}</main>
-          </div>
-        );
-      }
-      ```
-
-      ### Nested Layout with Shared UI
-      ```typescript
-      export default function DashboardLayout({
-        children,
-      }: {
-        children: React.ReactNode;
-      }) {
-        return (
-          <div className="dashboard-grid">
-            <aside>{/* Sidebar */}</aside>
+            <nav>{/* Nav */}</nav>
             <main>{children}</main>
           </div>
         );
@@ -227,33 +175,13 @@ features:
 
       ## Examples
 
-      ### Basic GET Route
-      ```typescript
-      import { NextResponse } from 'next/server';
-      import { UserService } from '@/services/UserService';
-
-      export async function GET() {
-        try {
-          const userService = new UserService();
-          const users = await userService.getAll();
-          
-          return NextResponse.json({ success: true, data: users });
-        } catch (error) {
-          return NextResponse.json(
-            { success: false, error: 'Failed to fetch users' },
-            { status: 500 }
-          );
-        }
-      }
-      ```
-
       ### POST Route with Validation
       ```typescript
       import { NextResponse } from 'next/server';
       import { z } from 'zod';
       import { UserService } from '@/services/UserService';
 
-      const createUserSchema = z.object({
+      const schema = z.object({
         email: z.string().email(),
         name: z.string().min(2),
       });
@@ -261,27 +189,14 @@ features:
       export async function POST(request: Request) {
         try {
           const body = await request.json();
-          const validatedData = createUserSchema.parse(body);
-          
-          const userService = new UserService();
-          const user = await userService.create(validatedData);
-          
-          return NextResponse.json(
-            { success: true, data: user },
-            { status: 201 }
-          );
+          const data = schema.parse(body);
+          const user = await new UserService().create(data);
+          return NextResponse.json({ success: true, data: user }, { status: 201 });
         } catch (error) {
           if (error instanceof z.ZodError) {
-            return NextResponse.json(
-              { success: false, error: error.errors },
-              { status: 400 }
-            );
+            return NextResponse.json({ success: false, error: error.errors }, { status: 400 });
           }
-          
-          return NextResponse.json(
-            { success: false, error: 'Internal server error' },
-            { status: 500 }
-          );
+          return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 });
         }
       }
       ```
@@ -293,50 +208,11 @@ features:
       import { headers } from 'next/headers';
 
       export async function GET() {
-        const session = await auth.api.getSession({
-          headers: await headers(),
-        });
-        
+        const session = await auth.api.getSession({ headers: await headers() });
         if (!session) {
-          return NextResponse.json(
-            { success: false, error: 'Unauthorized' },
-            { status: 401 }
-          );
+          return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
         }
-        
-        // Continue with authenticated logic
         return NextResponse.json({ success: true, data: { user: session.user } });
-      }
-      ```
-
-      ### Dynamic Route with Params
-      ```typescript
-      import { NextResponse } from 'next/server';
-      import { UserService } from '@/services/UserService';
-
-      export async function GET(
-        request: Request,
-        { params }: { params: Promise<{ id: string }> }
-      ) {
-        try {
-          const { id } = await params;
-          const userService = new UserService();
-          const user = await userService.getById(id);
-          
-          if (!user) {
-            return NextResponse.json(
-              { success: false, error: 'User not found' },
-              { status: 404 }
-            );
-          }
-          
-          return NextResponse.json({ success: true, data: user });
-        } catch (error) {
-          return NextResponse.json(
-            { success: false, error: 'Internal server error' },
-            { status: 500 }
-          );
-        }
       }
       ```
   - name: react-component-pattern
@@ -375,7 +251,7 @@ features:
 
       ## Examples
 
-      ### Basic Client Component
+      ### Client Component
       ```typescript
       'use client';
 
@@ -383,25 +259,15 @@ features:
 
       interface ButtonProps extends React.ComponentPropsWithoutRef<'button'> {
         variant?: 'primary' | 'secondary';
-        size?: 'sm' | 'md' | 'lg';
       }
 
-      export default function Button({
-        variant = 'primary',
-        size = 'md',
-        className,
-        children,
-        ...props
-      }: ButtonProps) {
+      export default function Button({ variant = 'primary', className, children, ...props }: ButtonProps) {
         return (
           <button
             className={cn(
-              'rounded font-medium transition-colors',
+              'rounded px-4 py-2 font-medium transition-colors',
               variant === 'primary' && 'bg-blue-600 text-white hover:bg-blue-700',
               variant === 'secondary' && 'bg-gray-200 text-gray-900 hover:bg-gray-300',
-              size === 'sm' && 'px-3 py-1 text-sm',
-              size === 'md' && 'px-4 py-2',
-              size === 'lg' && 'px-6 py-3 text-lg',
               className
             )}
             {...props}
@@ -420,100 +286,22 @@ features:
       import { cn } from '@/lib/utils';
 
       interface InputProps extends React.ComponentPropsWithRef<'input'> {
-        label?: string;
         error?: string;
       }
 
-      const Input = forwardRef<HTMLInputElement, InputProps>(
-        ({ label, error, className, ...props }, ref) => {
-          return (
-            <div className="space-y-1">
-              {label && <label className="block text-sm font-medium">{label}</label>}
-              <input
-                ref={ref}
-                className={cn(
-                  'w-full rounded border px-3 py-2',
-                  error ? 'border-red-500' : 'border-gray-300',
-                  className
-                )}
-                {...props}
-              />
-              {error && <p className="text-sm text-red-600">{error}</p>}
-            </div>
-          );
-        }
-      );
+      const Input = forwardRef<HTMLInputElement, InputProps>(({ error, className, ...props }, ref) => (
+        <div>
+          <input
+            ref={ref}
+            className={cn('w-full rounded border px-3 py-2', error ? 'border-red-500' : 'border-gray-300', className)}
+            {...props}
+          />
+          {error && <p className="text-sm text-red-600">{error}</p>}
+        </div>
+      ));
 
       Input.displayName = 'Input';
-
       export default Input;
-      ```
-
-      ### Server Component (No 'use client')
-      ```typescript
-      import { cn } from '@/lib/utils';
-
-      interface CardProps {
-        title: string;
-        description?: string;
-        children?: React.ReactNode;
-        className?: string;
-      }
-
-      export default function Card({
-        title,
-        description,
-        children,
-        className,
-      }: CardProps) {
-        return (
-          <div className={cn('rounded-lg border bg-white p-6 shadow-sm', className)}>
-            <h3 className="text-lg font-semibold">{title}</h3>
-            {description && <p className="mt-1 text-sm text-gray-600">{description}</p>}
-            {children && <div className="mt-4">{children}</div>}
-          </div>
-        );
-      }
-      ```
-
-      ### Storybook Story Example
-      ```typescript
-      import type { Meta, StoryObj } from '@storybook/react';
-      import Button from './index';
-
-      const meta = {
-        title: 'Components/Button',
-        component: Button,
-        parameters: {
-          layout: 'centered',
-        },
-        tags: ['autodocs'],
-      } satisfies Meta<typeof Button>;
-
-      export default meta;
-      type Story = StoryObj<typeof meta>;
-
-      export const Playground: Story = {
-        args: {
-          children: 'Click me',
-          variant: 'primary',
-          size: 'md',
-        },
-      };
-
-      export const Primary: Story = {
-        args: {
-          children: 'Primary Button',
-          variant: 'primary',
-        },
-      };
-
-      export const Secondary: Story = {
-        args: {
-          children: 'Secondary Button',
-          variant: 'secondary',
-        },
-      };
       ```
   - name: server-action-pattern
     design_pattern: Next.js Server Action Pattern
@@ -551,7 +339,7 @@ features:
 
       ## Examples
 
-      ### Basic Server Action with Validation
+      ### Basic Server Action
       ```typescript
       'use server';
 
@@ -559,166 +347,39 @@ features:
       import { revalidatePath } from 'next/cache';
       import { UserService } from '@/services/UserService';
 
-      const createUserSchema = z.object({
+      const schema = z.object({
         email: z.string().email(),
         name: z.string().min(2),
       });
 
-      export type CreateUserInput = z.infer<typeof createUserSchema>;
-
-      export async function createUser(input: CreateUserInput) {
+      export async function createUser(input: z.infer<typeof schema>) {
         try {
-          const validatedData = createUserSchema.parse(input);
-          
-          const userService = new UserService();
-          const user = await userService.create(validatedData);
-          
+          const data = schema.parse(input);
+          const user = await new UserService().create(data);
           revalidatePath('/users');
-          
           return { success: true, data: user };
         } catch (error) {
-          if (error instanceof z.ZodError) {
-            return { success: false, error: 'Invalid input data' };
-          }
-          
-          return { success: false, error: 'Failed to create user' };
+          return { success: false, error: error instanceof z.ZodError ? 'Invalid input' : 'Failed to create user' };
         }
       }
       ```
 
-      ### Protected Server Action with Auth
+      ### Protected Server Action
       ```typescript
       'use server';
 
-      import { z } from 'zod';
       import { auth } from '@/lib/auth';
       import { headers } from 'next/headers';
       import { revalidatePath } from 'next/cache';
       import { ProductService } from '@/services/ProductService';
 
-      const updateProductSchema = z.object({
-        id: z.string(),
-        name: z.string().min(1),
-        price: z.number().positive(),
-      });
+      export async function updateProduct(id: string, data: { name: string; price: number }) {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session) return { success: false, error: 'Unauthorized' };
 
-      export type UpdateProductInput = z.infer<typeof updateProductSchema>;
-
-      export async function updateProduct(input: UpdateProductInput) {
-        try {
-          // Check authentication
-          const session = await auth.api.getSession({
-            headers: await headers(),
-          });
-          
-          if (!session) {
-            return { success: false, error: 'Unauthorized' };
-          }
-          
-          // Validate input
-          const validatedData = updateProductSchema.parse(input);
-          
-          // Delegate to service
-          const productService = new ProductService();
-          const product = await productService.update(
-            validatedData.id,
-            validatedData
-          );
-          
-          // Revalidate cache
-          revalidatePath('/products');
-          revalidatePath(`/products/${validatedData.id}`);
-          
-          return { success: true, data: product };
-        } catch (error) {
-          if (error instanceof z.ZodError) {
-            return { success: false, error: 'Invalid input data' };
-          }
-          
-          return { success: false, error: 'Failed to update product' };
-        }
-      }
-      ```
-
-      ### Server Action with FormData
-      ```typescript
-      'use server';
-
-      import { z } from 'zod';
-      import { revalidatePath } from 'next/cache';
-      import { redirect } from 'next/navigation';
-      import { PostService } from '@/services/PostService';
-
-      const createPostSchema = z.object({
-        title: z.string().min(1),
-        content: z.string().min(10),
-      });
-
-      export async function createPost(formData: FormData) {
-        try {
-          const rawData = {
-            title: formData.get('title'),
-            content: formData.get('content'),
-          };
-          
-          const validatedData = createPostSchema.parse(rawData);
-          
-          const postService = new PostService();
-          const post = await postService.create(validatedData);
-          
-          revalidatePath('/posts');
-          
-          // Redirect after successful creation
-          redirect(`/posts/${post.id}`);
-        } catch (error) {
-          if (error instanceof z.ZodError) {
-            return { success: false, error: 'Invalid input data' };
-          }
-          
-          return { success: false, error: 'Failed to create post' };
-        }
-      }
-      ```
-
-      ### Usage in Components
-      ```typescript
-      'use client';
-
-      import { useState, useTransition } from 'react';
-      import { createUser } from '@/actions/createUser';
-
-      export default function CreateUserForm() {
-        const [isPending, startTransition] = useTransition();
-        const [error, setError] = useState<string | null>(null);
-
-        async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget);
-          
-          startTransition(async () => {
-            const result = await createUser({
-              email: formData.get('email') as string,
-              name: formData.get('name') as string,
-            });
-            
-            if (!result.success) {
-              setError(result.error || 'Failed to create user');
-            } else {
-              setError(null);
-              // Handle success (e.g., show toast, reset form)
-            }
-          });
-        }
-
-        return (
-          <form onSubmit={handleSubmit}>
-            {/* Form fields */}
-            <button type="submit" disabled={isPending}>
-              {isPending ? 'Creating...' : 'Create User'}
-            </button>
-            {error && <p className="text-red-600">{error}</p>}
-          </form>
-        );
+        const product = await new ProductService().update(id, data);
+        revalidatePath('/products');
+        return { success: true, data: product };
       }
       ```
   - name: service-layer-pattern
@@ -756,216 +417,57 @@ features:
 
       ## Examples
 
-      ### Basic Service with CRUD Operations
+      ### Basic Service with CRUD
       ```typescript
       import { db } from '@/db/drizzle';
       import { users } from '@/db/schema';
       import { eq } from 'drizzle-orm';
-      import type { IUserService } from './types';
 
-      export class UserService implements IUserService {
+      export class UserService {
         async getById(id: string) {
-          try {
-            const user = await db
-              .select()
-              .from(users)
-              .where(eq(users.id, id))
-              .limit(1);
-            
-            return user[0] || null;
-          } catch (error) {
-            console.error('Failed to get user by id:', error);
-            throw new Error('Failed to fetch user');
-          }
+          const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+          return user || null;
         }
 
         async getAll() {
-          try {
-            return await db.select().from(users);
-          } catch (error) {
-            console.error('Failed to get all users:', error);
-            throw new Error('Failed to fetch users');
-          }
+          return await db.select().from(users);
         }
 
         async create(data: { email: string; name: string }) {
-          try {
-            const result = await db
-              .insert(users)
-              .values(data)
-              .returning();
-            
-            return result[0];
-          } catch (error) {
-            console.error('Failed to create user:', error);
-            throw new Error('Failed to create user');
-          }
+          const [user] = await db.insert(users).values(data).returning();
+          return user;
         }
 
         async update(id: string, data: Partial<{ email: string; name: string }>) {
-          try {
-            const result = await db
-              .update(users)
-              .set(data)
-              .where(eq(users.id, id))
-              .returning();
-            
-            return result[0] || null;
-          } catch (error) {
-            console.error('Failed to update user:', error);
-            throw new Error('Failed to update user');
-          }
-        }
-
-        async delete(id: string) {
-          try {
-            await db.delete(users).where(eq(users.id, id));
-            return true;
-          } catch (error) {
-            console.error('Failed to delete user:', error);
-            throw new Error('Failed to delete user');
-          }
+          const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+          return user || null;
         }
       }
       ```
 
-      ### Service Interface Definition (types.ts)
-      ```typescript
-      export interface IUserService {
-        getById(id: string): Promise<User | null>;
-        getAll(): Promise<User[]>;
-        create(data: { email: string; name: string }): Promise<User>;
-        update(id: string, data: Partial<{ email: string; name: string }>): Promise<User | null>;
-        delete(id: string): Promise<boolean>;
-      }
-
-      export interface IProductService {
-        getById(id: string): Promise<Product | null>;
-        findByCategory(category: string): Promise<Product[]>;
-        create(data: CreateProductData): Promise<Product>;
-        update(id: string, data: UpdateProductData): Promise<Product | null>;
-        delete(id: string): Promise<boolean>;
-      }
-      ```
-
-      ### Service with Complex Queries
+      ### Service with Complex Query
       ```typescript
       import { db } from '@/db/drizzle';
       import { products, categories } from '@/db/schema';
       import { eq, and, gte, lte, desc } from 'drizzle-orm';
-      import type { IProductService } from './types';
 
-      export class ProductService implements IProductService {
+      export class ProductService {
         async getById(id: string) {
-          try {
-            const result = await db
-              .select()
-              .from(products)
-              .leftJoin(categories, eq(products.categoryId, categories.id))
-              .where(eq(products.id, id))
-              .limit(1);
-            
-            return result[0] || null;
-          } catch (error) {
-            console.error('Failed to get product:', error);
-            throw new Error('Failed to fetch product');
-          }
-        }
-
-        async findByCategory(categoryId: string) {
-          try {
-            return await db
-              .select()
-              .from(products)
-              .where(eq(products.categoryId, categoryId))
-              .orderBy(desc(products.createdAt));
-          } catch (error) {
-            console.error('Failed to get products by category:', error);
-            throw new Error('Failed to fetch products');
-          }
+          const [result] = await db
+            .select()
+            .from(products)
+            .leftJoin(categories, eq(products.categoryId, categories.id))
+            .where(eq(products.id, id))
+            .limit(1);
+          return result || null;
         }
 
         async findByPriceRange(min: number, max: number) {
-          try {
-            return await db
-              .select()
-              .from(products)
-              .where(and(gte(products.price, min), lte(products.price, max)))
-              .orderBy(products.price);
-          } catch (error) {
-            console.error('Failed to get products by price range:', error);
-            throw new Error('Failed to fetch products');
-          }
-        }
-
-        async create(data: { name: string; price: number; categoryId: string }) {
-          try {
-            const result = await db
-              .insert(products)
-              .values(data)
-              .returning();
-            
-            return result[0];
-          } catch (error) {
-            console.error('Failed to create product:', error);
-            throw new Error('Failed to create product');
-          }
-        }
-      }
-      ```
-
-      ### Service with Dependency Injection
-      ```typescript
-      import { db } from '@/db/drizzle';
-      import { orders, orderItems } from '@/db/schema';
-      import { eq } from 'drizzle-orm';
-      import type { IOrderService, IProductService, IUserService } from './types';
-
-      export class OrderService implements IOrderService {
-        constructor(
-          private productService: IProductService,
-          private userService: IUserService
-        ) {}
-
-        async create(userId: string, items: Array<{ productId: string; quantity: number }>) {
-          try {
-            // Verify user exists
-            const user = await this.userService.getById(userId);
-            if (!user) {
-              throw new Error('User not found');
-            }
-
-            // Verify all products exist
-            for (const item of items) {
-              const product = await this.productService.getById(item.productId);
-              if (!product) {
-                throw new Error(`Product ${item.productId} not found`);
-              }
-            }
-
-            // Create order in transaction
-            const result = await db.transaction(async (tx) => {
-              const [order] = await tx
-                .insert(orders)
-                .values({ userId })
-                .returning();
-
-              const orderItemsData = items.map(item => ({
-                orderId: order.id,
-                productId: item.productId,
-                quantity: item.quantity,
-              }));
-
-              await tx.insert(orderItems).values(orderItemsData);
-
-              return order;
-            });
-
-            return result;
-          } catch (error) {
-            console.error('Failed to create order:', error);
-            throw new Error('Failed to create order');
-          }
+          return await db
+            .select()
+            .from(products)
+            .where(and(gte(products.price, min), lte(products.price, max)))
+            .orderBy(desc(products.price));
         }
       }
       ```
@@ -1008,7 +510,7 @@ features:
 
       ### Basic Table Schema
       ```typescript
-      import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+      import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
       export const users = pgTable('users', {
         id: uuid('id').defaultRandom().primaryKey(),
@@ -1022,112 +524,25 @@ features:
       export type InsertUser = typeof users.$inferInsert;
       ```
 
-      ### Table with Foreign Key Relations
-      ```typescript
-      import { pgTable, text, timestamp, uuid, varchar, integer } from 'drizzle-orm/pg-core';
-      import { users } from './schema';
-
-      export const posts = pgTable('posts', {
-        id: uuid('id').defaultRandom().primaryKey(),
-        title: varchar('title', { length: 255 }).notNull(),
-        content: text('content').notNull(),
-        userId: uuid('user_id')
-          .notNull()
-          .references(() => users.id, { onDelete: 'cascade' }),
-        createdAt: timestamp('created_at').defaultNow().notNull(),
-        updatedAt: timestamp('updated_at').defaultNow().notNull(),
-      });
-
-      export type Post = typeof posts.$inferSelect;
-      export type InsertPost = typeof posts.$inferInsert;
-      ```
-
-      ### Table with Indexes
+      ### Table with Foreign Key & Index
       ```typescript
       import { pgTable, text, timestamp, uuid, varchar, index } from 'drizzle-orm/pg-core';
       import { users } from './schema';
 
-      export const products = pgTable(
-        'products',
+      export const posts = pgTable(
+        'posts',
         {
           id: uuid('id').defaultRandom().primaryKey(),
-          name: varchar('name', { length: 255 }).notNull(),
-          slug: varchar('slug', { length: 255 }).notNull().unique(),
-          categoryId: uuid('category_id').notNull(),
-          price: integer('price').notNull(),
+          title: varchar('title', { length: 255 }).notNull(),
+          content: text('content').notNull(),
+          userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
           createdAt: timestamp('created_at').defaultNow().notNull(),
           updatedAt: timestamp('updated_at').defaultNow().notNull(),
         },
-        (table) => ({
-          categoryIdx: index('category_idx').on(table.categoryId),
-          slugIdx: index('slug_idx').on(table.slug),
-        })
+        (table) => ({ userIdx: index('user_idx').on(table.userId) })
       );
 
-      export type Product = typeof products.$inferSelect;
-      export type InsertProduct = typeof products.$inferInsert;
-      ```
-
-      ### Database Client Setup (drizzle.ts)
-      ```typescript
-      import { drizzle } from 'drizzle-orm/neon-http';
-      import { neon } from '@neondatabase/serverless';
-      import * as schema from './schema';
-
-      const sql = neon(process.env.DATABASE_URL!);
-
-      export const db = drizzle(sql, { schema });
-      ```
-
-      ### Main Schema File Exports
-      ```typescript
-      // src/db/schema.ts
-      import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
-
-      // Application tables
-      export const users = pgTable('users', {
-        id: uuid('id').defaultRandom().primaryKey(),
-        email: varchar('email', { length: 255 }).notNull().unique(),
-        name: varchar('name', { length: 255 }).notNull(),
-        createdAt: timestamp('created_at').defaultNow().notNull(),
-        updatedAt: timestamp('updated_at').defaultNow().notNull(),
-      });
-
-      // Export auth schema (if using Better Auth)
-      export * from './auth-schema';
-
-      // Export types
-      export type User = typeof users.$inferSelect;
-      export type InsertUser = typeof users.$inferInsert;
-      ```
-
-      ### Drizzle Config
-      ```typescript
-      // drizzle.config.ts
-      import { defineConfig } from 'drizzle-kit';
-
-      export default defineConfig({
-        schema: './src/db/schema.ts',
-        out: './src/db/migrations',
-        dialect: 'postgresql',
-        dbCredentials: {
-          url: process.env.DATABASE_URL!,
-        },
-      });
-      ```
-
-      ### Migration Workflow
-      ```bash
-      # 1. Define or update schema in src/db/schema.ts
-      # 2. Generate migration
-      pnpm db:generate
-
-      # 3. Review generated migration in src/db/migrations/
-      # 4. Apply migration
-      pnpm db:migrate
-
-      # 5. (Optional) Open Drizzle Studio to verify
-      pnpm db:studio
+      export type Post = typeof posts.$inferSelect;
       ```
   - name: better-auth-pattern
     design_pattern: Better Auth Configuration Pattern
@@ -1167,7 +582,7 @@ features:
 
       ## Examples
 
-      ### Server Auth Configuration (auth.ts)
+      ### Server Auth (auth.ts)
       ```typescript
       import { betterAuth } from 'better-auth';
       import { drizzleAdapter } from 'better-auth/adapters/drizzle';
@@ -1175,31 +590,20 @@ features:
       import * as schema from '@/db/schema';
 
       export const auth = betterAuth({
-        database: drizzleAdapter(db, {
-          provider: 'pg',
-          schema,
-        }),
-        emailAndPassword: {
-          enabled: true,
-        },
+        database: drizzleAdapter(db, { provider: 'pg', schema }),
+        emailAndPassword: { enabled: true },
         socialProviders: {
           google: {
             clientId: process.env.GOOGLE_CLIENT_ID!,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
           },
-          github: {
-            clientId: process.env.GITHUB_CLIENT_ID!,
-            clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-          },
         },
         secret: process.env.BETTER_AUTH_SECRET!,
         baseURL: process.env.BETTER_AUTH_URL!,
       });
-
-      export type Session = typeof auth.$Infer.Session;
       ```
 
-      ### Client Auth Configuration (auth-client.ts)
+      ### Client Auth (auth-client.ts)
       ```typescript
       'use client';
 
@@ -1209,158 +613,24 @@ features:
         baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL!,
       });
 
-      export const { useSession, signIn, signOut, signUp } = authClient;
+      export const { useSession, signIn, signOut } = authClient;
       ```
 
-      ### Auth Schema (auth-schema.ts)
-      ```typescript
-      import { pgTable, text, timestamp, uuid, boolean } from 'drizzle-orm/pg-core';
-
-      export const user = pgTable('user', {
-        id: uuid('id').defaultRandom().primaryKey(),
-        name: text('name').notNull(),
-        email: text('email').notNull().unique(),
-        emailVerified: boolean('email_verified').notNull().default(false),
-        image: text('image'),
-        createdAt: timestamp('created_at').defaultNow().notNull(),
-        updatedAt: timestamp('updated_at').defaultNow().notNull(),
-      });
-
-      export const session = pgTable('session', {
-        id: uuid('id').defaultRandom().primaryKey(),
-        userId: uuid('user_id')
-          .notNull()
-          .references(() => user.id, { onDelete: 'cascade' }),
-        expiresAt: timestamp('expires_at').notNull(),
-        token: text('token').notNull().unique(),
-        ipAddress: text('ip_address'),
-        userAgent: text('user_agent'),
-        createdAt: timestamp('created_at').defaultNow().notNull(),
-        updatedAt: timestamp('updated_at').defaultNow().notNull(),
-      });
-
-      export const account = pgTable('account', {
-        id: uuid('id').defaultRandom().primaryKey(),
-        userId: uuid('user_id')
-          .notNull()
-          .references(() => user.id, { onDelete: 'cascade' }),
-        accountId: text('account_id').notNull(),
-        providerId: text('provider_id').notNull(),
-        accessToken: text('access_token'),
-        refreshToken: text('refresh_token'),
-        expiresAt: timestamp('expires_at'),
-        createdAt: timestamp('created_at').defaultNow().notNull(),
-        updatedAt: timestamp('updated_at').defaultNow().notNull(),
-      });
-
-      export const verification = pgTable('verification', {
-        id: uuid('id').defaultRandom().primaryKey(),
-        identifier: text('identifier').notNull(),
-        value: text('value').notNull(),
-        expiresAt: timestamp('expires_at').notNull(),
-        createdAt: timestamp('created_at').defaultNow().notNull(),
-        updatedAt: timestamp('updated_at').defaultNow().notNull(),
-      });
-      ```
-
-      ### Protected Layout with Auth Check
+      ### Protected Layout
       ```typescript
       import { auth } from '@/lib/auth';
       import { redirect } from 'next/navigation';
       import { headers } from 'next/headers';
 
-      export default async function ProtectedLayout({
-        children,
-      }: {
-        children: React.ReactNode;
-      }) {
-        const session = await auth.api.getSession({
-          headers: await headers(),
-        });
-
-        if (!session) {
-          redirect('/sign-in');
-        }
+      export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
+        const session = await auth.api.getSession({ headers: await headers() });
+        if (!session) redirect('/sign-in');
 
         return (
           <div>
-            <nav>
-              <p>Welcome, {session.user.name}</p>
-            </nav>
+            <nav><p>Welcome, {session.user.name}</p></nav>
             <main>{children}</main>
           </div>
         );
       }
-      ```
-
-      ### Middleware for Route Protection
-      ```typescript
-      import { type NextRequest, NextResponse } from 'next/server';
-      import { auth } from '@/lib/auth';
-
-      export async function middleware(request: NextRequest) {
-        const session = await auth.api.getSession({
-          headers: request.headers,
-        });
-
-        const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard');
-        const isAuthRoute = request.nextUrl.pathname.startsWith('/sign-in');
-
-        if (isProtectedRoute && !session) {
-          return NextResponse.redirect(new URL('/sign-in', request.url));
-        }
-
-        if (isAuthRoute && session) {
-          return NextResponse.redirect(new URL('/dashboard', request.url));
-        }
-
-        return NextResponse.next();
-      }
-
-      export const config = {
-        matcher: ['/dashboard/:path*', '/sign-in', '/sign-up'],
-      };
-      ```
-
-      ### Client Component with Auth Hooks
-      ```typescript
-      'use client';
-
-      import { useSession, signOut } from '@/lib/auth-client';
-
-      export default function UserProfile() {
-        const { data: session, isPending } = useSession();
-
-        if (isPending) {
-          return <div>Loading...</div>;
-        }
-
-        if (!session) {
-          return <div>Not authenticated</div>;
-        }
-
-        return (
-          <div>
-            <p>Logged in as {session.user.email}</p>
-            <button onClick={() => signOut()}>Sign Out</button>
-          </div>
-        );
-      }
-      ```
-
-      ### Environment Variables
-      ```bash
-      # .env.local
-      DATABASE_URL=postgresql://...
-
-      # Better Auth
-      BETTER_AUTH_SECRET=your-secret-here  # Generate with: npx better-auth secret
-      BETTER_AUTH_URL=http://localhost:3000
-      NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
-
-      # OAuth Providers (optional)
-      GOOGLE_CLIENT_ID=your-google-client-id
-      GOOGLE_CLIENT_SECRET=your-google-client-secret
-      GITHUB_CLIENT_ID=your-github-client-id
-      GITHUB_CLIENT_SECRET=your-github-client-secret
       ```

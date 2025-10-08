@@ -1,7 +1,6 @@
 version: '1.0'
 template: typescript-mcp-package
 description: Rules and patterns for typescript-mcp-package template
-
 rules:
   - pattern: src/tools/**/*.ts
     description: MCP Tool Implementation Standards
@@ -114,7 +113,6 @@ rules:
           }
       - rule: Skip error handling
       - rule: Use hardcoded values - use configuration or constants
-
   - pattern: src/services/**/*.ts
     description: Service Layer Implementation Standards
     inherits:
@@ -161,7 +159,6 @@ rules:
           export function trim(str: string): string { }
       - rule: Mix multiple concerns in one service
       - rule: Use synchronous blocking operations for I/O
-
   - pattern: src/cli/**/*.ts
     description: CLI Command Implementation Standards
     inherits:
@@ -197,7 +194,6 @@ rules:
       - rule: Use synchronous blocking operations in action handlers
       - rule: Missing error handling - always use try-catch
       - rule: Hardcode values - use options or environment variables
-
   - pattern: src/index.ts
     description: Main entry point standards
     inherits:
@@ -216,7 +212,6 @@ rules:
           #!/usr/bin/env node
     must_not_do:
       - rule: Hardcode command logic in index.ts - use separate command files
-
   - pattern: src/server/index.ts
     description: MCP Server setup standards
     inherits:
@@ -247,7 +242,6 @@ rules:
       - rule: Initialize tools with optional configuration
     must_not_do:
       - rule: Skip error handling for tool execution
-
   - pattern: tests/**/*.test.ts
     description: Test file standards
     inherits:
@@ -271,3 +265,326 @@ rules:
       - rule: Test input validation
       - rule: Verify return value structure
       - rule: Check edge cases and boundary conditions
+  - pattern: src/prompts/**/*.ts
+    description: MCP Prompt Implementation Standards
+    inherits:
+      - export-standards
+      - error-handling
+      - type-safety
+    must_do:
+      - rule: Implement Prompt interface with getDefinition and execute
+        codeExample: |-
+          export class MyPrompt implements Prompt {
+            getDefinition() {
+              return {
+                name: 'my-prompt',
+                description: 'Generate prompt for task',
+                arguments: [
+                  {
+                    name: 'topic',
+                    description: 'Topic to analyze',
+                    required: true
+                  }
+                ]
+              };
+            }
+
+            async execute(args: { topic: string }): Promise<GetPromptResult> {
+              return {
+                messages: [
+                  {
+                    role: 'user',
+                    content: {
+                      type: 'text',
+                      text: `Analyze: ${args.topic}`
+                    }
+                  }
+                ]
+              };
+            }
+          }
+      - rule: Return GetPromptResult with messages array
+        codeExample: |-
+          return {
+            messages: [
+              { role: 'user', content: { type: 'text', text: 'prompt' } }
+            ]
+          };
+      - rule: Define clear prompt arguments with descriptions
+        codeExample: |-
+          arguments: [
+            {
+              name: 'context',
+              description: 'Context for the prompt',
+              required: true
+            },
+            {
+              name: 'format',
+              description: 'Output format',
+              required: false
+            }
+          ]
+    must_not_do:
+      - rule: Return empty messages array
+        codeExample: |-
+          // ❌ BAD
+          return { messages: [] };
+
+          // ✅ GOOD
+          return {
+            messages: [
+              { role: 'user', content: { type: 'text', text: prompt } }
+            ]
+          };
+      - rule: Mix multiple concerns in one prompt
+        codeExample: |-
+          // ❌ BAD - Prompt handles code review + testing + docs
+          class AllInOnePrompt implements Prompt { }
+
+          // ✅ GOOD - Separate prompts
+          class CodeReviewPrompt implements Prompt { }
+          class TestGenerationPrompt implements Prompt { }
+      - rule: Use hardcoded messages without arguments
+  - pattern: src/transports/**/*.ts
+    description: MCP Transport Setup Standards
+    inherits:
+      - export-standards
+      - error-handling
+      - async-await-patterns
+    must_do:
+      - rule: Use async/await for transport connection
+        codeExample: |-
+          async function main() {
+            const transport = new StdioServerTransport();
+            await server.connect(transport);
+          }
+
+          main().catch((error) => {
+            console.error('Server error:', error);
+            process.exit(1);
+          });
+      - rule: Handle connection errors gracefully
+        codeExample: |-
+          async function startServer() {
+            try {
+              const transport = new StdioServerTransport();
+              await server.connect(transport);
+              console.log('Server started successfully');
+            } catch (error) {
+              console.error('Failed to start server:', error);
+              process.exit(1);
+            }
+          }
+      - rule: Import correct transport for use case (Stdio or SSE)
+        codeExample: |-
+          // For stdio (CLI usage)
+          import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+
+          // For SSE (HTTP usage)
+          import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+    must_not_do:
+      - rule: Mix multiple transports in same entry point
+        codeExample: |-
+          // ❌ BAD - Multiple transports
+          const stdioTransport = new StdioServerTransport();
+          const sseTransport = new SSEServerTransport();
+          await server.connect(stdioTransport);
+          await server.connect(sseTransport);
+
+          // ✅ GOOD - Separate entry points
+          // index.ts - stdio only
+          // server-http.ts - SSE only
+      - rule: Skip error handling on connect()
+        codeExample: |-
+          // ❌ BAD
+          await server.connect(transport); // No error handling
+
+          // ✅ GOOD
+          try {
+            await server.connect(transport);
+          } catch (error) {
+            console.error('Connection failed:', error);
+            process.exit(1);
+          }
+      - rule: Use synchronous connection methods
+  - pattern: src/types/**/*.ts
+    description: Type Definitions and Interfaces Standards
+    inherits:
+      - export-standards
+      - type-safety
+      - documentation-standards
+    must_do:
+      - rule: Define clear interfaces for all data structures
+        codeExample: |-
+          export interface ToolInput {
+            filePath: string;
+            options?: {
+              verbose?: boolean;
+              format?: 'json' | 'yaml';
+            };
+          }
+
+          export interface ToolResult {
+            success: boolean;
+            data?: unknown;
+            error?: string;
+          }
+      - rule: Use TypeScript utility types for type transformations
+        codeExample: |-
+          export type PartialToolInput = Partial<ToolInput>;
+          export type RequiredToolInput = Required<ToolInput>;
+          export type ToolInputKeys = keyof ToolInput;
+
+          // Pick specific fields
+          export type ToolConfig = Pick<ToolInput, 'options'>;
+      - rule: Add JSDoc comments for complex types
+        codeExample: |-
+          /**
+           * Configuration for the MCP tool execution
+           * @property timeout - Execution timeout in milliseconds
+           * @property retries - Number of retry attempts
+           */
+          export interface ToolConfig {
+            timeout: number;
+            retries: number;
+          }
+      - rule: Use const assertions for literal types
+        codeExample: |-
+          export const TOOL_CATEGORIES = {
+            FILE: 'file',
+            CODE: 'code',
+            SEARCH: 'search'
+          } as const;
+
+          export type ToolCategory = typeof TOOL_CATEGORIES[keyof typeof TOOL_CATEGORIES];
+    must_not_do:
+      - rule: Use 'any' type - use 'unknown' or proper types
+        codeExample: |-
+          // ❌ BAD
+          export interface Result {
+            data: any;
+          }
+
+          // ✅ GOOD
+          export interface Result<T = unknown> {
+            data: T;
+          }
+      - rule: Create types without exports
+        codeExample: |-
+          // ❌ BAD
+          interface Config { } // Not exported
+
+          // ✅ GOOD
+          export interface Config { }
+      - rule: Mix implementation with type definitions
+        codeExample: |-
+          // ❌ BAD - Implementation in types file
+          export class MyService { }
+          export interface MyInterface { }
+
+          // ✅ GOOD - Only types
+          export interface MyInterface { }
+          export type MyType = { };
+      - rule: Use default exports for types
+        codeExample: |-
+          // ❌ BAD
+          export default interface Config { }
+
+          // ✅ GOOD
+          export interface Config { }
+  - pattern: src/cli/index.ts
+    description: CLI Barrel Export Standards
+    inherits:
+      - export-standards
+    must_do:
+      - rule: Export all CLI commands from index.ts using barrel exports
+        codeExample: |-
+          export { myCommand } from './my-command.js';
+          export { anotherCommand } from './another-command.js';
+          export { utilityCommand } from './utility-command.js';
+      - rule: Use named exports for all commands
+        codeExample: |-
+          // ✅ GOOD - Named exports
+          export { processCommand } from './process.js';
+          export { analyzeCommand } from './analyze.js';
+
+          // ❌ BAD - Default exports
+          export { default as processCommand } from './process.js';
+    must_not_do:
+      - rule: Include implementation in index.ts - only exports
+        codeExample: |-
+          // ❌ BAD - Implementation in barrel file
+          export const myCommand = new Command('my').action(() => {});
+
+          // ✅ GOOD - Only exports
+          export { myCommand } from './my-command.js';
+      - rule: Use wildcard exports - be explicit
+        codeExample: |-
+          // ❌ BAD
+          export * from './commands.js';
+
+          // ✅ GOOD
+          export { command1, command2 } from './commands.js';
+  - pattern: src/tools/index.ts
+    description: Tools Barrel Export Standards
+    inherits:
+      - export-standards
+    must_do:
+      - rule: Export all tools from index.ts using barrel exports
+        codeExample: |-
+          export { MyTool } from './MyTool.js';
+          export { AnotherTool } from './AnotherTool.js';
+      - rule: Use named exports for all tools
+        codeExample: |-
+          // ✅ GOOD
+          export { FileTool } from './FileTool.js';
+          export { CodeTool } from './CodeTool.js';
+    must_not_do:
+      - rule: Include tool implementation in index.ts
+        codeExample: |-
+          // ❌ BAD
+          export class MyTool implements Tool { }
+
+          // ✅ GOOD
+          export { MyTool } from './MyTool.js';
+      - rule: Use wildcard exports
+        codeExample: |-
+          // ❌ BAD
+          export * from './tools.js';
+
+          // ✅ GOOD
+          export { Tool1, Tool2 } from './tools.js';
+  - pattern: src/services/index.ts
+    description: Services Barrel Export Standards
+    inherits:
+      - export-standards
+    must_do:
+      - rule: Export all services from index.ts using barrel exports
+        codeExample: |-
+          export { UserService } from './UserService.js';
+          export { DataService } from './DataService.js';
+          export { FileService } from './FileService.js';
+      - rule: Group related services together in exports
+        codeExample: |-
+          // Database services
+          export { UserService } from './UserService.js';
+          export { OrderService } from './OrderService.js';
+
+          // Utility services
+          export { LoggerService } from './LoggerService.js';
+          export { CacheService } from './CacheService.js';
+    must_not_do:
+      - rule: Include service implementation in index.ts
+        codeExample: |-
+          // ❌ BAD
+          export class UserService { }
+
+          // ✅ GOOD
+          export { UserService } from './UserService.js';
+      - rule: Use wildcard exports
+        codeExample: |-
+          // ❌ BAD
+          export * from './services.js';
+
+          // ✅ GOOD  
+          export { Service1, Service2 } from './services.js';
