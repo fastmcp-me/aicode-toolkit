@@ -88,7 +88,7 @@ type(scope): subject
 **Examples:**
 ```bash
 feat(scaffold-mcp): add support for Vue.js templates
-fix(scaffold-generator): resolve path resolution issue on Windows
+fix(aicode-utils): resolve path resolution issue on Windows
 docs(readme): update installation instructions
 test(scaffold-mcp): add tests for conditional includes
 ```
@@ -223,8 +223,9 @@ This is an [Nx](https://nx.dev/) monorepo with the following structure:
 ```
 aicode-toolkit/
 ├── packages/
-│   ├── scaffold-generator/    # Core utilities and types
-│   └── scaffold-mcp/          # MCP server (depends on scaffold-generator)
+│   ├── aicode-utils/          # Core utilities and types
+│   ├── architect-mcp/         # MCP server for design patterns and code review
+│   └── scaffold-mcp/          # MCP server for scaffolding (depends on aicode-utils)
 ├── templates/                 # Boilerplate templates
 │   ├── nextjs-15/
 │   └── vite-react/
@@ -234,7 +235,10 @@ aicode-toolkit/
 **Dependency graph:**
 ```
 scaffold-mcp
-    └── scaffold-generator
+    └── aicode-utils
+
+architect-mcp
+    └── aicode-utils
 ```
 
 **View the full project graph:**

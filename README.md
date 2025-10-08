@@ -348,12 +348,6 @@ MCP server for software architecture design, code quality enforcement, and desig
 
 [View full documentation →](./packages/architect-mcp/README.md)
 
-### [@agiflowai/scaffold-generator](./packages/scaffold-generator)
-
-Core utilities and types for scaffold generators. Internal library used by `scaffold-mcp`.
-
-[View source →](./packages/scaffold-generator)
-
 ---
 
 ## Our Approach

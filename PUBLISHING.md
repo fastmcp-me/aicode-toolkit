@@ -12,10 +12,11 @@ This guide explains how to publish packages from this monorepo to npm using Nx R
 
 ## Package Configuration
 
-Both packages are configured for publishing:
+All packages are configured for publishing:
 
-- `@agiflowai/scaffold-generator` - Shared utilities and types
-- `@agiflowai/scaffold-mcp` - MCP server with CLI
+- `@agiflowai/aicode-utils` - Shared utilities and types
+- `@agiflowai/scaffold-mcp` - MCP server for scaffolding with CLI
+- `@agiflowai/architect-mcp` - MCP server for design patterns and code review
 
 ### Key Configuration Details
 
@@ -88,11 +89,14 @@ pnpm exec nx release --version=0.1.0
 To publish only specific packages:
 
 ```bash
-# Publish only scaffold-generator
-pnpm exec nx release --projects=@agiflowai/scaffold-generator
+# Publish only aicode-utils
+pnpm exec nx release --projects=@agiflowai/aicode-utils
 
 # Publish only scaffold-mcp
 pnpm exec nx release --projects=@agiflowai/scaffold-mcp
+
+# Publish only architect-mcp
+pnpm exec nx release --projects=@agiflowai/architect-mcp
 ```
 
 ## Nx Release Configuration
@@ -206,7 +210,7 @@ export NPM_TOKEN=your-token-here
 
 ### Workspace Dependencies
 
-The `workspace:*` protocol in `scaffold-mcp`'s dependency on `scaffold-generator` is automatically converted to the actual version during publishing. You don't need to manually update this.
+The `workspace:*` protocol in package dependencies (e.g., `scaffold-mcp` and `architect-mcp` depending on `aicode-utils`) is automatically converted to the actual version during publishing. You don't need to manually update this.
 
 ### Build Before Publish
 
@@ -224,8 +228,9 @@ pnpm exec nx build scaffold-mcp
 
 After publishing, verify on npm:
 
-- https://www.npmjs.com/package/@agiflowai/scaffold-generator
+- https://www.npmjs.com/package/@agiflowai/aicode-utils
 - https://www.npmjs.com/package/@agiflowai/scaffold-mcp
+- https://www.npmjs.com/package/@agiflowai/architect-mcp
 
 ## Best Practices
 

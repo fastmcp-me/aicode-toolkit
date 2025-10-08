@@ -27,3 +27,71 @@ export interface ProjectConfig {
   sourceTemplate?: string;
   projectType?: string;
 }
+
+/**
+ * Scaffold template include configuration
+ */
+export interface ParsedInclude {
+  sourcePath: string;
+  targetPath: string;
+  conditions?: Record<string, string>;
+}
+
+/**
+ * Result of a scaffold operation
+ */
+export interface ScaffoldResult {
+  success: boolean;
+  message: string;
+  warnings?: string[];
+  createdFiles?: string[];
+  existingFiles?: string[];
+}
+
+/**
+ * Abstract interface for file system operations
+ */
+export interface IFileSystemService {
+  pathExists(path: string): Promise<boolean>;
+  readFile(path: string, encoding?: BufferEncoding): Promise<string>;
+  readJson(path: string): Promise<any>;
+  writeFile(path: string, content: string, encoding?: BufferEncoding): Promise<void>;
+  ensureDir(path: string): Promise<void>;
+  copy(src: string, dest: string): Promise<void>;
+  readdir(path: string): Promise<string[]>;
+  stat(path: string): Promise<{ isDirectory(): boolean; isFile(): boolean }>;
+}
+
+/**
+ * Abstract interface for variable replacement in templates
+ */
+export interface IVariableReplacementService {
+  processFilesForVariableReplacement(
+    dirPath: string,
+    variables: Record<string, any>,
+  ): Promise<void>;
+  replaceVariablesInFile(filePath: string, variables: Record<string, any>): Promise<void>;
+  isBinaryFile(filePath: string): boolean;
+}
+
+/**
+ * Context object passed to generator functions
+ */
+export interface GeneratorContext {
+  variables: Record<string, any>;
+  config: any;
+  targetPath: string;
+  templatePath: string;
+  fileSystem: IFileSystemService;
+  scaffoldConfigLoader: any;
+  variableReplacer: IVariableReplacementService;
+  // Utility classes and functions passed to avoid import issues
+  ScaffoldProcessingService: any; // Constructor for ScaffoldProcessingService
+  getRootPath: () => string;
+  getProjectPath: (projectPath: string) => string;
+}
+
+/**
+ * Type definition for generator functions
+ */
+export type GeneratorFunction = (context: GeneratorContext) => Promise<ScaffoldResult>;
