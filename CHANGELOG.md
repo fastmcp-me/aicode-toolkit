@@ -1,3 +1,13 @@
+## 0.4.1 (2025-10-08)
+
+### 🩹 Fixes
+
+- **architect-mcp:** cli Fix wrong cli entry ([a0000c0](https://github.com/AgiFlow/aicode-toolkit/commit/a0000c0))
+
+### ❤️ Thank You
+
+- Vuong Ngo @AgiFlow
+
 ## 0.4.0 (2025-10-08)
 
 ### 🚀 Features
