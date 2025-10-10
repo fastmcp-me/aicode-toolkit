@@ -39,13 +39,8 @@
           "command": "npx",
           "args": [
             "-y",
-            "@agiflowai/scaffold-mcp",
-            "--tools",
-            "list-boilerplates,use-boilerplate"
-          ],
-          "env": {
-            "AICODE_MODE": "bootstrap"
-          }
+            "@agiflowai/scaffold-mcp"
+          ]
         }
       },
       "strict": false
@@ -86,27 +81,17 @@
           "command": "npx",
           "args": [
             "-y",
-            "@agiflowai/scaffold-mcp",
-            "--tools",
-            "list-scaffolding-methods,use-scaffold-method"
-          ],
-          "env": {
-            "AICODE_MODE": "develop"
-          }
+            "@agiflowai/scaffold-mcp"
+          ]
         },
         "aicode-patterns": {
           "command": "npx",
           "args": [
             "-y",
             "@agiflowai/architect-mcp",
-            "--tools",
-            "get-file-design-pattern",
             "--design-pattern-tool",
             "claude-code"
-          ],
-          "env": {
-            "AICODE_MODE": "develop"
-          }
+          ]
         }
       },
       "strict": false
@@ -140,14 +125,9 @@
           "args": [
             "-y",
             "@agiflowai/architect-mcp",
-            "--tools",
-            "review-code-change",
             "--review-tool",
             "claude-code"
-          ],
-          "env": {
-            "AICODE_MODE": "review"
-          }
+          ]
         }
       },
       "strict": false
