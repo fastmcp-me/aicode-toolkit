@@ -39,7 +39,8 @@
           "command": "npx",
           "args": [
             "-y",
-            "@agiflowai/scaffold-mcp"
+            "@agiflowai/scaffold-mcp",
+            "mcp-serve"
           ]
         }
       },
@@ -81,7 +82,8 @@
           "command": "npx",
           "args": [
             "-y",
-            "@agiflowai/scaffold-mcp"
+            "@agiflowai/scaffold-mcp",
+            "mcp-serve"
           ]
         },
         "aicode-patterns": {
@@ -125,6 +127,7 @@
           "args": [
             "-y",
             "@agiflowai/architect-mcp",
+            "mcp-serve",
             "--review-tool",
             "claude-code"
           ]
@@ -161,6 +164,7 @@
           "args": [
             "-y",
             "@agiflowai/scaffold-mcp",
+            "mcp-serve",
             "--admin-enable"
           ],
           "env": {
@@ -172,6 +176,7 @@
           "args": [
             "-y",
             "@agiflowai/architect-mcp",
+            "mcp-serve",
             "--admin-enable"
           ],
           "env": {
