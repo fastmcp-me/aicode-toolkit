@@ -4,7 +4,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@agiflowai/scaffold-mcp.svg?style=flat-square)](https://www.npmjs.com/package/@agiflowai/scaffold-mcp)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg?style=flat-square)](https://opensource.org/licenses/AGPL-3.0)
-[![Node.js Version](https://img.shields.io/node/v/@agiflowai/scaffold-mcp?style=flat-square)](https://nodejs.org)
+[![Discord](https://dcbadge.limes.pink/api/server/https://discord.gg/NsB6q9Vas9?style=flat-square)](https://discord.gg/NsB6q9Vas9)
 
 A collection of [Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers and tools that help AI coding agents maintain consistency, follow conventions, and scale with your codebase.
 
@@ -14,11 +14,12 @@ A collection of [Model Context Protocol (MCP)](https://modelcontextprotocol.io) 
 
 - [Why This Exists](#why-this-exists)
 - [Core Pillars](#core-pillars)
+- [Our Approach](#our-approach)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Quick Start](#quick-start)
+- [Development Workflow](#development-workflow)
 - [Packages](#packages)
-- [Our Approach](#our-approach)
 - [Development](#development)
 - [Documentation](#documentation)
 - [Tool-Specific Support](#tool-specific-support)
@@ -42,6 +43,13 @@ As projects evolve from MVP to production, they develop patterns, conventions, a
 - ✅ Work with any AI coding agent (Claude, Cursor, etc.)
 - ✅ Support any tech stack (Next.js, React, or custom frameworks)
 
+### The Perfect Complement to Spec Driven Development
+
+While **Spec Driven Development** tells AI agents *what* to build (requirements, features, behavior), **AI Code Toolkit** tells them *how* to build it (patterns, conventions, validation). Together, they create a complete development workflow:
+
+- **Specs** → Define product requirements and business logic
+- **AI Code Toolkit** → Enforce technical standards and architectural consistency
+
 Whether you're bootstrapping a new project or managing a complex monorepo, these tools ensure AI agents integrate seamlessly with your development workflow.
 
 ---
@@ -62,6 +70,35 @@ Pre-flight guidance + post-flight validation = consistent output. Rules provide 
 
 ---
 
+## Our Approach
+
+### 🤖 Agent Agnostic
+
+Works with any AI coding agent (Claude Code, Cursor, Windsurf, etc.). Each library provides:
+- **MCP tools** for integration with MCP-compatible agents
+- **CLI commands** for scripting deterministic workflows
+
+### 🛠️ Tech Stack Agnostic
+
+Built-in templates for popular frameworks:
+- Next.js 15
+- TypeScript Libraries & MCP Packages
+- _More coming soon (Vite + React, Remix, etc.)_
+
+Don't see your stack? Use the built-in MCP tools to generate custom templates—the system is fully extensible.
+
+### 🎯 Coding Tool Specific
+
+Maximize effectiveness by combining three layers:
+
+1. **MCP Servers** → Let tools guide the agent with their default prompts
+2. **Custom Instructions** → Use `CLAUDE.md`, `AGENTS.md` to specify when to use MCP tools
+3. **Hooks** → Intercept tool calls to enforce workflows (e.g., require scaffolding for new files)
+
+Experiment with these layers to find the right balance for your project. There's no one-size-fits-all solution.
+
+---
+
 ## Getting Started
 
 ### Prerequisites
@@ -72,114 +109,72 @@ Pre-flight guidance + post-flight validation = consistent output. Rules provide 
 
 ### Quick Start
 
-#### Option 1: Use as Claude Code Plugin (Recommended)
+Get started with AI Code Toolkit in 3 simple steps:
 
-The easiest way to get started is through the Claude Code plugin marketplace:
+#### Step 1: Initialize Templates
 
-1. **Add the marketplace:**
-   ```bash
-   /plugin marketplace add AgiFlow/aicode-toolkit
-   ```
-
-2. **Install plugins:**
-   ```bash
-   # Install scaffold-mcp for code generation
-   /plugin install scaffold-mcp@aicode-toolkit
-
-   # Install architect-mcp for architecture review
-   /plugin install architect-mcp@aicode-toolkit
-   ```
-
-3. **Start using it:**
-   The MCP servers will be automatically configured and available in Claude Code.
-
-📖 **[Learn more about the marketplace →](./docs/claude-code/MARKETPLACE.md)**
-
-#### Option 2: Use as MCP Server (with Claude Code)
-
-1. **Install the package:**
-   ```bash
-   pnpm install @agiflowai/scaffold-mcp
-   ```
-
-2. **Configure Claude Code:**
-   Add to your MCP settings:
-   ```json
-   {
-     "mcpServers": {
-       "scaffold": {
-         "command": "scaffold-mcp",
-         "args": ["mcp-serve"]
-       }
-     }
-   }
-   ```
-
-3. **Start using it:**
-   The MCP server tools will be available in Claude Code.
-
-#### Option 3: Use as CLI
+Run the init command to download official templates:
 
 ```bash
-# Install globally or use npx
-pnpm install -g @agiflowai/scaffold-mcp
-
-# Initialize templates (auto-downloads official templates)
-scaffold-mcp init
-
-# List available boilerplates
-scaffold-mcp boilerplate list
-
-# Create a new project
-scaffold-mcp boilerplate create scaffold-nextjs-app \
-  --vars '{"appName":"my-app","withDrizzle":true}'
-
-# Add features to existing projects
-scaffold-mcp scaffold list ./apps/my-app
-scaffold-mcp scaffold add scaffold-route \
-  --project ./apps/my-app \
-  --vars '{"routePath":"about","pageTitle":"About Us"}'
+npx @agiflowai/scaffold-mcp init
 ```
 
-**Key Features:**
-- 🎁 **Auto-download templates**: `init` command downloads official templates from GitHub
-- 🔗 **GitHub subdirectory support**: Add templates from specific folders in repositories
-- 🌐 **Multiple transport modes**: stdio (MCP), HTTP, SSE, or standalone CLI
-- 📦 **Built-in templates**: Next.js 15 with Drizzle ORM, Storybook, and more
+This automatically downloads official templates (Next.js 15, TypeScript libraries, MCP packages) to your workspace.
 
-For detailed usage, see the [scaffold-mcp documentation](./packages/scaffold-mcp/README.md).
+#### Step 2: Configure MCP Servers
 
-### Template Management
+Add the MCP servers to your AI coding tool's configuration:
 
-The `init` command automatically downloads official templates from the AgiFlow repository:
+**For Claude Code, Cursor, Windsurf, or any MCP-compatible tool:**
 
-```bash
-# Initialize and auto-download official templates
-scaffold-mcp init
+Add to your MCP settings (e.g., `claude_desktop_config.json`, `.cursor/mcp.json`):
 
-# Skip auto-download
-scaffold-mcp init --no-download
-
-# Custom templates path
-scaffold-mcp init --path ./custom-templates
+```json
+{
+  "mcpServers": {
+    "scaffold-mcp": {
+      "command": "npx",
+      "args": ["-y", "@agiflowai/scaffold-mcp", "mcp-serve", "--admin-enable"]
+    },
+    "architect-mcp": {
+      "command": "npx",
+      "args": [
+        "-y", "@agiflowai/architect-mcp", "mcp-serve",
+        "--admin-enable",
+        "--design-pattern-tool", "claude-code",
+        "--review-tool", "claude-code"
+      ]
+    }
+  }
+}
 ```
 
-Add additional templates from GitHub (supports subdirectories):
+**Note for Claude Code users:** You can also use the [plugin marketplace](./docs/claude-code/MARKETPLACE.md) for automatic configuration.
 
-```bash
-# Add from full repository
-scaffold-mcp add --name my-template --url https://github.com/user/repo
+#### Step 3: Use MCP Tools and Slash Commands
 
-# Add from repository subdirectory
-scaffold-mcp add \
-  --name nextjs-template \
-  --url https://github.com/user/repo/tree/main/templates/nextjs
-```
+Once configured, your AI agent has access to:
 
-**Current Templates:**
+**Scaffolding Tools (scaffold-mcp):**
+- `list-boilerplates` - Show available project templates
+- `use-boilerplate` - Create new project from template
+- `list-scaffolding-methods` - Show features you can add to existing projects
+- `use-scaffold-method` - Add features (pages, components, API routes, etc.)
+
+**Architecture Tools (architect-mcp):**
+- `get-file-design-pattern` - Get design patterns for a specific file
+- `review-code-change` - Review code against rules and standards
+
+**Slash Commands** (for compatible agents like Claude Code):
+- `/scaffold-mcp:scaffold-application` - Create a new application
+- `/scaffold-mcp:scaffold-feature` - Add features to existing projects
+- `/scaffold-mcp:generate-boilerplate` - Create custom boilerplate templates
+- `/scaffold-mcp:generate-feature-scaffold` - Create custom feature scaffolds
+
+**Available Templates:**
 - **nextjs-15-drizzle**: Next.js 15 + App Router + TypeScript + Tailwind CSS 4 + Storybook + Optional Drizzle ORM
-  - Boilerplate: Full application setup
-  - Features: Routes, components, API routes, auth, services, and more
+- **typescript-lib**: TypeScript library with ESM/CJS builds, testing, and documentation
+- **typescript-mcp-package**: Model Context Protocol (MCP) server package template
 
 ---
 
@@ -304,41 +299,6 @@ Result: Validates against RULES.yaml (named exports, error handling, etc.)
    - Validate output (automated review)
 4. **Feedback Loop**: Reviews inform future scaffolding and patterns
 
-### Using with AI Coding Agents
-
-**Claude Code Configuration** (Both MCP servers):
-```json
-{
-  "mcpServers": {
-    "scaffold-mcp": {
-      "command": "npx",
-      "args": ["-y", "@agiflowai/scaffold-mcp", "mcp-serve", "--admin-enable"]
-    },
-    "architect-mcp": {
-      "command": "npx",
-      "args": [
-        "-y", "@agiflowai/architect-mcp", "mcp-serve",
-        "--admin-enable",
-        "--design-pattern-tool", "claude-code",
-        "--review-tool", "claude-code"
-      ]
-    }
-  }
-}
-```
-
-**Agent Instructions** (in CLAUDE.md or similar):
-```markdown
-When creating new features:
-1. Use scaffold-mcp to generate boilerplate if standard feature exists
-2. Use architect-mcp to understand patterns before writing custom code
-3. Use architect-mcp to review code before committing
-
-When updating patterns:
-1. Use architect-mcp admin tools to update architect.yaml and RULES.yaml
-2. Use scaffold-mcp admin tools to update scaffold.yaml templates
-```
-
 ---
 
 ## Packages
@@ -351,7 +311,7 @@ MCP server for scaffolding applications with boilerplate templates and feature g
 - 🚀 Create projects from boilerplate templates
 - 🎯 Add features to existing projects (pages, components, services)
 - 📦 Template management (initialize, add from repositories)
-- 🔧 Built-in templates: Next.js 15, Vite + React
+- 🔧 Built-in templates: Next.js 15, TypeScript libraries, MCP packages
 - 🌐 Multiple transport modes: stdio, HTTP, SSE
 - 💻 Standalone CLI mode
 - 🎙️ Slash command prompts for AI coding agents
@@ -373,51 +333,6 @@ MCP server for software architecture design, code quality enforcement, and desig
 - 🔧 Admin tools for pattern and rule management
 
 [View full documentation →](./packages/architect-mcp/README.md)
-
----
-
-## Our Approach
-
-### 🤖 Agent Agnostic
-
-Works with any AI coding agent (Claude Code, Cursor, Windsurf, etc.). Each library provides:
-- **MCP tools** for integration with MCP-compatible agents
-- **CLI commands** for scripting deterministic workflows
-
-### 🛠️ Tech Stack Agnostic
-
-Built-in templates for popular frameworks:
-- Next.js 15
-- Vite + React
-- _More coming soon_
-
-Don't see your stack? Use the built-in MCP tools to generate custom templates—the system is fully extensible.
-
-### 🎯 Coding Tool Specific
-
-Maximize effectiveness by combining three layers:
-
-1. **MCP Servers** → Let tools guide the agent with their default prompts
-2. **Custom Instructions** → Use `CLAUDE.md`, `AGENTS.md` to specify when to use MCP tools
-3. **Hooks** → Intercept tool calls to enforce workflows (e.g., require scaffolding for new files)
-
-Experiment with these layers to find the right balance for your project. There's no one-size-fits-all solution.
-
-#### Slash Command Prompts
-
-The scaffold-mcp server provides built-in slash commands for AI coding agents like Claude Code:
-
-**For Users:**
-- **`/scaffold-mcp:scaffold-application`** - Guide the agent to create a new application from boilerplate templates
-- **`/scaffold-mcp:scaffold-feature`** - Guide the agent to add features (pages, components, services) to existing projects
-
-**For Template Creators:**
-- **`/scaffold-mcp:generate-boilerplate`** - Guide the agent to create a new boilerplate template configuration
-- **`/scaffold-mcp:generate-feature-scaffold`** - Guide the agent to create a new feature scaffold configuration
-
-These prompts provide step-by-step instructions to the AI agent, ensuring it follows the correct workflow for scaffolding tasks. They're automatically available when the MCP server is configured in your coding agent.
-
-📖 **[Learn how to use prompts →](./packages/scaffold-mcp/docs/how-to.md)**
 
 ---
 
@@ -510,7 +425,7 @@ The AICode Toolkit provides first-class support for Claude Code through a dedica
 
 **Quick Install:**
 ```bash
-/plugin marketplace add AgiFlow/aicode-toolkit
+/plugin marketplace add https://github.com/AgiFlow/aicode-toolkit
 /plugin install aicode-develop@aicode-toolkit
 ```
 
@@ -575,4 +490,5 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 - 🐛 [Report Issues](https://github.com/AgiFlow/aicode-toolkit/issues)
 - 💬 [Discussions](https://github.com/AgiFlow/aicode-toolkit/discussions)
+- 💬 [Discord Community](https://discord.gg/NsB6q9Vas9)
 - 🌐 [Website](https://agiflow.io)
