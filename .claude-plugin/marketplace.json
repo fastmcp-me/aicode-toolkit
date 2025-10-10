@@ -91,6 +91,7 @@
           "args": [
             "-y",
             "@agiflowai/architect-mcp",
+            "mcp-serve",
             "--design-pattern-tool",
             "claude-code"
           ]
@@ -166,10 +167,7 @@
             "@agiflowai/scaffold-mcp",
             "mcp-serve",
             "--admin-enable"
-          ],
-          "env": {
-            "AICODE_MODE": "admin"
-          }
+          ]
         },
         "aicode-architect-admin": {
           "command": "npx",
@@ -178,10 +176,7 @@
             "@agiflowai/architect-mcp",
             "mcp-serve",
             "--admin-enable"
-          ],
-          "env": {
-            "AICODE_MODE": "admin"
-          }
+          ]
         }
       },
       "strict": false
