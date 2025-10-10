@@ -11,7 +11,7 @@ A Model Context Protocol (MCP) server for software architecture design, code qua
 - **Template-aware**: Automatically detects project templates and applies relevant patterns
 - **LLM-powered analysis**: Optional integration with Claude Code CLI for AI-assisted reviews
 - **Multiple modes**: MCP server mode (stdio) and standalone CLI mode
-- **MCP integration**: Seamlessly works with Claude Desktop and other MCP-compatible clients
+- **MCP integration**: Seamlessly works with Claude Code and other MCP-compatible clients
 
 ## Installation
 
@@ -23,12 +23,12 @@ pnpm install @agiflowai/architect-mcp
 
 ### 1. MCP Server
 
-Run architect-mcp as an MCP server to integrate with Claude Desktop or other MCP clients.
+Run architect-mcp as an MCP server to integrate with Claude Code or other MCP clients.
 
 #### Starting the Server
 
 ```bash
-# stdio transport (default) - for Claude Desktop
+# stdio transport (default) - for Claude Code
 npx @agiflowai/architect-mcp mcp-serve
 
 # HTTP transport - for web applications
@@ -63,9 +63,9 @@ npx @agiflowai/architect-mcp mcp-serve --type http --port 3000 --admin-enable --
 - When LLM tools are **enabled** (e.g., `--review-tool claude-code`), the server uses Claude Code CLI to perform the analysis
 - This allows flexibility: let the AI agent do its own analysis, or use specialized LLM tools for deeper insights
 
-#### Claude Desktop Configuration
+#### Claude Code Configuration
 
-Add to your Claude Desktop config:
+Add to your Claude Code config:
 
 ```json
 {
