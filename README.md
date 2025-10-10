@@ -21,6 +21,9 @@ A collection of [Model Context Protocol (MCP)](https://modelcontextprotocol.io) 
 - [Our Approach](#our-approach)
 - [Development](#development)
 - [Documentation](#documentation)
+- [Tool-Specific Support](#tool-specific-support)
+  - [Claude Code](#claude-code)
+  - [Other Tools](#other-tools)
 - [Version Support](#version-support)
 - [Contributing](#contributing)
 - [License](#license)
@@ -69,14 +72,37 @@ Pre-flight guidance + post-flight validation = consistent output. Rules provide 
 
 ### Quick Start
 
-#### Option 1: Use as MCP Server (with Claude Desktop)
+#### Option 1: Use as Claude Code Plugin (Recommended)
+
+The easiest way to get started is through the Claude Code plugin marketplace:
+
+1. **Add the marketplace:**
+   ```bash
+   /plugin marketplace add AgiFlow/aicode-toolkit
+   ```
+
+2. **Install plugins:**
+   ```bash
+   # Install scaffold-mcp for code generation
+   /plugin install scaffold-mcp@aicode-toolkit
+
+   # Install architect-mcp for architecture review
+   /plugin install architect-mcp@aicode-toolkit
+   ```
+
+3. **Start using it:**
+   The MCP servers will be automatically configured and available in Claude Code.
+
+📖 **[Learn more about the marketplace →](./docs/claude-code/MARKETPLACE.md)**
+
+#### Option 2: Use as MCP Server (with Claude Code)
 
 1. **Install the package:**
    ```bash
    pnpm install @agiflowai/scaffold-mcp
    ```
 
-2. **Configure Claude Desktop:**
+2. **Configure Claude Code:**
    Add to your MCP settings:
    ```json
    {
@@ -90,9 +116,9 @@ Pre-flight guidance + post-flight validation = consistent output. Rules provide 
    ```
 
 3. **Start using it:**
-   The MCP server tools will be available in Claude Desktop.
+   The MCP server tools will be available in Claude Code.
 
-#### Option 2: Use as CLI
+#### Option 3: Use as CLI
 
 ```bash
 # Install globally or use npx
@@ -280,7 +306,7 @@ Result: Validates against RULES.yaml (named exports, error handling, etc.)
 
 ### Using with AI Coding Agents
 
-**Claude Desktop Configuration** (Both MCP servers):
+**Claude Code Configuration** (Both MCP servers):
 ```json
 {
   "mcpServers": {
@@ -466,6 +492,46 @@ pnpm release
 ### General
 - **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute to this project
 - **[Publishing Guide](./PUBLISHING.md)** - Release and versioning workflow
+
+---
+
+## Tool-Specific Support
+
+### Claude Code
+
+The AICode Toolkit provides first-class support for Claude Code through a dedicated plugin marketplace. This integration offers:
+
+**🎁 Plugin Marketplace:**
+- **4 focused plugins** organized by project maturity (Bootstrap, Develop, Review, Admin)
+- **Automatic configuration** - No manual MCP server setup required
+- **Specialized agents** - Pre-built agents for architecture review, testing, and migrations
+- **Slash commands** - Quick workflow commands like `/edit-with-pattern`
+- **Team distribution** - Share plugin configurations via `.claude/settings.json`
+
+**Quick Install:**
+```bash
+/plugin marketplace add AgiFlow/aicode-toolkit
+/plugin install aicode-develop@aicode-toolkit
+```
+
+**Features:**
+- ✅ AI-powered pattern filtering (analyzes file content, not just paths)
+- ✅ Intelligent code review (understands code intent)
+- ✅ Architecture review agent with trade-off analysis
+- ✅ Test coverage agent for comprehensive testing
+- ✅ Migration assistant for framework upgrades
+
+📖 **[Complete Claude Code Marketplace Guide →](./docs/claude-code/MARKETPLACE.md)**
+
+### Other Tools
+
+While AICode Toolkit works with any MCP-compatible tool (Claude Code, Cursor, etc.), Claude Code integration provides the most seamless experience with:
+- Pre-configured plugin marketplace
+- Specialized agents for complex workflows
+- Built-in slash commands
+- Team collaboration features
+
+For other tools, see the [Quick Start](#quick-start) guide for manual MCP server configuration.
 
 ---
 

@@ -13,7 +13,7 @@ A Model Context Protocol (MCP) server for scaffolding applications with boilerpl
 - **Template management**: Initialize templates folder and add templates from remote repositories
 - **Multiple frameworks**: Support for Next.js, Vite React, and custom boilerplates
 - **Multiple modes**: MCP server mode (stdio/HTTP/SSE) and standalone CLI mode
-- **MCP integration**: Seamlessly works with Claude Desktop and other MCP-compatible clients
+- **MCP integration**: Seamlessly works with Claude Code and other MCP-compatible clients
 
 ## Installation
 
@@ -25,12 +25,12 @@ pnpm install @agiflowai/scaffold-mcp
 
 ### 1. MCP Server
 
-Run scaffold-mcp as an MCP server to integrate with Claude Desktop or other MCP clients.
+Run scaffold-mcp as an MCP server to integrate with Claude Code or other MCP clients.
 
 #### Starting the Server
 
 ```bash
-# stdio transport (default) - for Claude Desktop
+# stdio transport (default) - for Claude Code
 npx @agiflowai/scaffold-mcp mcp-serve
 
 # HTTP transport - for web applications
@@ -49,9 +49,9 @@ npx @agiflowai/scaffold-mcp mcp-serve --admin-enable
 - `--host <host>`: Host to bind to for HTTP/SSE (default: `localhost`)
 - `--admin-enable`: Enable admin tools for template generation
 
-#### Claude Desktop Configuration
+#### Claude Code Configuration
 
-Add to your Claude Desktop config:
+Add to your Claude Code config:
 
 ```json
 {
