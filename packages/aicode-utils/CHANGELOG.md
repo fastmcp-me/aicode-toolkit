@@ -1,3 +1,18 @@
+## 0.6.0 (2025-10-12)
+
+### 🚀 Features
+
+- **scaffold-mcp:** Add interactive new project setup with @inquirer/prompts ([5d2358a](https://github.com/AgiFlow/aicode-toolkit/commit/5d2358a))
+
+### 🩹 Fixes
+
+- lint Fix lint errors ([c4ceffb](https://github.com/AgiFlow/aicode-toolkit/commit/c4ceffb))
+- **scaffold-mcp:** security and code quality improvements ([bf578ae](https://github.com/AgiFlow/aicode-toolkit/commit/bf578ae))
+
+### ❤️ Thank You
+
+- Vuong Ngo @AgiFlow
+
 ## 0.5.0 (2025-10-12)
 
 ### 🚀 Features
