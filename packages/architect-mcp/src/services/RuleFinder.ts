@@ -258,26 +258,28 @@ export class RuleFinder {
    */
   private async findProjectForFile(filePath: string): Promise<ProjectConfig | null> {
     try {
-      // Use ProjectConfigResolver to support both monolith and monorepo
-      const projectConfig = await ProjectConfigResolver.resolveProjectConfig(filePath);
+      // For monorepo: First try to find project using ProjectFinderService
+      // For monolith: ProjectConfigResolver will find toolkit.yaml at workspace root
+      const project = await this.projectFinder.findProjectForFile(filePath);
 
-      if (!projectConfig || !projectConfig.sourceTemplate) {
-        return null;
-      }
-
-      // Determine project root based on project type
+      let projectConfig: any;
       let projectRoot: string;
       let projectName: string;
 
-      if (projectConfig.type === ProjectType.MONOLITH) {
-        // For monolith, use workspace root
+      if (project && project.root) {
+        // Monorepo project found - use ProjectConfigResolver with project directory
+        projectConfig = await ProjectConfigResolver.resolveProjectConfig(project.root);
+        projectRoot = project.root;
+        projectName = project.name;
+      } else {
+        // No project.json found - try monolith mode with workspace root
+        projectConfig = await ProjectConfigResolver.resolveProjectConfig(this.workspaceRoot);
         projectRoot = projectConfig.workspaceRoot || this.workspaceRoot;
         projectName = path.basename(projectRoot);
-      } else {
-        // For monorepo, use ProjectFinderService to find project.json directory
-        const project = await this.projectFinder.findProjectForFile(filePath);
-        projectRoot = project?.root || path.dirname(filePath);
-        projectName = project?.name || path.basename(projectRoot);
+      }
+
+      if (!projectConfig || !projectConfig.sourceTemplate) {
+        return null;
       }
 
       return {

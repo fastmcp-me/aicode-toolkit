@@ -47,22 +47,25 @@ export class TemplateFinder {
       : path.join(this.workspaceRoot, filePath);
 
     try {
-      // Use ProjectConfigResolver to support both monolith and monorepo
-      const projectConfig = await ProjectConfigResolver.resolveProjectConfig(normalizedPath);
+      // For monorepo: First try to find project using ProjectFinderService
+      // For monolith: ProjectConfigResolver will find toolkit.yaml at workspace root
+      const project = await this.projectFinder.findProjectForFile(normalizedPath);
+
+      let projectConfig: any;
+      let projectPath: string;
+
+      if (project && project.root) {
+        // Monorepo project found - use ProjectConfigResolver with project directory
+        projectConfig = await ProjectConfigResolver.resolveProjectConfig(project.root);
+        projectPath = project.root;
+      } else {
+        // No project.json found - try monolith mode with workspace root
+        projectConfig = await ProjectConfigResolver.resolveProjectConfig(this.workspaceRoot);
+        projectPath = projectConfig.workspaceRoot || this.workspaceRoot;
+      }
 
       if (!projectConfig || !projectConfig.sourceTemplate) {
         return null;
-      }
-
-      // Determine project path based on project type
-      let projectPath: string;
-      if (projectConfig.type === ProjectType.MONOLITH) {
-        // For monolith: use workspace root
-        projectPath = projectConfig.workspaceRoot || this.workspaceRoot;
-      } else {
-        // For monorepo: use ProjectFinderService to find project.json directory
-        const project = await this.projectFinder.findProjectForFile(normalizedPath);
-        projectPath = project?.root || path.dirname(normalizedPath);
       }
 
       // Get templates root
