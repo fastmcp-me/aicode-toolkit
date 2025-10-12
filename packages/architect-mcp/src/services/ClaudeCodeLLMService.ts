@@ -117,7 +117,15 @@ export class ClaudeCodeLLMService {
 
     // Build command arguments - single turn only
     // Note: stream-json requires --verbose flag
-    const args = ['--max-turns', '0', '--output-format', 'stream-json', '--verbose', '--session-id', sessionId];
+    const args = [
+      '--max-turns',
+      '0',
+      '--output-format',
+      'stream-json',
+      '--verbose',
+      '--session-id',
+      sessionId,
+    ];
 
     args.push('--disallowedTools', claudeCodeBuiltinTools);
 
@@ -221,7 +229,8 @@ export class ClaudeCodeLLMService {
           if (message.usage) {
             usage.inputTokens = message.usage.input_tokens || usage.inputTokens;
             usage.outputTokens = message.usage.output_tokens || usage.outputTokens;
-            usage.cacheCreationTokens = message.usage.cache_creation_input_tokens || usage.cacheCreationTokens;
+            usage.cacheCreationTokens =
+              message.usage.cache_creation_input_tokens || usage.cacheCreationTokens;
             usage.cacheReadTokens = message.usage.cache_read_input_tokens || usage.cacheReadTokens;
             usage.totalTokens = usage.inputTokens + usage.outputTokens;
           }

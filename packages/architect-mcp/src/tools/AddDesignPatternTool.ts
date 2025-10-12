@@ -41,7 +41,8 @@ export class AddDesignPatternTool implements Tool<AddDesignPatternToolInput> {
   getDefinition(): ToolDefinition {
     return {
       name: AddDesignPatternTool.TOOL_NAME,
-      description: 'Admin tool to add a new design pattern to a template\'s architect.yaml file. Creates the file if it doesn\'t exist.',
+      description:
+        "Admin tool to add a new design pattern to a template's architect.yaml file. Creates the file if it doesn't exist.",
       inputSchema: {
         type: 'object',
         properties: {
@@ -60,11 +61,13 @@ export class AddDesignPatternTool implements Tool<AddDesignPatternToolInput> {
           includes: {
             type: 'array',
             items: { type: 'string' },
-            description: 'Array of file patterns that match this design pattern (e.g., ["src/components/**/*.tsx"])',
+            description:
+              'Array of file patterns that match this design pattern (e.g., ["src/components/**/*.tsx"])',
           },
           description: {
             type: 'string',
-            description: 'Detailed markdown description following the format: Pattern Overview, What TO DO (✅), What NOT TO DO (❌), and Examples with code blocks',
+            description:
+              'Detailed markdown description following the format: Pattern Overview, What TO DO (✅), What NOT TO DO (❌), and Examples with code blocks',
           },
         },
         required: ['template_name', 'pattern_name', 'design_pattern', 'includes', 'description'],
@@ -122,7 +125,7 @@ export class AddDesignPatternTool implements Tool<AddDesignPatternToolInput> {
 
       // Check if pattern already exists
       const existingPattern = architectConfig.features!.find(
-        (f) => f.name === input.pattern_name || f.architecture === input.pattern_name
+        (f) => f.name === input.pattern_name || f.architecture === input.pattern_name,
       );
 
       if (existingPattern) {

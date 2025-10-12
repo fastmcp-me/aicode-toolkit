@@ -43,7 +43,8 @@ export class ReviewCodeChangeTool implements Tool<ReviewCodeChangeToolInput> {
   getDefinition(): ToolDefinition {
     return {
       name: ReviewCodeChangeTool.TOOL_NAME,
-      description: 'Review code changes against template-specific RULES.yaml and provide feedback with severity rating',
+      description:
+        'Review code changes against template-specific RULES.yaml and provide feedback with severity rating',
       inputSchema: {
         type: 'object',
         properties: {

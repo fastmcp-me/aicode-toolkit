@@ -1,4 +1,9 @@
-import { ProjectFinderService, TemplatesManagerService } from '@agiflowai/aicode-utils';
+import {
+  ProjectConfigResolver,
+  ProjectFinderService,
+  TemplatesManagerService,
+  ProjectType,
+} from '@agiflowai/aicode-utils';
 import * as fs from 'fs/promises';
 import * as yaml from 'js-yaml';
 import { minimatch } from 'minimatch';
@@ -95,10 +100,18 @@ export class RuleFinder {
     // Resolve inheritance
     if (rule.inherits && rule.inherits.length > 0) {
       for (const inheritPattern of rule.inherits) {
-        const inheritedRule = await this.findInheritedRule(inheritPattern, templateRules, globalRules);
+        const inheritedRule = await this.findInheritedRule(
+          inheritPattern,
+          templateRules,
+          globalRules,
+        );
         if (inheritedRule) {
           // Recursively resolve inheritance for the inherited rule
-          const fullyResolvedInheritedRule = await this.resolveInheritance(inheritedRule, templateRules, globalRules);
+          const fullyResolvedInheritedRule = await this.resolveInheritance(
+            inheritedRule,
+            templateRules,
+            globalRules,
+          );
           resolvedRule = this.mergeRules(fullyResolvedInheritedRule, resolvedRule);
         }
       }
@@ -117,7 +130,9 @@ export class RuleFinder {
     templatePath: string | null;
   }> {
     // Normalize the file path
-    const normalizedPath = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath);
+    const normalizedPath = path.isAbsolute(filePath)
+      ? filePath
+      : path.join(this.workspaceRoot, filePath);
 
     // Find the project containing this file
     const project = await this.findProjectForFile(normalizedPath);
@@ -155,7 +170,10 @@ export class RuleFinder {
   /**
    * Merge template rules config with global rules config
    */
-  private mergeRulesConfigs(templateRules: RulesYamlConfig, globalRules: RulesYamlConfig | null): RulesYamlConfig {
+  private mergeRulesConfigs(
+    templateRules: RulesYamlConfig,
+    globalRules: RulesYamlConfig | null,
+  ): RulesYamlConfig {
     if (!globalRules) {
       return templateRules;
     }
@@ -203,7 +221,11 @@ export class RuleFinder {
   /**
    * Find matching rule for a file path
    */
-  private findMatchingRule(filePath: string, projectRoot: string, rulesConfig: RulesYamlConfig): RuleSection | null {
+  private findMatchingRule(
+    filePath: string,
+    projectRoot: string,
+    rulesConfig: RulesYamlConfig,
+  ): RuleSection | null {
     // Get the file path relative to the project root
     const projectRelativePath = path.relative(projectRoot, filePath);
 
@@ -232,9 +254,44 @@ export class RuleFinder {
 
   /**
    * Find the project containing a given file
+   * Supports both monolith (toolkit.yaml) and monorepo (project.json) configurations
    */
   private async findProjectForFile(filePath: string): Promise<ProjectConfig | null> {
-    return this.projectFinder.findProjectForFile(filePath);
+    try {
+      // For monorepo: First try to find project using ProjectFinderService
+      // For monolith: ProjectConfigResolver will find toolkit.yaml at workspace root
+      const project = await this.projectFinder.findProjectForFile(filePath);
+
+      let projectConfig: any;
+      let projectRoot: string;
+      let projectName: string;
+
+      if (project && project.root) {
+        // Monorepo project found - use ProjectConfigResolver with project directory
+        projectConfig = await ProjectConfigResolver.resolveProjectConfig(project.root);
+        projectRoot = project.root;
+        projectName = project.name;
+      } else {
+        // No project.json found - try monolith mode with workspace root
+        projectConfig = await ProjectConfigResolver.resolveProjectConfig(this.workspaceRoot);
+        projectRoot = projectConfig.workspaceRoot || this.workspaceRoot;
+        projectName = path.basename(projectRoot);
+      }
+
+      if (!projectConfig || !projectConfig.sourceTemplate) {
+        return null;
+      }
+
+      return {
+        name: projectName,
+        root: projectRoot,
+        sourceTemplate: projectConfig.sourceTemplate,
+        projectType: projectConfig.type,
+      };
+    } catch {
+      // Project config not found
+      return null;
+    }
   }
 
   /**
@@ -243,5 +300,6 @@ export class RuleFinder {
   clearCache(): void {
     this.projectCache.clear();
     this.rulesCache.clear();
+    this.projectFinder.clearCache();
   }
 }

@@ -31,7 +31,8 @@ export class CodeReviewService {
    */
   async reviewCodeChange(filePath: string): Promise<CodeReviewResult> {
     // Find rules for this file
-    const { project, rulesConfig, matchedRule, templatePath } = await this.ruleFinder.findRulesForFile(filePath);
+    const { project, rulesConfig, matchedRule, templatePath } =
+      await this.ruleFinder.findRulesForFile(filePath);
 
     if (!project) {
       return {
@@ -78,7 +79,9 @@ export class CodeReviewService {
     }
 
     // Read the file content
-    const normalizedPath = path.isAbsolute(filePath) ? filePath : path.join(process.cwd(), filePath);
+    const normalizedPath = path.isAbsolute(filePath)
+      ? filePath
+      : path.join(process.cwd(), filePath);
     let fileContent: string;
     try {
       fileContent = await fs.readFile(normalizedPath, 'utf-8');
@@ -87,7 +90,12 @@ export class CodeReviewService {
     }
 
     // Perform the code review using Claude
-    const reviewResult = await this.performCodeReview(fileContent, normalizedPath, matchedRule, rulesConfig);
+    const reviewResult = await this.performCodeReview(
+      fileContent,
+      normalizedPath,
+      matchedRule,
+      rulesConfig,
+    );
 
     return {
       file_path: filePath,
@@ -107,7 +115,9 @@ export class CodeReviewService {
     rulesConfig: RulesYamlConfig,
   ): Promise<Pick<CodeReviewResult, 'review_feedback' | 'severity' | 'issues_found'>> {
     if (!this.claudeService) {
-      throw new Error('Claude service not initialized. Use llmTool="claude-code" to enable LLM-based review.');
+      throw new Error(
+        'Claude service not initialized. Use llmTool="claude-code" to enable LLM-based review.',
+      );
     }
 
     // Build the review prompt

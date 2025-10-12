@@ -12,10 +12,7 @@
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { GetFileDesignPatternTool } from '../tools/GetFileDesignPatternTool';
 import { ReviewCodeChangeTool } from '../tools/ReviewCodeChangeTool';
 import { AddDesignPatternTool } from '../tools/AddDesignPatternTool';
@@ -35,11 +32,13 @@ export function createServer(options?: {
       capabilities: {
         tools: {},
       },
-    }
+    },
   );
 
   // Initialize core tools with optional LLM support
-  const getFileDesignPatternTool = new GetFileDesignPatternTool({ llmTool: options?.designPatternTool });
+  const getFileDesignPatternTool = new GetFileDesignPatternTool({
+    llmTool: options?.designPatternTool,
+  });
   const reviewCodeChangeTool = new ReviewCodeChangeTool({ llmTool: options?.reviewTool });
 
   // Initialize admin tools if enabled
@@ -48,10 +47,7 @@ export function createServer(options?: {
   const addRuleTool = adminEnabled ? new AddRuleTool() : null;
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
-    const tools = [
-      getFileDesignPatternTool.getDefinition(),
-      reviewCodeChangeTool.getDefinition(),
-    ];
+    const tools = [getFileDesignPatternTool.getDefinition(), reviewCodeChangeTool.getDefinition()];
 
     // Add admin tools if enabled
     if (adminEnabled && addDesignPatternTool && addRuleTool) {

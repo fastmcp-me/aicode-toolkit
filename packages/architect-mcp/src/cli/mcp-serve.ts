@@ -62,8 +62,16 @@ export const mcpServeCommand = new Command('mcp-serve')
     3000,
   )
   .option('--host <host>', 'Host to bind to (http/sse only)', 'localhost')
-  .option('--design-pattern-tool <tool>', 'LLM tool for design pattern analysis (currently only "claude-code" is supported)', undefined)
-  .option('--review-tool <tool>', 'LLM tool for code review (currently only "claude-code" is supported)', undefined)
+  .option(
+    '--design-pattern-tool <tool>',
+    'LLM tool for design pattern analysis (currently only "claude-code" is supported)',
+    undefined,
+  )
+  .option(
+    '--review-tool <tool>',
+    'LLM tool for code review (currently only "claude-code" is supported)',
+    undefined,
+  )
   .option('--admin-enable', 'Enable admin tools (add_design_pattern, add_rule)', false)
   .action(async (options) => {
     try {
@@ -74,13 +82,17 @@ export const mcpServeCommand = new Command('mcp-serve')
 
       // Validate design-pattern-tool option
       if (designPatternTool && designPatternTool !== 'claude-code') {
-        print.error(`Invalid design pattern tool: ${designPatternTool}. Currently only "claude-code" is supported.`);
+        print.error(
+          `Invalid design pattern tool: ${designPatternTool}. Currently only "claude-code" is supported.`,
+        );
         process.exit(1);
       }
 
       // Validate review-tool option
       if (reviewTool && reviewTool !== 'claude-code') {
-        print.error(`Invalid review tool: ${reviewTool}. Currently only "claude-code" is supported.`);
+        print.error(
+          `Invalid review tool: ${reviewTool}. Currently only "claude-code" is supported.`,
+        );
         process.exit(1);
       }
 

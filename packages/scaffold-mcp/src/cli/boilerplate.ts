@@ -54,6 +54,14 @@ boilerplateCommand
   .command('create <boilerplateName>')
   .description('Create a new project from a boilerplate template')
   .option('-v, --vars <json>', 'JSON string containing variables for the boilerplate')
+  .option(
+    '-m, --monolith',
+    'Create as monolith project at workspace root with toolkit.yaml (default: false, creates as monorepo with project.json)',
+  )
+  .option(
+    '-t, --target-folder <path>',
+    'Override target folder (defaults to boilerplate targetFolder for monorepo, workspace root for monolith)',
+  )
   .option('--verbose', 'Enable verbose logging')
   .action(async (boilerplateName, options) => {
     try {
@@ -124,6 +132,8 @@ boilerplateCommand
       const result = await boilerplateService.useBoilerplate({
         boilerplateName,
         variables,
+        monolith: options.monolith,
+        targetFolderOverride: options.targetFolder,
       });
 
       if (result.success) {
@@ -138,11 +148,17 @@ boilerplateCommand
           (variables as Record<string, unknown>).appName ||
           (variables as Record<string, unknown>).packageName;
         if (projectName) {
-          sections.nextSteps([
-            `cd ${boilerplate.target_folder}/${projectName}`,
-            'pnpm install',
-            'pnpm dev',
-          ]);
+          // Determine the correct path based on monolith flag
+          const targetFolder =
+            options.targetFolder || (options.monolith ? '.' : boilerplate.target_folder);
+          const projectPath = options.monolith ? '.' : `${targetFolder}/${projectName}`;
+
+          const steps =
+            projectPath === '.'
+              ? ['pnpm install', 'pnpm dev']
+              : [`cd ${projectPath}`, 'pnpm install', 'pnpm dev'];
+
+          sections.nextSteps(steps);
         }
       } else {
         messages.error(`Failed to create project: ${result.message}`);

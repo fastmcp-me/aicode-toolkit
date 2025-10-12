@@ -24,7 +24,9 @@ describe('AddRuleTool', () => {
   it('should have correct metadata', () => {
     const definition = tool.getDefinition();
     expect(definition.name).toBeDefined();
-    expect(definition.description).toBe('Add a new design pattern rule to a template\'s RULES.yaml or global RULES.yaml. Rules define specific coding standards, must-do/must-not-do items, and code examples.');
+    expect(definition.description).toBe(
+      "Add a new design pattern rule to a template's RULES.yaml or global RULES.yaml. Rules define specific coding standards, must-do/must-not-do items, and code examples.",
+    );
     expect(definition.inputSchema).toBeDefined();
   });
 
@@ -39,7 +41,38 @@ describe('AddRuleTool', () => {
     expect(result.content[0].type).toBe('text');
   });
 
-  it('should handle errors gracefully', async () => {
-    // TODO: Add error test cases
+  it('should return error when template not found', async () => {
+    const result = await tool.execute({
+      template_name: 'non-existent-template',
+      pattern: 'test-pattern',
+      description: 'Test pattern description',
+      is_global: false,
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].type).toBe('text');
+    const response = JSON.parse(result.content[0].text);
+    expect(response.error).toContain('not found');
+  });
+
+  it('should return error when rule pattern already exists', async () => {
+    // First add a rule
+    await tool.execute({
+      pattern: 'duplicate-pattern',
+      description: 'Test pattern description',
+      is_global: true,
+    });
+
+    // Try to add the same pattern again
+    const result = await tool.execute({
+      pattern: 'duplicate-pattern',
+      description: 'Another description',
+      is_global: true,
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].type).toBe('text');
+    const response = JSON.parse(result.content[0].text);
+    expect(response.error).toContain('already exists');
   });
 });

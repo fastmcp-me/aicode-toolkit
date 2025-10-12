@@ -18,6 +18,11 @@ A collection of [Model Context Protocol (MCP)](https://modelcontextprotocol.io) 
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Quick Start](#quick-start)
+- [Project Structure Support](#project-structure-support)
+  - [Monorepo (Default)](#monorepo-default)
+  - [Monolith](#monolith-new)
+  - [Creating Projects](#creating-projects)
+  - [Adding Features](#adding-features)
 - [Development Workflow](#development-workflow)
 - [Packages](#packages)
 - [Development](#development)
@@ -175,6 +180,104 @@ Once configured, your AI agent has access to:
 - **nextjs-15-drizzle**: Next.js 15 + App Router + TypeScript + Tailwind CSS 4 + Storybook + Optional Drizzle ORM
 - **typescript-lib**: TypeScript library with ESM/CJS builds, testing, and documentation
 - **typescript-mcp-package**: Model Context Protocol (MCP) server package template
+
+---
+
+## Project Structure Support
+
+AI Code Toolkit supports both **monorepo** and **monolith** project architectures. The tools automatically detect your project type and adapt accordingly.
+
+### Monorepo (Default)
+
+Multi-project workspaces using tools like Nx, Lerna, or Turborepo:
+
+```
+my-workspace/
+├── apps/
+│   ├── web-app/
+│   │   ├── project.json  ← sourceTemplate: "nextjs-15"
+│   │   └── src/
+│   └── mobile-app/
+│       ├── project.json  ← sourceTemplate: "react-native"
+│       └── src/
+└── packages/
+    └── shared-lib/
+        ├── project.json  ← sourceTemplate: "typescript-lib"
+        └── src/
+```
+
+**Configuration**: Each project has `project.json` with `sourceTemplate` field
+
+### Monolith (New!)
+
+Single-application codebases:
+
+```
+my-app/
+├── toolkit.yaml  ← projectType: monolith, sourceTemplate: "react-vite"
+├── package.json
+├── src/
+└── public/
+```
+
+**Configuration**: `toolkit.yaml` at workspace root with `projectType` and `sourceTemplate`
+
+```yaml
+version: "1.0"
+projectType: monolith
+sourceTemplate: react-vite  # Your template identifier
+```
+
+**Alternative**: Configure via `package.json`:
+```json
+{
+  "name": "my-app",
+  "scaffold": {
+    "sourceTemplate": "react-vite"
+  }
+}
+```
+
+### Creating Projects
+
+**Monorepo** (default behavior):
+```bash
+scaffold-mcp boilerplate create scaffold-nextjs-app \
+  --vars '{"appName": "web-app", "description": "Web App"}'
+
+# Creates: apps/web-app/project.json + project files
+```
+
+**Monolith** (use `--monolith` flag):
+```bash
+scaffold-mcp boilerplate create scaffold-react-vite-app \
+  --vars '{"appName": "my-app", "description": "My App"}' \
+  --monolith
+
+# Creates: toolkit.yaml + project files at workspace root
+```
+
+### Adding Features
+
+The tools automatically detect your project type:
+
+```bash
+# Monorepo
+scaffold-mcp scaffold add scaffold-nextjs-page \
+  --project apps/web-app \
+  --vars '{"pageName": "dashboard"}'
+
+# Monolith
+scaffold-mcp scaffold add scaffold-react-component \
+  --project . \
+  --vars '{"componentName": "Header"}'
+```
+
+**Key Points**:
+- Templates are **architecture-agnostic** (same templates work for both)
+- Tools **auto-detect** project type from configuration files
+- Use `--monolith` flag only when **creating new projects**
+- Configuration priority: `project.json` → `toolkit.yaml` → `package.json`
 
 ---
 

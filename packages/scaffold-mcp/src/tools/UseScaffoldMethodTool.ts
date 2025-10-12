@@ -43,7 +43,8 @@ IMPORTANT:
         properties: {
           projectPath: {
             type: 'string',
-            description: 'Absolute path to the project directory containing project.json',
+            description:
+              'Absolute path to the project directory (for monorepo: containing project.json; for monolith: workspace root with toolkit.yaml)',
           },
           scaffold_feature_name: {
             type: 'string',

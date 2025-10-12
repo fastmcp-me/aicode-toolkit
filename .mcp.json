@@ -9,7 +9,16 @@
     "architect-mcp": {
       "type": "stdio",
       "command": "bun",
-      "args": ["run", "packages/architect-mcp/src/index.ts", "mcp-serve", "--admin-enable", "--design-pattern-tool", "claude-code", "--review-tool", "claude-code"],
+      "args": [
+        "run",
+        "packages/architect-mcp/src/index.ts",
+        "mcp-serve",
+        "--admin-enable",
+        "--design-pattern-tool",
+        "claude-code",
+        "--review-tool",
+        "claude-code"
+      ],
       "disabled": false
     },
     "nx-mcp": {

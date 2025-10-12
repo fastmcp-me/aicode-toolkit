@@ -25,6 +25,13 @@
 import path from 'node:path';
 import * as fs from 'fs-extra';
 
+export interface ToolkitConfig {
+  version?: string;
+  templatesPath?: string;
+  projectType?: 'monolith' | 'monorepo';
+  sourceTemplate?: string;
+}
+
 export class TemplatesManagerService {
   private static SCAFFOLD_CONFIG_FILE = 'scaffold.yaml';
   private static TEMPLATES_FOLDER = 'templates';
@@ -211,5 +218,85 @@ export class TemplatesManagerService {
    */
   static getTemplatesFolderName(): string {
     return TemplatesManagerService.TEMPLATES_FOLDER;
+  }
+
+  /**
+   * Read toolkit.yaml configuration from workspace root
+   *
+   * @param startPath - The path to start searching from (defaults to process.cwd())
+   * @returns The toolkit configuration object or null if not found
+   */
+  static async readToolkitConfig(startPath: string = process.cwd()): Promise<ToolkitConfig | null> {
+    const workspaceRoot = await TemplatesManagerService.findWorkspaceRoot(startPath);
+    const toolkitConfigPath = path.join(workspaceRoot, TemplatesManagerService.TOOLKIT_CONFIG_FILE);
+
+    if (!(await fs.pathExists(toolkitConfigPath))) {
+      return null;
+    }
+
+    const yaml = await import('js-yaml');
+    const content = await fs.readFile(toolkitConfigPath, 'utf-8');
+    const config = yaml.load(content) as ToolkitConfig;
+
+    return config;
+  }
+
+  /**
+   * Read toolkit.yaml configuration from workspace root (sync)
+   *
+   * @param startPath - The path to start searching from (defaults to process.cwd())
+   * @returns The toolkit configuration object or null if not found
+   */
+  static readToolkitConfigSync(startPath: string = process.cwd()): ToolkitConfig | null {
+    const workspaceRoot = TemplatesManagerService.findWorkspaceRootSync(startPath);
+    const toolkitConfigPath = path.join(workspaceRoot, TemplatesManagerService.TOOLKIT_CONFIG_FILE);
+
+    if (!fs.pathExistsSync(toolkitConfigPath)) {
+      return null;
+    }
+
+    const yaml = require('js-yaml');
+    const content = fs.readFileSync(toolkitConfigPath, 'utf-8');
+    const config = yaml.load(content) as ToolkitConfig;
+
+    return config;
+  }
+
+  /**
+   * Write toolkit.yaml configuration to workspace root
+   *
+   * @param config - The toolkit configuration to write
+   * @param startPath - The path to start searching from (defaults to process.cwd())
+   */
+  static async writeToolkitConfig(
+    config: ToolkitConfig,
+    startPath: string = process.cwd(),
+  ): Promise<void> {
+    const workspaceRoot = await TemplatesManagerService.findWorkspaceRoot(startPath);
+    const toolkitConfigPath = path.join(workspaceRoot, TemplatesManagerService.TOOLKIT_CONFIG_FILE);
+
+    const yaml = await import('js-yaml');
+    const content = yaml.dump(config, { indent: 2 });
+    await fs.writeFile(toolkitConfigPath, content, 'utf-8');
+  }
+
+  /**
+   * Get the workspace root directory
+   *
+   * @param startPath - The path to start searching from (defaults to process.cwd())
+   * @returns The workspace root directory path
+   */
+  static async getWorkspaceRoot(startPath: string = process.cwd()): Promise<string> {
+    return TemplatesManagerService.findWorkspaceRoot(startPath);
+  }
+
+  /**
+   * Get the workspace root directory (sync)
+   *
+   * @param startPath - The path to start searching from (defaults to process.cwd())
+   * @returns The workspace root directory path
+   */
+  static getWorkspaceRootSync(startPath: string = process.cwd()): string {
+    return TemplatesManagerService.findWorkspaceRootSync(startPath);
   }
 }

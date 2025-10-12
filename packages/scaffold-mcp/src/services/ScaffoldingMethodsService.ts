@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { log } from '@agiflowai/aicode-utils';
+import { log, ProjectConfigResolver } from '@agiflowai/aicode-utils';
 import yaml from 'js-yaml';
 import type { IFileSystemService } from '../types/interfaces';
 import type { ScaffoldResult } from '../types/scaffold';
@@ -30,12 +30,6 @@ export interface UseScaffoldMethodRequest {
   variables: Record<string, any>;
 }
 
-interface ProjectConfig {
-  name: string;
-  sourceTemplate?: string;
-  [key: string]: any;
-}
-
 interface ArchitectConfig {
   [scaffoldType: string]: any;
 }
@@ -52,17 +46,10 @@ export class ScaffoldingMethodsService {
 
   async listScaffoldingMethods(projectPath: string): Promise<ListScaffoldingMethodsResult> {
     const absoluteProjectPath = path.resolve(projectPath);
-    const projectJsonPath = path.join(absoluteProjectPath, 'project.json');
 
-    if (!(await this.fileSystem.pathExists(projectJsonPath))) {
-      throw new Error(`project.json not found at ${projectJsonPath}`);
-    }
-
-    const projectConfig = (await this.fileSystem.readJson(projectJsonPath)) as ProjectConfig;
-
-    if (!projectConfig.sourceTemplate) {
-      throw new Error(`sourceTemplate not specified in project.json at ${projectJsonPath}`);
-    }
+    // Use ProjectConfigResolver to get sourceTemplate
+    // This supports both monolith (toolkit.yaml) and monorepo (project.json)
+    const projectConfig = await ProjectConfigResolver.resolveProjectConfig(absoluteProjectPath);
 
     const sourceTemplate = projectConfig.sourceTemplate;
     const templatePath = await this.findTemplatePath(sourceTemplate);

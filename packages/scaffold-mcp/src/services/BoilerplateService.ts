@@ -1,5 +1,5 @@
 import * as path from 'node:path';
-import { log } from '@agiflowai/aicode-utils';
+import { log, ProjectConfigResolver } from '@agiflowai/aicode-utils';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
 import * as fs from 'fs-extra';
 import * as yaml from 'js-yaml';
@@ -136,7 +136,7 @@ export class BoilerplateService {
    * Executes a specific boilerplate with provided variables
    */
   async useBoilerplate(request: UseBoilerplateRequest): Promise<ScaffoldResult> {
-    const { boilerplateName, variables } = request;
+    const { boilerplateName, variables, monolith = false, targetFolderOverride } = request;
 
     // Find the boilerplate configuration
     const boilerplateList = await this.listBoilerplates();
@@ -171,12 +171,15 @@ export class BoilerplateService {
     // e.g., "@agiflowai/test-package" -> "test-package"
     const folderName = packageName.includes('/') ? packageName.split('/')[1] : packageName;
 
+    // Determine target folder based on monolith flag
+    const targetFolder = targetFolderOverride || (monolith ? '.' : boilerplate.target_folder);
+
     // Use ScaffoldService to perform the scaffolding
     try {
       const result = await this.scaffoldService.useBoilerplate({
         projectName: folderName,
         packageName: packageName,
-        targetFolder: boilerplate.target_folder,
+        targetFolder,
         templateFolder: boilerplate.template_path,
         boilerplateName,
         variables: {
@@ -192,12 +195,22 @@ export class BoilerplateService {
         return result;
       }
 
-      // After scaffolding, ensure project.json has sourceTemplate field
-      this.ensureProjectJsonSourceTemplate(
-        boilerplate.target_folder,
-        folderName,
-        boilerplate.template_path,
-      );
+      // After scaffolding, create appropriate config based on project type
+      // NOTE: For monolith mode, toolkit.yaml is created at workspace root after scaffolding.
+      // If running multiple operations concurrently, consider adding a locking mechanism
+      // or creating the config file before scaffolding begins.
+      if (monolith) {
+        // Create toolkit.yaml for monolith projects
+        await ProjectConfigResolver.createToolkitYaml(boilerplate.template_path);
+      } else {
+        // Create/update project.json for monorepo projects
+        const projectPath = path.join(targetFolder, folderName);
+        await ProjectConfigResolver.createProjectJson(
+          projectPath,
+          folderName,
+          boilerplate.template_path,
+        );
+      }
 
       return {
         success: result.success,
@@ -278,44 +291,6 @@ export class BoilerplateService {
       }
 
       return { isValid: false, errors };
-    }
-  }
-
-  /**
-   * Ensures project.json has sourceTemplate field
-   * If project.json exists, updates it; otherwise creates a new one
-   */
-  private ensureProjectJsonSourceTemplate(
-    targetFolder: string,
-    projectName: string,
-    sourceTemplate: string,
-  ): void {
-    const projectJsonPath = path.join(targetFolder, projectName, 'project.json');
-
-    try {
-      let projectJson: any;
-
-      if (fs.existsSync(projectJsonPath)) {
-        // Read existing project.json
-        const content = fs.readFileSync(projectJsonPath, 'utf8');
-        projectJson = JSON.parse(content);
-      } else {
-        // Create minimal project.json
-        projectJson = {
-          name: projectName,
-          $schema: '../../node_modules/nx/schemas/project-schema.json',
-          sourceRoot: `${targetFolder}/${projectName}`,
-          projectType: 'application',
-        };
-      }
-
-      // Add/update sourceTemplate field
-      projectJson.sourceTemplate = sourceTemplate;
-
-      // Write back to file
-      fs.writeFileSync(projectJsonPath, `${JSON.stringify(projectJson, null, 2)}\n`, 'utf8');
-    } catch (error) {
-      log.warn(`Failed to update project.json with sourceTemplate: ${error}`);
     }
   }
 }

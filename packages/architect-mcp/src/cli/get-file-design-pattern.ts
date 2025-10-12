@@ -95,9 +95,7 @@ export const getFileDesignPatternCommand = new Command('get-file-design-pattern'
 
             if (pattern.description) {
               // Clean up description formatting
-              const cleanDescription = pattern.description
-                .replace(/\n\n/g, '\n')
-                .trim();
+              const cleanDescription = pattern.description.replace(/\n\n/g, '\n').trim();
               print.info(cleanDescription);
             }
 
@@ -115,9 +113,11 @@ export const getFileDesignPatternCommand = new Command('get-file-design-pattern'
           print.newline();
         }
       }
-
     } catch (error) {
-      print.error('❌ Error executing get-file-design-pattern:', error instanceof Error ? error : String(error));
+      print.error(
+        '❌ Error executing get-file-design-pattern:',
+        error instanceof Error ? error : String(error),
+      );
       process.exit(1);
     }
   });
