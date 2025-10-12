@@ -21,7 +21,12 @@ import { log } from '@agiflowai/aicode-utils';
  */
 
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import type { Tool, ToolDefinition, FileDesignPatternResult, DesignPatternMatch } from '../types/index.js';
+import type {
+  Tool,
+  ToolDefinition,
+  FileDesignPatternResult,
+  DesignPatternMatch,
+} from '../types/index.js';
 import { TemplateFinder } from '../services/TemplateFinder.js';
 import { ArchitectParser } from '../services/ArchitectParser.js';
 import { PatternMatcher } from '../services/PatternMatcher.js';
@@ -55,13 +60,15 @@ export class GetFileDesignPatternTool implements Tool<GetFileDesignPatternToolIn
   getDefinition(): ToolDefinition {
     return {
       name: GetFileDesignPatternTool.TOOL_NAME,
-      description: 'Review a file against template-specific and global design patterns with detailed guidance',
+      description:
+        'Review a file against template-specific and global design patterns with detailed guidance',
       inputSchema: {
         type: 'object',
         properties: {
           file_path: {
             type: 'string',
-            description: 'The file path to check for design patterns (absolute or relative to workspace)',
+            description:
+              'The file path to check for design patterns (absolute or relative to workspace)',
           },
         },
         required: ['file_path'],
@@ -93,7 +100,10 @@ export class GetFileDesignPatternTool implements Tool<GetFileDesignPatternToolIn
       // If LLM service is available, filter patterns based on file content
       let filteredPatterns = result.matched_patterns;
       if (this.llmService && result.matched_patterns.length > 0) {
-        filteredPatterns = await this.filterPatternsWithLLM(input.file_path, result.matched_patterns);
+        filteredPatterns = await this.filterPatternsWithLLM(
+          input.file_path,
+          result.matched_patterns,
+        );
       }
 
       // Add additional metadata
@@ -145,7 +155,9 @@ export class GetFileDesignPatternTool implements Tool<GetFileDesignPatternToolIn
 
     try {
       // Read file content
-      const normalizedPath = path.isAbsolute(filePath) ? filePath : path.join(process.cwd(), filePath);
+      const normalizedPath = path.isAbsolute(filePath)
+        ? filePath
+        : path.join(process.cwd(), filePath);
       const fileContent = await fs.readFile(normalizedPath, 'utf-8');
 
       // Build prompt for LLM
@@ -196,7 +208,7 @@ Your response (numbers only):`;
     }
 
     const indices: number[] = [];
-    const parts = response.split(',').map(s => s.trim());
+    const parts = response.split(',').map((s) => s.trim());
 
     for (const part of parts) {
       const num = parseInt(part, 10);

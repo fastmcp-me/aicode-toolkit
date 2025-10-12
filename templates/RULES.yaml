@@ -317,3 +317,5 @@ rules:
           }
   - pattern: test-pattern
     description: Test pattern description
+  - pattern: duplicate-pattern
+    description: Test pattern description

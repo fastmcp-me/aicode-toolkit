@@ -1,7 +1,6 @@
 import path from 'node:path';
-import { TemplatesManagerService } from '@agiflowai/aicode-utils';
+import { ProjectConfigResolver, TemplatesManagerService } from '@agiflowai/aicode-utils';
 import { Command } from 'commander';
-import * as fs from 'fs-extra';
 import { FileSystemService } from '../services/FileSystemService';
 import { ScaffoldingMethodsService } from '../services/ScaffoldingMethodsService';
 import { icons, messages, print } from '../utils';
@@ -21,9 +20,14 @@ scaffoldCommand
     try {
       const absolutePath = path.resolve(projectPath);
 
-      if (!fs.existsSync(path.join(absolutePath, 'project.json'))) {
-        messages.error(`No project.json found in ${absolutePath}`);
-        messages.hint('Make sure you are in a valid project directory');
+      // Verify project configuration exists (supports both monolith and monorepo)
+      const hasConfig = await ProjectConfigResolver.hasConfiguration(absolutePath);
+      if (!hasConfig) {
+        messages.error(`No project configuration found in ${absolutePath}`);
+        messages.hint(
+          'For monorepo: ensure project.json exists with sourceTemplate field\n' +
+            'For monolith: ensure toolkit.yaml exists at workspace root',
+        );
         process.exit(1);
       }
 
@@ -71,9 +75,14 @@ scaffoldCommand
     try {
       const projectPath = path.resolve(options.project);
 
-      if (!fs.existsSync(path.join(projectPath, 'project.json'))) {
-        messages.error(`No project.json found in ${projectPath}`);
-        messages.hint('Make sure you are in a valid project directory');
+      // Verify project configuration exists (supports both monolith and monorepo)
+      const hasConfig = await ProjectConfigResolver.hasConfiguration(projectPath);
+      if (!hasConfig) {
+        messages.error(`No project configuration found in ${projectPath}`);
+        messages.hint(
+          'For monorepo: ensure project.json exists with sourceTemplate field\n' +
+            'For monolith: ensure toolkit.yaml exists at workspace root',
+        );
         process.exit(1);
       }
 
@@ -197,8 +206,14 @@ scaffoldCommand
     try {
       const projectPath = path.resolve(options.project);
 
-      if (!fs.existsSync(path.join(projectPath, 'project.json'))) {
-        messages.error(`❌ No project.json found in ${projectPath}`);
+      // Verify project configuration exists (supports both monolith and monorepo)
+      const hasConfig = await ProjectConfigResolver.hasConfiguration(projectPath);
+      if (!hasConfig) {
+        messages.error(`No project configuration found in ${projectPath}`);
+        messages.hint(
+          'For monorepo: ensure project.json exists with sourceTemplate field\n' +
+            'For monolith: ensure toolkit.yaml exists at workspace root',
+        );
         process.exit(1);
       }
 

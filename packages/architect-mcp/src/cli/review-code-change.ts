@@ -34,11 +34,17 @@ interface ReviewCodeChangeOptions {
  * Review code changes against template-specific and global rules to identify violations
  */
 export const reviewCodeChangeCommand = new Command('review-code-change')
-  .description('Review code changes against template-specific and global rules to identify violations')
+  .description(
+    'Review code changes against template-specific and global rules to identify violations',
+  )
   .argument('<file-path>', 'Path to the file to review')
   .option('-v, --verbose', 'Enable verbose output', false)
   .option('-j, --json', 'Output as JSON', false)
-  .option('--llm-tool <tool>', 'LLM tool to use for code review (currently only "claude-code" is supported)', 'claude-code')
+  .option(
+    '--llm-tool <tool>',
+    'LLM tool to use for code review (currently only "claude-code" is supported)',
+    'claude-code',
+  )
   .action(async (filePath: string, options: ReviewCodeChangeOptions) => {
     try {
       if (options.verbose) {

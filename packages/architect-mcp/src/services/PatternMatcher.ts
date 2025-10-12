@@ -1,11 +1,6 @@
 import { minimatch } from 'minimatch';
 import * as path from 'path';
-import {
-  DesignPatternMatch,
-  FileDesignPatternResult,
-  ArchitectConfig,
-  Feature,
-} from '../types';
+import { DesignPatternMatch, FileDesignPatternResult, ArchitectConfig, Feature } from '../types';
 
 export class PatternMatcher {
   /**
@@ -23,13 +18,21 @@ export class PatternMatcher {
 
     // Match against template-specific patterns first (higher priority)
     if (templateConfig) {
-      const templateMatches = this.findMatchingPatterns(normalizedPath, templateConfig.features, 'template');
+      const templateMatches = this.findMatchingPatterns(
+        normalizedPath,
+        templateConfig.features,
+        'template',
+      );
       matchedPatterns.push(...templateMatches);
     }
 
     // Match against global patterns if no template matches found
     if (globalConfig && matchedPatterns.length === 0) {
-      const globalMatches = this.findMatchingPatterns(normalizedPath, globalConfig.features, 'global');
+      const globalMatches = this.findMatchingPatterns(
+        normalizedPath,
+        globalConfig.features,
+        'global',
+      );
       matchedPatterns.push(...globalMatches);
     }
 
@@ -97,10 +100,12 @@ export class PatternMatcher {
 
         if (source === 'template') {
           // Template matches have higher confidence
-          confidence = matchType === 'exact' ? 'exact' : matchType === 'partial' ? 'partial' : 'inferred';
+          confidence =
+            matchType === 'exact' ? 'exact' : matchType === 'partial' ? 'partial' : 'inferred';
         } else {
           // Global matches have lower confidence
-          confidence = matchType === 'exact' ? 'exact' : matchType === 'partial' ? 'partial' : 'inferred';
+          confidence =
+            matchType === 'exact' ? 'exact' : matchType === 'partial' ? 'partial' : 'inferred';
         }
 
         matches.push({
@@ -119,7 +124,10 @@ export class PatternMatcher {
   /**
    * Calculate match confidence for a file against pattern includes
    */
-  private calculateMatchConfidence(filePath: string, includes: string[]): 'exact' | 'partial' | 'inferred' | null {
+  private calculateMatchConfidence(
+    filePath: string,
+    includes: string[],
+  ): 'exact' | 'partial' | 'inferred' | null {
     if (!includes || includes.length === 0) {
       return null;
     }

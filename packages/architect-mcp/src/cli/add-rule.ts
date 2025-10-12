@@ -40,7 +40,7 @@ interface AddRuleOptions {
  * Add a new design pattern rule to a template's RULES.yaml or global RULES.yaml
  */
 export const addRuleCommand = new Command('add-rule')
-  .description('Add a new design pattern rule to a template\'s RULES.yaml or global RULES.yaml')
+  .description("Add a new design pattern rule to a template's RULES.yaml or global RULES.yaml")
   .argument('<pattern>', 'Pattern identifier (e.g., "src/index.ts", "export-standards")')
   .argument('<description>', 'Description of the rule pattern')
   .option('-t, --template-name <name>', 'Template name (omit for global rules)')

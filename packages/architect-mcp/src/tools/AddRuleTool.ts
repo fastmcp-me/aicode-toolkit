@@ -20,7 +20,13 @@
  */
 
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import type { Tool, ToolDefinition, RulesYamlConfig, RuleSection, RuleItem } from '../types/index.js';
+import type {
+  Tool,
+  ToolDefinition,
+  RulesYamlConfig,
+  RuleSection,
+  RuleItem,
+} from '../types/index.js';
 import { TemplatesManagerService } from '@agiflowai/aicode-utils';
 import * as fs from 'fs/promises';
 import * as yaml from 'js-yaml';
@@ -43,13 +49,15 @@ export class AddRuleTool implements Tool<AddRuleToolInput> {
   getDefinition(): ToolDefinition {
     return {
       name: AddRuleTool.TOOL_NAME,
-      description: 'Add a new design pattern rule to a template\'s RULES.yaml or global RULES.yaml. Rules define specific coding standards, must-do/must-not-do items, and code examples.',
+      description:
+        "Add a new design pattern rule to a template's RULES.yaml or global RULES.yaml. Rules define specific coding standards, must-do/must-not-do items, and code examples.",
       inputSchema: {
         type: 'object',
         properties: {
           template_name: {
             type: 'string',
-            description: 'Name of the template (e.g., "nextjs-15", "typescript-mcp-package"). Omit for global rules.',
+            description:
+              'Name of the template (e.g., "nextjs-15", "typescript-mcp-package"). Omit for global rules.',
           },
           pattern: {
             type: 'string',
@@ -62,7 +70,8 @@ export class AddRuleTool implements Tool<AddRuleToolInput> {
           inherits: {
             type: 'array',
             items: { type: 'string' },
-            description: 'Optional array of inherited rule patterns (e.g., ["barrel-exports", "documentation-standards"])',
+            description:
+              'Optional array of inherited rule patterns (e.g., ["barrel-exports", "documentation-standards"])',
           },
           must_do: {
             type: 'array',
@@ -105,7 +114,8 @@ export class AddRuleTool implements Tool<AddRuleToolInput> {
           },
           is_global: {
             type: 'boolean',
-            description: 'If true, adds to global RULES.yaml (templates/RULES.yaml). If false or omitted with template_name, adds to template-specific RULES.yaml',
+            description:
+              'If true, adds to global RULES.yaml (templates/RULES.yaml). If false or omitted with template_name, adds to template-specific RULES.yaml',
           },
         },
         required: ['pattern', 'description'],

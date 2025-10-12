@@ -36,7 +36,9 @@ export class TemplateFinder {
    */
   async findTemplateForFile(filePath: string): Promise<TemplateMapping | null> {
     // Normalize the file path
-    const normalizedPath = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath);
+    const normalizedPath = path.isAbsolute(filePath)
+      ? filePath
+      : path.join(this.workspaceRoot, filePath);
 
     // Find the project containing this file
     const project = await this.projectFinder.findProjectForFile(normalizedPath);

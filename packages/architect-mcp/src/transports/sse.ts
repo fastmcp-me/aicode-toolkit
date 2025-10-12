@@ -120,7 +120,7 @@ export class SseTransportHandler implements IHttpTransportHandler {
       // Connect the new server instance to the transport
       await mcpServer.connect(transport);
 
-      log.error(`SSE session established: ${transport.sessionId}`);
+      log.info(`SSE session established: ${transport.sessionId}`);
     } catch (error) {
       log.error('Error handling SSE connection:', error);
       if (!res.headersSent) {
@@ -158,14 +158,12 @@ export class SseTransportHandler implements IHttpTransportHandler {
     return new Promise((resolve, reject) => {
       try {
         this.server = this.app.listen(this.config.port, this.config.host, () => {
-          log.error(
+          log.info(
             `Architect MCP server started with SSE transport on http://${this.config.host}:${this.config.port}`,
           );
-          log.error(`SSE endpoint: http://${this.config.host}:${this.config.port}/sse`);
-          log.error(
-            `Messages endpoint: http://${this.config.host}:${this.config.port}/messages`,
-          );
-          log.error(`Health check: http://${this.config.host}:${this.config.port}/health`);
+          log.info(`SSE endpoint: http://${this.config.host}:${this.config.port}/sse`);
+          log.info(`Messages endpoint: http://${this.config.host}:${this.config.port}/messages`);
+          log.info(`Health check: http://${this.config.host}:${this.config.port}/health`);
           resolve();
         });
 

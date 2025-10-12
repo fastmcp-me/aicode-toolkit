@@ -26,7 +26,7 @@ export class ListScaffoldingMethodsTool {
       description: `Lists all available scaffolding methods (features) that can be added to an existing project.
 
 This tool:
-- Reads the project's sourceTemplate from project.json
+- Reads the project's sourceTemplate from project.json (monorepo) or toolkit.yaml (monolith)
 - Returns available features for that template type
 - Provides variable schemas for each scaffolding method
 - Shows descriptions of what each method creates
@@ -47,7 +47,7 @@ Example methods might include:
           projectPath: {
             type: 'string',
             description:
-              'Absolute path to the project directory containing project.json (e.g., "apps/my-app", "backend/apis/my-api", "packages/my-package")',
+              'Absolute path to the project directory (for monorepo: containing project.json; for monolith: workspace root with toolkit.yaml)',
           },
         },
         required: ['projectPath'],

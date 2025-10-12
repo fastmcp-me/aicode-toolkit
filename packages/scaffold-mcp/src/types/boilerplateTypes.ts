@@ -35,6 +35,8 @@ export interface BoilerplateInfo {
 export interface UseBoilerplateRequest {
   boilerplateName: string;
   variables: Record<string, any>;
+  monolith?: boolean; // If true, create at workspace root with toolkit.yaml
+  targetFolderOverride?: string; // Optional override for target folder
 }
 
 export interface ListBoilerplateResponse {

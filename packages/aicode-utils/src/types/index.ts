@@ -18,6 +18,8 @@
  * - Coupling types to implementation details
  */
 
+export * from './projectConfig';
+
 /**
  * Project configuration from project.json
  */

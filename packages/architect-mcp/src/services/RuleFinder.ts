@@ -95,10 +95,18 @@ export class RuleFinder {
     // Resolve inheritance
     if (rule.inherits && rule.inherits.length > 0) {
       for (const inheritPattern of rule.inherits) {
-        const inheritedRule = await this.findInheritedRule(inheritPattern, templateRules, globalRules);
+        const inheritedRule = await this.findInheritedRule(
+          inheritPattern,
+          templateRules,
+          globalRules,
+        );
         if (inheritedRule) {
           // Recursively resolve inheritance for the inherited rule
-          const fullyResolvedInheritedRule = await this.resolveInheritance(inheritedRule, templateRules, globalRules);
+          const fullyResolvedInheritedRule = await this.resolveInheritance(
+            inheritedRule,
+            templateRules,
+            globalRules,
+          );
           resolvedRule = this.mergeRules(fullyResolvedInheritedRule, resolvedRule);
         }
       }
@@ -117,7 +125,9 @@ export class RuleFinder {
     templatePath: string | null;
   }> {
     // Normalize the file path
-    const normalizedPath = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath);
+    const normalizedPath = path.isAbsolute(filePath)
+      ? filePath
+      : path.join(this.workspaceRoot, filePath);
 
     // Find the project containing this file
     const project = await this.findProjectForFile(normalizedPath);
@@ -155,7 +165,10 @@ export class RuleFinder {
   /**
    * Merge template rules config with global rules config
    */
-  private mergeRulesConfigs(templateRules: RulesYamlConfig, globalRules: RulesYamlConfig | null): RulesYamlConfig {
+  private mergeRulesConfigs(
+    templateRules: RulesYamlConfig,
+    globalRules: RulesYamlConfig | null,
+  ): RulesYamlConfig {
     if (!globalRules) {
       return templateRules;
     }
@@ -203,7 +216,11 @@ export class RuleFinder {
   /**
    * Find matching rule for a file path
    */
-  private findMatchingRule(filePath: string, projectRoot: string, rulesConfig: RulesYamlConfig): RuleSection | null {
+  private findMatchingRule(
+    filePath: string,
+    projectRoot: string,
+    rulesConfig: RulesYamlConfig,
+  ): RuleSection | null {
     // Get the file path relative to the project root
     const projectRelativePath = path.relative(projectRoot, filePath);
 
