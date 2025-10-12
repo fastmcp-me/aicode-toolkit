@@ -169,7 +169,9 @@ export const sections = {
    */
   list: (title: string, items: string[]) => {
     print.header(`\n${title}\n`);
-    items.forEach((item) => print.item(item));
+    items.forEach((item) => {
+      print.item(item);
+    });
   },
 
   /**
@@ -177,7 +179,9 @@ export const sections = {
    */
   nextSteps: (steps: string[]) => {
     print.header(`\n${icons.clipboard} Next steps:`);
-    steps.forEach((step) => print.indent(step));
+    steps.forEach((step) => {
+      print.indent(step);
+    });
   },
 
   /**
@@ -186,7 +190,9 @@ export const sections = {
   createdFiles: (files: string[], maxShow: number = 10) => {
     print.header(`\n${icons.folder} Created files:`);
     const filesToShow = files.slice(0, maxShow);
-    filesToShow.forEach((file) => print.item(file));
+    filesToShow.forEach((file) => {
+      print.item(file);
+    });
     if (files.length > maxShow) {
       print.indent(`... and ${files.length - maxShow} more files`);
     }
@@ -197,6 +203,8 @@ export const sections = {
    */
   warnings: (warnings: string[]) => {
     print.warning(`\n${icons.warning} Warnings:`);
-    warnings.forEach((warning) => print.item(warning));
+    warnings.forEach((warning) => {
+      print.item(warning);
+    });
   },
 };

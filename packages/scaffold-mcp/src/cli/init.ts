@@ -1,4 +1,3 @@
-import { execa } from 'execa';
 import path from 'node:path';
 import {
   icons,
@@ -11,6 +10,7 @@ import {
 } from '@agiflowai/aicode-utils';
 import { confirm, input, select } from '@inquirer/prompts';
 import { Command } from 'commander';
+import { execa } from 'execa';
 import * as fs from 'fs-extra';
 import {
   cloneRepository,
@@ -59,7 +59,32 @@ async function setupNewProject(
   let projectName: string;
 
   // Reserved names that should not be used
-  const reservedNames = ['.', '..', 'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'];
+  const reservedNames = [
+    '.',
+    '..',
+    'CON',
+    'PRN',
+    'AUX',
+    'NUL',
+    'COM1',
+    'COM2',
+    'COM3',
+    'COM4',
+    'COM5',
+    'COM6',
+    'COM7',
+    'COM8',
+    'COM9',
+    'LPT1',
+    'LPT2',
+    'LPT3',
+    'LPT4',
+    'LPT5',
+    'LPT6',
+    'LPT7',
+    'LPT8',
+    'LPT9',
+  ];
 
   const validateProjectName = (value: string): true | string => {
     const trimmed = value.trim();
