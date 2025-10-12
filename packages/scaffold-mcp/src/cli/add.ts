@@ -1,15 +1,8 @@
 import path from 'node:path';
+import { icons, messages, print, sections } from '@agiflowai/aicode-utils';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
-import {
-  cloneRepository,
-  cloneSubdirectory,
-  icons,
-  messages,
-  parseGitHubUrl,
-  print,
-  sections,
-} from '../utils';
+import { cloneRepository, cloneSubdirectory, parseGitHubUrl } from '../utils';
 
 /**
  * Add command - add a template to templates folder

@@ -1,6 +1,7 @@
 import { exec } from 'node:child_process';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { icons, messages, ProjectType, print, sections } from '@agiflowai/aicode-utils';
 import { confirm, input, select } from '@inquirer/prompts';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
@@ -9,12 +10,7 @@ import {
   cloneSubdirectory,
   fetchGitHubDirectoryContents,
   findWorkspaceRoot,
-  icons,
-  messages,
-  ProjectType,
   parseGitHubUrl,
-  print,
-  sections,
 } from '../utils';
 
 const execAsync = promisify(exec);
@@ -29,29 +25,49 @@ const DEFAULT_TEMPLATE_REPO = {
 /**
  * Interactive setup for new projects
  * Prompts user for project details when no .git folder is found
+ * @param providedName - Optional project name from CLI argument
  * @param providedProjectType - Optional project type from CLI argument
  */
-async function setupNewProject(providedProjectType?: string): Promise<{
+async function setupNewProject(
+  providedName?: string,
+  providedProjectType?: string,
+): Promise<{
   projectPath: string;
   projectType: ProjectType;
 }> {
   print.header(`\n${icons.rocket} New Project Setup`);
   print.info("No Git repository detected. Let's set up a new project!\n");
 
-  // Prompt for project name
-  const projectName = await input({
-    message: 'Enter your project name:',
-    validate: (value) => {
-      if (!value.trim()) {
-        return 'Project name is required';
-      }
-      // Validate project name (alphanumeric, hyphens, underscores)
-      if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
-        return 'Project name can only contain letters, numbers, hyphens, and underscores';
-      }
-      return true;
-    },
-  });
+  // Validate and use provided project name, or prompt for it
+  let projectName: string;
+
+  if (providedName) {
+    // Validate provided project name
+    const trimmedName = providedName.trim();
+    if (!trimmedName) {
+      throw new Error('Project name cannot be empty');
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(trimmedName)) {
+      throw new Error('Project name can only contain letters, numbers, hyphens, and underscores');
+    }
+    projectName = trimmedName;
+    print.info(`Project name: ${projectName}`);
+  } else {
+    // Prompt for project name
+    projectName = await input({
+      message: 'Enter your project name:',
+      validate: (value) => {
+        if (!value.trim()) {
+          return 'Project name is required';
+        }
+        // Validate project name (alphanumeric, hyphens, underscores)
+        if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+          return 'Project name can only contain letters, numbers, hyphens, and underscores';
+        }
+        return true;
+      },
+    });
+  }
 
   // Validate and use provided project type, or prompt for it
   let projectType: ProjectType;
@@ -223,6 +239,7 @@ export const initCommand = new Command('init')
   .description('Initialize templates folder structure at workspace root or create new project')
   .option('--no-download', 'Skip downloading templates from repository')
   .option('--path <path>', 'Custom path for templates folder (relative to workspace root)')
+  .option('--name <name>', 'Project name (for new projects)')
   .option('--project-type <type>', 'Project type: monolith or monorepo (for new projects)')
   .action(async (options) => {
     try {
@@ -231,7 +248,7 @@ export const initCommand = new Command('init')
 
       // If no workspace root found, run interactive setup for new project
       if (!workspaceRoot) {
-        const projectSetup = await setupNewProject(options.projectType);
+        const projectSetup = await setupNewProject(options.name, options.projectType);
         workspaceRoot = projectSetup.projectPath;
         projectType = projectSetup.projectType;
 
