@@ -6,6 +6,32 @@ import * as fs from 'fs-extra';
 const execAsync = promisify(exec);
 
 /**
+ * Find the workspace root by searching upwards for .git folder
+ * Returns null if no .git folder is found (indicating a new project setup is needed)
+ */
+export async function findWorkspaceRoot(startPath: string = process.cwd()): Promise<string | null> {
+  let currentPath = path.resolve(startPath);
+  const rootPath = path.parse(currentPath).root;
+
+  while (true) {
+    // Check if .git folder exists (repository root)
+    const gitPath = path.join(currentPath, '.git');
+    if (await fs.pathExists(gitPath)) {
+      return currentPath;
+    }
+
+    // Check if we've reached the filesystem root
+    if (currentPath === rootPath) {
+      // No .git found, return null to indicate new project setup needed
+      return null;
+    }
+
+    // Move up to parent directory
+    currentPath = path.dirname(currentPath);
+  }
+}
+
+/**
  * Parse GitHub URL to detect if it's a subdirectory
  * Supports formats:
  * - https://github.com/user/repo
