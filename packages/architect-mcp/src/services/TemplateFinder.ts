@@ -17,7 +17,12 @@
  * - Direct tool implementation (services should be tool-agnostic)
  */
 
-import { TemplatesManagerService, ProjectFinderService } from '@agiflowai/aicode-utils';
+import {
+  TemplatesManagerService,
+  ProjectConfigResolver,
+  ProjectFinderService,
+  ProjectType,
+} from '@agiflowai/aicode-utils';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { TemplateMapping } from '../types';
@@ -33,6 +38,7 @@ export class TemplateFinder {
 
   /**
    * Find the template associated with a given file path
+   * Supports both monolith (toolkit.yaml) and monorepo (project.json) configurations
    */
   async findTemplateForFile(filePath: string): Promise<TemplateMapping | null> {
     // Normalize the file path
@@ -40,33 +46,49 @@ export class TemplateFinder {
       ? filePath
       : path.join(this.workspaceRoot, filePath);
 
-    // Find the project containing this file
-    const project = await this.projectFinder.findProjectForFile(normalizedPath);
-
-    if (!project || !project.sourceTemplate) {
-      return null;
-    }
-
-    // Get templates root
-    const templatesRoot = await TemplatesManagerService.findTemplatesPath(this.workspaceRoot);
-
-    // Map to template path - try to find architect.yaml
-    const templatePath = path.join(templatesRoot, project.sourceTemplate);
-
     try {
-      // Check if the architect.yaml file exists in the template directory
-      await fs.access(path.join(templatePath, 'architect.yaml'));
+      // Use ProjectConfigResolver to support both monolith and monorepo
+      const projectConfig = await ProjectConfigResolver.resolveProjectConfig(normalizedPath);
+
+      if (!projectConfig || !projectConfig.sourceTemplate) {
+        return null;
+      }
+
+      // Determine project path based on project type
+      let projectPath: string;
+      if (projectConfig.type === ProjectType.MONOLITH) {
+        // For monolith: use workspace root
+        projectPath = projectConfig.workspaceRoot || this.workspaceRoot;
+      } else {
+        // For monorepo: use ProjectFinderService to find project.json directory
+        const project = await this.projectFinder.findProjectForFile(normalizedPath);
+        projectPath = project?.root || path.dirname(normalizedPath);
+      }
+
+      // Get templates root
+      const templatesRoot = await TemplatesManagerService.findTemplatesPath(this.workspaceRoot);
+
+      // Map to template path - try to find architect.yaml
+      const templatePath = path.join(templatesRoot, projectConfig.sourceTemplate);
+
+      try {
+        // Check if the architect.yaml file exists in the template directory
+        await fs.access(path.join(templatePath, 'architect.yaml'));
+      } catch {
+        // Template not found, but that's okay - not all projects have templates
+        return null;
+      }
+
+      return {
+        projectPath,
+        templatePath,
+        projectName: path.basename(projectPath),
+        sourceTemplate: projectConfig.sourceTemplate,
+      };
     } catch {
-      // Template not found, but that's okay - not all projects have templates
+      // Project config not found or error occurred
       return null;
     }
-
-    return {
-      projectPath: project.root,
-      templatePath,
-      projectName: project.name,
-      sourceTemplate: project.sourceTemplate,
-    };
   }
 
   /**

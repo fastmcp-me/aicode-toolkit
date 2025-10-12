@@ -1,4 +1,9 @@
-import { ProjectFinderService, TemplatesManagerService } from '@agiflowai/aicode-utils';
+import {
+  ProjectConfigResolver,
+  ProjectFinderService,
+  TemplatesManagerService,
+  ProjectType,
+} from '@agiflowai/aicode-utils';
 import * as fs from 'fs/promises';
 import * as yaml from 'js-yaml';
 import { minimatch } from 'minimatch';
@@ -249,9 +254,42 @@ export class RuleFinder {
 
   /**
    * Find the project containing a given file
+   * Supports both monolith (toolkit.yaml) and monorepo (project.json) configurations
    */
   private async findProjectForFile(filePath: string): Promise<ProjectConfig | null> {
-    return this.projectFinder.findProjectForFile(filePath);
+    try {
+      // Use ProjectConfigResolver to support both monolith and monorepo
+      const projectConfig = await ProjectConfigResolver.resolveProjectConfig(filePath);
+
+      if (!projectConfig || !projectConfig.sourceTemplate) {
+        return null;
+      }
+
+      // Determine project root based on project type
+      let projectRoot: string;
+      let projectName: string;
+
+      if (projectConfig.type === ProjectType.MONOLITH) {
+        // For monolith, use workspace root
+        projectRoot = projectConfig.workspaceRoot || this.workspaceRoot;
+        projectName = path.basename(projectRoot);
+      } else {
+        // For monorepo, use ProjectFinderService to find project.json directory
+        const project = await this.projectFinder.findProjectForFile(filePath);
+        projectRoot = project?.root || path.dirname(filePath);
+        projectName = project?.name || path.basename(projectRoot);
+      }
+
+      return {
+        name: projectName,
+        root: projectRoot,
+        sourceTemplate: projectConfig.sourceTemplate,
+        projectType: projectConfig.type,
+      };
+    } catch {
+      // Project config not found
+      return null;
+    }
   }
 
   /**
@@ -260,5 +298,6 @@ export class RuleFinder {
   clearCache(): void {
     this.projectCache.clear();
     this.rulesCache.clear();
+    this.projectFinder.clearCache();
   }
 }
