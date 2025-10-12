@@ -1,7 +1,6 @@
-import { TemplatesManagerService } from '@agiflowai/aicode-utils';
+import { icons, messages, print, sections, TemplatesManagerService } from '@agiflowai/aicode-utils';
 import { Command } from 'commander';
 import { BoilerplateService } from '../services/BoilerplateService';
-import { icons, messages, print, sections } from '../utils';
 
 /**
  * Boilerplate CLI command

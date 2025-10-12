@@ -1,9 +1,14 @@
 import path from 'node:path';
-import { ProjectConfigResolver, TemplatesManagerService } from '@agiflowai/aicode-utils';
+import {
+  icons,
+  messages,
+  ProjectConfigResolver,
+  print,
+  TemplatesManagerService,
+} from '@agiflowai/aicode-utils';
 import { Command } from 'commander';
 import { FileSystemService } from '../services/FileSystemService';
 import { ScaffoldingMethodsService } from '../services/ScaffoldingMethodsService';
-import { icons, messages, print } from '../utils';
 
 /**
  * Scaffold CLI command

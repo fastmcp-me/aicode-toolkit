@@ -41,9 +41,11 @@
   "dependencies": {
     "@agiflowai/aicode-utils": "workspace:*",
     "@composio/json-schema-to-zod": "0.1.15",
+    "@inquirer/prompts": "^7.8.6",
     "@modelcontextprotocol/sdk": "1.19.1",
     "chalk": "5.6.2",
     "commander": "14.0.1",
+    "execa": "^9.5.2",
     "express": "^4.21.2",
     "fs-extra": "11.3.2",
     "js-yaml": "4.1.0",

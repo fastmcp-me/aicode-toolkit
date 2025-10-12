@@ -98,7 +98,7 @@ export class ProjectConfigResolver {
             workspaceRoot,
           };
         }
-      } catch (error) {
+      } catch (_error) {
         // toolkit.yaml doesn't exist or couldn't be read - this is expected for some projects
         // Fall through to error message
       }

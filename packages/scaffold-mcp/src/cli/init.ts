@@ -1,37 +1,34 @@
 import path from 'node:path';
-import { Command } from 'commander';
-import * as fs from 'fs-extra';
 import {
-  cloneSubdirectory,
-  fetchGitHubDirectoryContents,
   icons,
   messages,
+  ProjectType,
   print,
   sections,
+  TemplatesManagerService,
+  type ToolkitConfig,
+} from '@agiflowai/aicode-utils';
+import { confirm, input, select } from '@inquirer/prompts';
+import { Command } from 'commander';
+import { execa } from 'execa';
+import * as fs from 'fs-extra';
+import {
+  cloneRepository,
+  cloneSubdirectory,
+  fetchGitHubDirectoryContents,
+  findWorkspaceRoot,
+  parseGitHubUrl,
 } from '../utils';
 
 /**
- * Find the workspace root by searching upwards for .git folder
+ * Execute git init safely using execa to prevent command injection
  */
-async function findWorkspaceRoot(startPath: string = process.cwd()): Promise<string> {
-  let currentPath = path.resolve(startPath);
-  const rootPath = path.parse(currentPath).root;
-
-  while (true) {
-    // Check if .git folder exists (repository root)
-    const gitPath = path.join(currentPath, '.git');
-    if (await fs.pathExists(gitPath)) {
-      return currentPath;
-    }
-
-    // Check if we've reached the filesystem root
-    if (currentPath === rootPath) {
-      // No .git found, return current working directory as workspace root
-      return process.cwd();
-    }
-
-    // Move up to parent directory
-    currentPath = path.dirname(currentPath);
+async function gitInit(projectPath: string): Promise<void> {
+  try {
+    await execa('git', ['init', projectPath]);
+  } catch (error) {
+    const execaError = error as { stderr?: string; message: string };
+    throw new Error(`Git init failed: ${execaError.stderr || execaError.message}`);
   }
 }
 
@@ -41,6 +38,203 @@ const DEFAULT_TEMPLATE_REPO = {
   branch: 'main',
   path: 'templates',
 };
+
+/**
+ * Interactive setup for new projects
+ * Prompts user for project details when no .git folder is found
+ * @param providedName - Optional project name from CLI argument
+ * @param providedProjectType - Optional project type from CLI argument
+ */
+async function setupNewProject(
+  providedName?: string,
+  providedProjectType?: string,
+): Promise<{
+  projectPath: string;
+  projectType: ProjectType;
+}> {
+  print.header(`\n${icons.rocket} New Project Setup`);
+  print.info("No Git repository detected. Let's set up a new project!\n");
+
+  // Validate and use provided project name, or prompt for it
+  let projectName: string;
+
+  // Reserved names that should not be used
+  const reservedNames = [
+    '.',
+    '..',
+    'CON',
+    'PRN',
+    'AUX',
+    'NUL',
+    'COM1',
+    'COM2',
+    'COM3',
+    'COM4',
+    'COM5',
+    'COM6',
+    'COM7',
+    'COM8',
+    'COM9',
+    'LPT1',
+    'LPT2',
+    'LPT3',
+    'LPT4',
+    'LPT5',
+    'LPT6',
+    'LPT7',
+    'LPT8',
+    'LPT9',
+  ];
+
+  const validateProjectName = (value: string): true | string => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return 'Project name is required';
+    }
+    // Must start with a letter or number
+    if (!/^[a-zA-Z0-9]/.test(trimmed)) {
+      return 'Project name must start with a letter or number';
+    }
+    // Can only contain alphanumeric, hyphens, and underscores
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(trimmed)) {
+      return 'Project name can only contain letters, numbers, hyphens, and underscores';
+    }
+    // Check against reserved names
+    if (reservedNames.includes(trimmed.toUpperCase())) {
+      return 'Project name uses a reserved name';
+    }
+    return true;
+  };
+
+  if (providedName) {
+    // Validate provided project name
+    const trimmedName = providedName.trim();
+    const validationResult = validateProjectName(trimmedName);
+    if (validationResult !== true) {
+      throw new Error(validationResult);
+    }
+    projectName = trimmedName;
+    print.info(`Project name: ${projectName}`);
+  } else {
+    // Prompt for project name
+    projectName = await input({
+      message: 'Enter your project name:',
+      validate: validateProjectName,
+    });
+  }
+
+  // Validate and use provided project type, or prompt for it
+  let projectType: ProjectType;
+
+  if (providedProjectType) {
+    // Validate provided project type
+    if (
+      providedProjectType !== ProjectType.MONOLITH &&
+      providedProjectType !== ProjectType.MONOREPO
+    ) {
+      throw new Error(
+        `Invalid project type '${providedProjectType}'. Must be '${ProjectType.MONOLITH}' or '${ProjectType.MONOREPO}'`,
+      );
+    }
+    projectType = providedProjectType as ProjectType;
+    print.info(`Project type: ${projectType}`);
+  } else {
+    // Prompt for project type
+    projectType = await select({
+      message: 'Select project type:',
+      choices: [
+        {
+          name: 'Monolith - Single application structure',
+          value: ProjectType.MONOLITH,
+          description: 'Traditional single-application project structure',
+        },
+        {
+          name: 'Monorepo - Multiple packages/apps in one repository',
+          value: ProjectType.MONOREPO,
+          description: 'Multiple packages managed together (uses workspaces)',
+        },
+      ],
+    });
+  }
+
+  // Prompt for Git repository
+  const hasExistingRepo = await confirm({
+    message: 'Do you have an existing Git repository you want to use?',
+    default: false,
+  });
+
+  const projectPath = path.join(process.cwd(), projectName.trim());
+
+  // Create project directory atomically to avoid race conditions
+  try {
+    await fs.mkdir(projectPath, { recursive: false });
+    print.success(`${icons.check} Created project directory: ${projectPath}`);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      throw new Error(`Directory '${projectName}' already exists. Please choose a different name.`);
+    }
+    throw error;
+  }
+
+  if (hasExistingRepo) {
+    // Prompt for repository URL
+    const repoUrl = await input({
+      message: 'Enter Git repository URL:',
+      validate: (value) => {
+        if (!value.trim()) {
+          return 'Repository URL is required';
+        }
+        // Basic URL validation
+        if (!value.match(/^(https?:\/\/|git@)/)) {
+          return 'Please enter a valid Git repository URL';
+        }
+        return true;
+      },
+    });
+
+    print.info(`${icons.download} Cloning repository...`);
+
+    try {
+      // Parse URL to check if it's a subdirectory
+      const parsed = parseGitHubUrl(repoUrl.trim());
+
+      if (parsed.isSubdirectory && parsed.branch && parsed.subdirectory) {
+        // Clone subdirectory
+        await cloneSubdirectory(parsed.repoUrl, parsed.branch, parsed.subdirectory, projectPath);
+      } else {
+        // Clone entire repository
+        await cloneRepository(parsed.repoUrl, projectPath);
+      }
+
+      print.success(`${icons.check} Repository cloned successfully`);
+    } catch (error) {
+      // Clean up on error
+      await fs.remove(projectPath);
+      throw new Error(`Failed to clone repository: ${(error as Error).message}`);
+    }
+  } else {
+    // Ask if user wants to initialize a new Git repository
+    const initGit = await confirm({
+      message: 'Initialize a new Git repository?',
+      default: true,
+    });
+
+    if (initGit) {
+      print.info(`${icons.rocket} Initializing Git repository...`);
+      try {
+        await gitInit(projectPath);
+        print.success(`${icons.check} Git repository initialized`);
+      } catch (error) {
+        messages.warning(`Failed to initialize Git: ${(error as Error).message}`);
+      }
+    }
+  }
+
+  return {
+    projectPath,
+    projectType,
+  };
+}
 
 /**
  * Download templates from GitHub repository
@@ -98,17 +292,72 @@ async function downloadTemplates(templatesPath: string): Promise<void> {
  * Init command - initialize templates folder
  */
 export const initCommand = new Command('init')
-  .description('Initialize templates folder structure at workspace root')
+  .description('Initialize templates folder structure at workspace root or create new project')
   .option('--no-download', 'Skip downloading templates from repository')
   .option('--path <path>', 'Custom path for templates folder (relative to workspace root)')
+  .option('--name <name>', 'Project name (for new projects)')
+  .option('--project-type <type>', 'Project type: monolith or monorepo (for new projects)')
   .action(async (options) => {
     try {
-      const workspaceRoot = await findWorkspaceRoot();
-      const templatesPath = options.path
+      let workspaceRoot = await findWorkspaceRoot();
+      let projectType: ProjectType | undefined;
+
+      // If no workspace root found, run interactive setup for new project
+      if (!workspaceRoot) {
+        const projectSetup = await setupNewProject(options.name, options.projectType);
+        workspaceRoot = projectSetup.projectPath;
+        projectType = projectSetup.projectType;
+
+        print.info(`\n${icons.folder} Project type: ${projectType}`);
+      }
+
+      let templatesPath = options.path
         ? path.join(workspaceRoot, options.path)
         : path.join(workspaceRoot, 'templates');
 
-      print.info(`${icons.rocket} Initializing templates folder at: ${templatesPath}`);
+      // Check if templates folder already exists
+      if (await fs.pathExists(templatesPath)) {
+        messages.warning(`\n⚠️  Templates folder already exists at: ${templatesPath}`);
+
+        const useAlternate = await confirm({
+          message: 'Do you want to use a different folder for templates?',
+          default: false,
+        });
+
+        if (useAlternate) {
+          const alternateFolder = await input({
+            message: 'Enter alternate folder name for templates:',
+            default: 'my-templates',
+            validate: (value) => {
+              if (!value.trim()) {
+                return 'Folder name is required';
+              }
+              // Validate folder name (alphanumeric, hyphens, underscores, forward slashes for paths)
+              if (!/^[a-zA-Z0-9_\-/]+$/.test(value)) {
+                return 'Folder name can only contain letters, numbers, hyphens, underscores, and slashes';
+              }
+              return true;
+            },
+          });
+
+          // Update templates path to the alternate folder
+          templatesPath = path.join(workspaceRoot, alternateFolder.trim());
+
+          // Create toolkit.yaml with the custom templates path
+          const toolkitConfig: ToolkitConfig = {
+            templatesPath: alternateFolder.trim(),
+            projectType,
+          };
+
+          print.info(`\n${icons.config} Creating toolkit.yaml with custom templates path...`);
+          await TemplatesManagerService.writeToolkitConfig(toolkitConfig, workspaceRoot);
+          print.success(`${icons.check} toolkit.yaml created`);
+        } else {
+          print.info(`\n${icons.info} Using existing templates folder`);
+        }
+      }
+
+      print.info(`\n${icons.rocket} Initializing templates folder at: ${templatesPath}`);
 
       // Create templates directory
       await fs.ensureDir(templatesPath);
