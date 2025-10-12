@@ -1,5 +1,5 @@
+import { log } from '@agiflowai/aicode-utils';
 import { Liquid } from 'liquidjs';
-import { log } from '../utils/logger';
 
 export interface ITemplateService {
   renderString(template: string, variables: Record<string, any>): string;

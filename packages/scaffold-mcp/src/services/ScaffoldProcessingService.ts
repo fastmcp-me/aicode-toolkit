@@ -1,6 +1,6 @@
 import path from 'node:path';
+import { log } from '@agiflowai/aicode-utils';
 import type { IFileSystemService, IVariableReplacementService } from '../types/interfaces';
-import { log } from '../utils/logger';
 
 /**
  * Shared service for common scaffolding operations like processing templates and tracking files

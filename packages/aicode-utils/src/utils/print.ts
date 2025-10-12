@@ -85,22 +85,22 @@ export const print = {
  * Emoji icons for consistent visual markers
  */
 export const icons = {
-  rocket: '=�',
-  check: '',
-  cross: 'L',
-  warning: '�',
-  info: '9',
-  package: '=�',
-  folder: '=�',
+  rocket: '🚀',
+  check: '✅',
+  cross: '❌',
+  warning: '⚠️',
+  info: 'ℹ️',
+  package: '📦',
+  folder: '📁',
   file: '📄',
   config: '📝',
   wrench: '🔧',
   chart: '📊',
   bulb: '💡',
-  download: '=�',
-  upload: '=�',
-  gear: '�',
-  clipboard: '=�',
+  download: '⬇️',
+  upload: '⬆️',
+  gear: '⚙️',
+  clipboard: '📋',
   skip: '⏭',
 };
 
