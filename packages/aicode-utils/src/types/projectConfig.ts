@@ -9,12 +9,3 @@ export interface ProjectConfigResult {
   configSource: ConfigSource;
   workspaceRoot?: string;
 }
-
-/**
- * Package.json scaffold field
- */
-export interface PackageJsonScaffold {
-  scaffold?: {
-    sourceTemplate?: string;
-  };
-}

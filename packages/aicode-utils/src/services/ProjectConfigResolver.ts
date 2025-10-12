@@ -24,7 +24,7 @@
 import path from 'node:path';
 import * as fs from 'fs-extra';
 import { ConfigSource, ProjectType } from '../constants/projectType';
-import type { PackageJsonScaffold, ProjectConfigResult } from '../types/projectConfig';
+import type { ProjectConfigResult } from '../types/projectConfig';
 import { log } from '../utils/logger';
 import { TemplatesManagerService, type ToolkitConfig } from './TemplatesManagerService';
 
@@ -34,7 +34,6 @@ import { TemplatesManagerService, type ToolkitConfig } from './TemplatesManagerS
  * Resolves project configuration from multiple sources with priority:
  * 1. project.json (monorepo - Nx/Lerna/Turborepo)
  * 2. toolkit.yaml at workspace root (monolith)
- * 3. package.json scaffold field (monolith)
  */
 export class ProjectConfigResolver {
   /**
@@ -43,8 +42,7 @@ export class ProjectConfigResolver {
    * Priority order:
    * 1. Check for project.json (monorepo case)
    * 2. Check for toolkit.yaml at workspace root (monolith case)
-   * 3. Check for package.json scaffold field
-   * 4. Error with helpful message
+   * 3. Error with helpful message
    *
    * @param projectPath - Absolute path to the project directory
    * @param explicitTemplate - Optional explicit template override
@@ -97,24 +95,10 @@ export class ProjectConfigResolver {
         }
       } catch (error) {
         // toolkit.yaml doesn't exist or couldn't be read - this is expected for some projects
-        // Continue to check package.json as fallback
+        // Fall through to error message
       }
 
-      // 3. Check for package.json scaffold field
-      const packageJsonPath = path.join(absolutePath, 'package.json');
-      if (await fs.pathExists(packageJsonPath)) {
-        const packageJson = (await fs.readJson(packageJsonPath)) as PackageJsonScaffold;
-
-        if (packageJson.scaffold?.sourceTemplate) {
-          return {
-            type: ProjectType.MONOLITH,
-            sourceTemplate: packageJson.scaffold.sourceTemplate,
-            configSource: ConfigSource.PACKAGE_JSON,
-          };
-        }
-      }
-
-      // 4. No configuration found - throw helpful error
+      // 3. No configuration found - throw helpful error
       throw new Error(ProjectConfigResolver.getHelpfulErrorMessage(absolutePath));
     } catch (error) {
       // If it's already our helpful error message, rethrow it
@@ -142,14 +126,6 @@ For monolith projects:
 
     projectType: monolith
     sourceTemplate: your-template-name
-
-  - OR add to package.json:
-
-    {
-      "scaffold": {
-        "sourceTemplate": "your-template-name"
-      }
-    }
 
   - OR use --template flag:
     scaffold-mcp scaffold add <feature> --template <template-name>

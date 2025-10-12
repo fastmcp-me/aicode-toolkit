@@ -14,7 +14,6 @@ export type ProjectType = (typeof ProjectType)[keyof typeof ProjectType];
 export const ConfigSource = {
   PROJECT_JSON: 'project.json',
   TOOLKIT_YAML: 'toolkit.yaml',
-  PACKAGE_JSON: 'package.json',
 } as const;
 
 export type ConfigSource = (typeof ConfigSource)[keyof typeof ConfigSource];

@@ -81,32 +81,6 @@ describe('ProjectConfigResolver', () => {
       });
     });
 
-    it('should resolve config from package.json scaffold field', async () => {
-      const projectPath = '/test/my-package';
-      const mockPackageJson = {
-        name: 'my-package',
-        scaffold: {
-          sourceTemplate: 'typescript-library',
-        },
-      };
-
-      vi.mocked(fs.pathExists).mockResolvedValueOnce(false); // project.json doesn't exist
-      vi.mocked(TemplatesManagerService.getWorkspaceRoot).mockResolvedValueOnce('/test');
-      vi.mocked(TemplatesManagerService.readToolkitConfig).mockRejectedValueOnce(
-        new Error('toolkit.yaml not found'),
-      );
-      vi.mocked(fs.pathExists).mockResolvedValueOnce(true); // package.json exists
-      vi.mocked(fs.readJson).mockResolvedValueOnce(mockPackageJson);
-
-      const result = await ProjectConfigResolver.resolveProjectConfig(projectPath);
-
-      expect(result).toEqual({
-        type: ProjectType.MONOLITH,
-        sourceTemplate: 'typescript-library',
-        configSource: ConfigSource.PACKAGE_JSON,
-      });
-    });
-
     it('should use explicit template when provided', async () => {
       const projectPath = '/test/my-app';
       const explicitTemplate = 'custom-template';
