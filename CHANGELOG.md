@@ -1,3 +1,24 @@
+## 0.5.0 (2025-10-12)
+
+### 🚀 Features
+
+- claude-code-marketplace Add support for claude-code marketplace. ([f76a779](https://github.com/AgiFlow/aicode-toolkit/commit/f76a779))
+- github-actions Add pr-check github actions ([bec9254](https://github.com/AgiFlow/aicode-toolkit/commit/bec9254))
+- **architect-mcp:** monolith Support monolith config ([3dd3c46](https://github.com/AgiFlow/aicode-toolkit/commit/3dd3c46))
+- **scaffold-mcp:** repo-type Support monolith vs mono-repo init ([e7b7ad8](https://github.com/AgiFlow/aicode-toolkit/commit/e7b7ad8))
+
+### 🩹 Fixes
+
+- claude-code-marketplace Fix mcp settings ([9a6c552](https://github.com/AgiFlow/aicode-toolkit/commit/9a6c552))
+- claude-marketplace Fix mcps start command ([67ff822](https://github.com/AgiFlow/aicode-toolkit/commit/67ff822))
+- marketplace-mcps Fix mcp start command ([1e10d91](https://github.com/AgiFlow/aicode-toolkit/commit/1e10d91))
+- Address code review feedback - type safety, validation, and error handling ([f75a451](https://github.com/AgiFlow/aicode-toolkit/commit/f75a451))
+- **architect-mcp:** config Fix finding config fils ([c4da661](https://github.com/AgiFlow/aicode-toolkit/commit/c4da661))
+
+### ❤️ Thank You
+
+- Vuong Ngo @AgiFlow
+
 ## 0.4.1 (2025-10-08)
 
 ### 🩹 Fixes
