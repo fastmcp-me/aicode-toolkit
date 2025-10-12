@@ -1,3 +1,4 @@
+import { log, print } from '@agiflowai/aicode-utils';
 /**
  * Add Rule Command
  *
@@ -53,8 +54,8 @@ export const addRuleCommand = new Command('add-rule')
   .action(async (pattern: string, description: string, options: AddRuleOptions) => {
     try {
       if (options.verbose) {
-        console.log('Adding rule pattern:', pattern);
-        console.log('Template:', options.templateName || 'global');
+        print.info(`Adding rule pattern: ${pattern}`);
+        print.info(`Template: ${options.templateName || 'global'}`);
       }
 
       // Parse rule items
@@ -81,41 +82,41 @@ export const addRuleCommand = new Command('add-rule')
       // Parse and display result
       if (result.isError) {
         const errorData = JSON.parse(result.content[0].text as string);
-        console.error('❌ Error:', errorData.error || errorData);
+        print.error('❌ Error:', errorData.error || errorData);
         process.exit(1);
       }
 
       const data = JSON.parse(result.content[0].text as string);
 
       if (options.json) {
-        console.log(JSON.stringify(data, null, 2));
+        print.info(JSON.stringify(data, null, 2));
       } else {
-        console.log('\n✅ Success:', data.message);
-        console.log('📄 File:', data.file);
-        console.log('\nAdded rule:');
-        console.log(`  Pattern: ${data.rule.pattern}`);
-        console.log(`  Description: ${data.rule.description}`);
+        print.info(`\n✅ Success: ${data.message}`);
+        print.info(`📄 File: ${data.file}`);
+        print.info('\nAdded rule:');
+        print.info(`  Pattern: ${data.rule.pattern}`);
+        print.info(`  Description: ${data.rule.description}`);
 
         if (data.rule.inherits && data.rule.inherits.length > 0) {
-          console.log(`  Inherits: ${data.rule.inherits.join(', ')}`);
+          print.info(`  Inherits: ${data.rule.inherits.join(', ')}`);
         }
 
         if (data.rule.must_do && data.rule.must_do.length > 0) {
-          console.log(`  Must Do: ${data.rule.must_do.length} rules`);
+          print.info(`  Must Do: ${data.rule.must_do.length} rules`);
         }
 
         if (data.rule.should_do && data.rule.should_do.length > 0) {
-          console.log(`  Should Do: ${data.rule.should_do.length} rules`);
+          print.info(`  Should Do: ${data.rule.should_do.length} rules`);
         }
 
         if (data.rule.must_not_do && data.rule.must_not_do.length > 0) {
-          console.log(`  Must Not Do: ${data.rule.must_not_do.length} rules`);
+          print.info(`  Must Not Do: ${data.rule.must_not_do.length} rules`);
         }
 
-        console.log();
+        print.newline();
       }
     } catch (error) {
-      console.error('❌ Error executing add-rule:', error);
+      print.error('❌ Error executing add-rule:', error instanceof Error ? error : String(error));
       process.exit(1);
     }
   });

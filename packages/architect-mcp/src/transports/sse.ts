@@ -1,3 +1,4 @@
+import { log } from '@agiflowai/aicode-utils';
 import type { Server as HttpServer } from 'node:http';
 import type { Server as McpServer } from '@modelcontextprotocol/sdk/server/index.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
@@ -119,9 +120,9 @@ export class SseTransportHandler implements IHttpTransportHandler {
       // Connect the new server instance to the transport
       await mcpServer.connect(transport);
 
-      console.error(`SSE session established: ${transport.sessionId}`);
+      log.error(`SSE session established: ${transport.sessionId}`);
     } catch (error) {
-      console.error('Error handling SSE connection:', error);
+      log.error('Error handling SSE connection:', error);
       if (!res.headersSent) {
         res.status(500).send('Internal Server Error');
       }
@@ -146,7 +147,7 @@ export class SseTransportHandler implements IHttpTransportHandler {
     try {
       await transport.handlePostMessage(req, res, req.body);
     } catch (error) {
-      console.error('Error handling post message:', error);
+      log.error('Error handling post message:', error);
       if (!res.headersSent) {
         res.status(500).send('Internal Server Error');
       }
@@ -157,14 +158,14 @@ export class SseTransportHandler implements IHttpTransportHandler {
     return new Promise((resolve, reject) => {
       try {
         this.server = this.app.listen(this.config.port, this.config.host, () => {
-          console.error(
+          log.error(
             `Architect MCP server started with SSE transport on http://${this.config.host}:${this.config.port}`,
           );
-          console.error(`SSE endpoint: http://${this.config.host}:${this.config.port}/sse`);
-          console.error(
+          log.error(`SSE endpoint: http://${this.config.host}:${this.config.port}/sse`);
+          log.error(
             `Messages endpoint: http://${this.config.host}:${this.config.port}/messages`,
           );
-          console.error(`Health check: http://${this.config.host}:${this.config.port}/health`);
+          log.error(`Health check: http://${this.config.host}:${this.config.port}/health`);
           resolve();
         });
 

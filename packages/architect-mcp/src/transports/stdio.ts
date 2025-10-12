@@ -1,3 +1,4 @@
+import { log } from '@agiflowai/aicode-utils';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import type { TransportHandler } from './types.js';
@@ -19,7 +20,7 @@ export class StdioTransportHandler implements TransportHandler {
 
     await this.server.connect(this.transport);
 
-    console.error('Architect MCP server started on stdio');
+    log.error('Architect MCP server started on stdio');
   }
 
   async stop(): Promise<void> {

@@ -20,6 +20,7 @@
  * - Not exiting with appropriate exit codes on errors
  */
 
+import { log, print } from '@agiflowai/aicode-utils';
 import { Command } from 'commander';
 import { ReviewCodeChangeTool } from '../tools/ReviewCodeChangeTool';
 
@@ -41,13 +42,13 @@ export const reviewCodeChangeCommand = new Command('review-code-change')
   .action(async (filePath: string, options: ReviewCodeChangeOptions) => {
     try {
       if (options.verbose) {
-        console.log('Reviewing file:', filePath);
-        console.log('Using LLM tool:', options.llmTool);
+        log.info('Reviewing file:', filePath);
+        log.info('Using LLM tool:', options.llmTool);
       }
 
       // Validate llm-tool option
       if (options.llmTool && options.llmTool !== 'claude-code') {
-        console.error('❌ Error: Only "claude-code" is currently supported for --llm-tool');
+        print.error('❌ Error: Only "claude-code" is currently supported for --llm-tool');
         process.exit(1);
       }
 
@@ -64,7 +65,7 @@ export const reviewCodeChangeCommand = new Command('review-code-change')
       // Parse and display result
       if (result.isError) {
         const errorData = JSON.parse(result.content[0].text as string);
-        console.error('❌ Error:', errorData.error || errorData);
+        print.error('❌ Error:', errorData.error || errorData);
         process.exit(1);
       }
 
@@ -72,24 +73,24 @@ export const reviewCodeChangeCommand = new Command('review-code-change')
 
       if (options.json) {
         // Output raw JSON
-        console.log(JSON.stringify(data, null, 2));
+        print.info(JSON.stringify(data, null, 2));
       } else {
         // Pretty print the results
-        console.log(`\n## ${data.file_path}`);
+        print.info(`\n## ${data.file_path}`);
 
         if (data.project_name) {
-          console.log(`Project: ${data.project_name}`);
+          print.info(`Project: ${data.project_name}`);
         }
 
         if (data.source_template) {
-          console.log(`Template: ${data.source_template}`);
+          print.info(`Template: ${data.source_template}`);
         }
 
         if (data.matched_rules) {
-          console.log('\n### Matched Rule Pattern\n');
-          console.log(`**${data.matched_rules.pattern}**`);
-          console.log(data.matched_rules.description);
-          console.log('');
+          print.info('\n### Matched Rule Pattern\n');
+          print.info(`**${data.matched_rules.pattern}**`);
+          print.info(data.matched_rules.description);
+          print.info('');
         }
 
         // Display severity
@@ -98,17 +99,17 @@ export const reviewCodeChangeCommand = new Command('review-code-change')
           MEDIUM: '🟡',
           HIGH: '🔴',
         };
-        console.log(`### Review Result: ${severityEmoji[data.severity] || '⚪'} ${data.severity}\n`);
+        print.info(`### Review Result: ${severityEmoji[data.severity] || '⚪'} ${data.severity}\n`);
 
         // Display feedback
         if (data.review_feedback) {
-          console.log(data.review_feedback);
-          console.log('');
+          print.info(data.review_feedback);
+          print.info('');
         }
 
         // Display issues found
         if (data.issues_found && data.issues_found.length > 0) {
-          console.log('### Issues Found\n');
+          print.info('### Issues Found\n');
 
           const groupedIssues: Record<string, any[]> = {
             must_not_do: [],
@@ -123,43 +124,43 @@ export const reviewCodeChangeCommand = new Command('review-code-change')
           }
 
           if (groupedIssues.must_not_do.length > 0) {
-            console.log('**❌ Must Not Do Violations:**\n');
+            print.info('**❌ Must Not Do Violations:**\n');
             for (const issue of groupedIssues.must_not_do) {
-              console.log(`- ${issue.rule}`);
+              print.info(`- ${issue.rule}`);
               if (issue.violation) {
-                console.log(`  Violation: ${issue.violation}`);
+                print.info(`  Violation: ${issue.violation}`);
               }
             }
-            console.log('');
+            print.info('');
           }
 
           if (groupedIssues.must_do.length > 0) {
-            console.log('**⚠️ Must Do Missing:**\n');
+            print.info('**⚠️ Must Do Missing:**\n');
             for (const issue of groupedIssues.must_do) {
-              console.log(`- ${issue.rule}`);
+              print.info(`- ${issue.rule}`);
               if (issue.violation) {
-                console.log(`  Note: ${issue.violation}`);
+                print.info(`  Note: ${issue.violation}`);
               }
             }
-            console.log('');
+            print.info('');
           }
 
           if (groupedIssues.should_do.length > 0) {
-            console.log('**💡 Should Do Suggestions:**\n');
+            print.info('**💡 Should Do Suggestions:**\n');
             for (const issue of groupedIssues.should_do) {
-              console.log(`- ${issue.rule}`);
+              print.info(`- ${issue.rule}`);
               if (issue.violation) {
-                console.log(`  Note: ${issue.violation}`);
+                print.info(`  Note: ${issue.violation}`);
               }
             }
-            console.log('');
+            print.info('');
           }
         } else {
-          console.log('✅ No violations found!\n');
+          print.success('✅ No violations found!\n');
         }
       }
     } catch (error) {
-      console.error('❌ Error executing review-code-change:', error);
+      log.error('❌ Error executing review-code-change:', error);
       process.exit(1);
     }
   });

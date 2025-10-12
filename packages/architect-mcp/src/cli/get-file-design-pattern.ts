@@ -1,3 +1,4 @@
+import { log, print } from '@agiflowai/aicode-utils';
 /**
  * Get File Design Pattern Command
  *
@@ -41,16 +42,16 @@ export const getFileDesignPatternCommand = new Command('get-file-design-pattern'
   .action(async (filePath: string, options: GetFileDesignPatternOptions) => {
     try {
       if (options.verbose) {
-        console.log('Analyzing file:', filePath);
+        print.info(`Analyzing file: ${filePath}`);
         if (options.llmTool) {
-          console.log('Using LLM tool:', options.llmTool);
+          print.info(`Using LLM tool: ${options.llmTool}`);
         }
       }
 
       // Validate llm-tool option
       const llmTool = options.llmTool as 'claude-code' | undefined;
       if (llmTool && llmTool !== 'claude-code') {
-        console.error(`Invalid LLM tool: ${llmTool}. Currently only "claude-code" is supported.`);
+        print.error(`Invalid LLM tool: ${llmTool}. Currently only "claude-code" is supported.`);
         process.exit(1);
       }
 
@@ -65,7 +66,7 @@ export const getFileDesignPatternCommand = new Command('get-file-design-pattern'
       // Parse and display result
       if (result.isError) {
         const errorData = JSON.parse(result.content[0].text as string);
-        console.error('❌ Error:', errorData.error || errorData);
+        print.error('❌ Error:', errorData.error || errorData);
         process.exit(1);
       }
 
@@ -73,50 +74,50 @@ export const getFileDesignPatternCommand = new Command('get-file-design-pattern'
 
       if (options.json) {
         // Output raw JSON
-        console.log(JSON.stringify(data, null, 2));
+        print.info(JSON.stringify(data, null, 2));
       } else {
         // Lead developer style: concise, direct, actionable
-        console.log(`\n## ${data.file_path}`);
+        print.info(`\n## ${data.file_path}`);
 
         if (data.project_name) {
-          console.log(`Project: ${data.project_name}`);
+          print.info(`Project: ${data.project_name}`);
         }
 
         if (data.source_template) {
-          console.log(`Template: ${data.source_template}`);
+          print.info(`Template: ${data.source_template}`);
         }
 
         if (data.matched_patterns && data.matched_patterns.length > 0) {
-          console.log('\n### Design Patterns\n');
+          print.info('\n### Design Patterns\n');
 
           for (const pattern of data.matched_patterns) {
-            console.log(`**${pattern.design_pattern}** (${pattern.confidence})`);
+            print.info(`**${pattern.design_pattern}** (${pattern.confidence})`);
 
             if (pattern.description) {
               // Clean up description formatting
               const cleanDescription = pattern.description
                 .replace(/\n\n/g, '\n')
                 .trim();
-              console.log(cleanDescription);
+              print.info(cleanDescription);
             }
 
-            console.log('');
+            print.info('');
           }
         } else {
-          console.log('\n⚠️ No design patterns matched.');
+          print.info('\n⚠️ No design patterns matched.');
         }
 
         if (data.recommendations && data.recommendations.length > 0) {
-          console.log('### Action Items\n');
+          print.info('### Action Items\n');
           for (const rec of data.recommendations) {
-            console.log(`- ${rec}`);
+            print.info(`- ${rec}`);
           }
-          console.log();
+          print.newline();
         }
       }
 
     } catch (error) {
-      console.error('❌ Error executing get-file-design-pattern:', error);
+      print.error('❌ Error executing get-file-design-pattern:', error instanceof Error ? error : String(error));
       process.exit(1);
     }
   });

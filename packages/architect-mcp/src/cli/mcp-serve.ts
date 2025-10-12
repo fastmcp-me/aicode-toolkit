@@ -1,3 +1,4 @@
+import { log, print } from '@agiflowai/aicode-utils';
 /**
  * MCP Serve Command
  *
@@ -34,12 +35,12 @@ async function startServer(handler: TransportHandler) {
 
   // Handle graceful shutdown
   const shutdown = async (signal: string) => {
-    console.error(`\nReceived ${signal}, shutting down gracefully...`);
+    print.error(`\nReceived ${signal}, shutting down gracefully...`);
     try {
       await handler.stop();
       process.exit(0);
     } catch (error) {
-      console.error('Error during shutdown:', error);
+      print.error('Error during shutdown:', error instanceof Error ? error : String(error));
       process.exit(1);
     }
   };
@@ -73,13 +74,13 @@ export const mcpServeCommand = new Command('mcp-serve')
 
       // Validate design-pattern-tool option
       if (designPatternTool && designPatternTool !== 'claude-code') {
-        console.error(`Invalid design pattern tool: ${designPatternTool}. Currently only "claude-code" is supported.`);
+        print.error(`Invalid design pattern tool: ${designPatternTool}. Currently only "claude-code" is supported.`);
         process.exit(1);
       }
 
       // Validate review-tool option
       if (reviewTool && reviewTool !== 'claude-code') {
-        console.error(`Invalid review tool: ${reviewTool}. Currently only "claude-code" is supported.`);
+        print.error(`Invalid review tool: ${reviewTool}. Currently only "claude-code" is supported.`);
         process.exit(1);
       }
 
@@ -112,11 +113,11 @@ export const mcpServeCommand = new Command('mcp-serve')
         const handler = new SseTransportHandler(() => createServer(serverOptions), config);
         await startServer(handler);
       } else {
-        console.error(`Unknown transport type: ${transportType}. Use: stdio, http, or sse`);
+        print.error(`Unknown transport type: ${transportType}. Use: stdio, http, or sse`);
         process.exit(1);
       }
     } catch (error) {
-      console.error('Failed to start MCP server:', error);
+      print.error('Failed to start MCP server:', error instanceof Error ? error : String(error));
       process.exit(1);
     }
   });
