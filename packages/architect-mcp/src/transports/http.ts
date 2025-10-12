@@ -1,3 +1,4 @@
+import { log } from '@agiflowai/aicode-utils';
 import { randomUUID } from 'node:crypto';
 import type { Server as HttpServer } from 'node:http';
 import type { Server as McpServer } from '@modelcontextprotocol/sdk/server/index.js';
@@ -177,10 +178,10 @@ export class HttpTransportHandler implements IHttpTransportHandler {
     return new Promise((resolve, reject) => {
       try {
         this.server = this.app.listen(this.config.port, this.config.host, () => {
-          console.error(
+          log.error(
             `Architect MCP server started on http://${this.config.host}:${this.config.port}/mcp`,
           );
-          console.error(`Health check: http://${this.config.host}:${this.config.port}/health`);
+          log.error(`Health check: http://${this.config.host}:${this.config.port}/health`);
           resolve();
         });
 

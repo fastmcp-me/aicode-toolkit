@@ -1,3 +1,4 @@
+import { log, print } from '@agiflowai/aicode-utils';
 /**
  * Add Pattern Command
  *
@@ -42,13 +43,13 @@ export const addPatternCommand = new Command('add-pattern')
   .action(async (template: string, patternName: string, designPattern: string, description: string, options: AddPatternOptions) => {
     try {
       if (options.verbose) {
-        console.log('Adding design pattern with options:', {
+        print.info(`Adding design pattern with options: ${JSON.stringify({
           template,
           patternName,
           designPattern,
           description: description.substring(0, 100) + '...',
           includes: options.includes,
-        });
+        }, null, 2)}`);
       }
 
       // Create tool instance
@@ -67,21 +68,21 @@ export const addPatternCommand = new Command('add-pattern')
       // Parse and display result
       if (result.isError) {
         const errorData = JSON.parse(result.content[0].text as string);
-        console.error('❌ Error:', errorData.error);
+        print.error('❌ Error:', errorData.error);
         process.exit(1);
       }
 
       const successData = JSON.parse(result.content[0].text as string);
-      console.log('✅', successData.message);
-      console.log('📄 File:', successData.file);
+      print.info(`✅ ${successData.message}`);
+      print.info(`📄 File: ${successData.file}`);
 
       if (options.verbose) {
-        console.log('\nPattern added:');
-        console.log(JSON.stringify(successData.pattern, null, 2));
+        print.info('\nPattern added:');
+        print.info(JSON.stringify(successData.pattern, null, 2));
       }
 
     } catch (error) {
-      console.error('❌ Error executing add-pattern:', error);
+      print.error('❌ Error executing add-pattern:', error instanceof Error ? error : String(error));
       process.exit(1);
     }
   });

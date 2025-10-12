@@ -1,8 +1,8 @@
 import path from 'node:path';
+import { log } from '@agiflowai/aicode-utils';
 import yaml from 'js-yaml';
 import type { IFileSystemService } from '../types/interfaces';
 import type { ScaffoldResult } from '../types/scaffold';
-import { log } from '../utils/logger';
 import { TemplateService } from './TemplateService';
 
 export interface ScaffoldMethod {

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { TemplatesManagerService } from '@agiflowai/aicode-utils';
+import { log, TemplatesManagerService } from '@agiflowai/aicode-utils';
 import type {
   IFileSystemService,
   IScaffoldConfigLoader,
@@ -13,7 +13,6 @@ import type {
   ParsedInclude,
   ScaffoldResult,
 } from '../types/scaffold';
-import { log } from '../utils/logger';
 import { ScaffoldProcessingService } from './ScaffoldProcessingService';
 
 export class ScaffoldService implements IScaffoldService {

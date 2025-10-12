@@ -1,4 +1,5 @@
 import * as path from 'node:path';
+import { log } from '@agiflowai/aicode-utils';
 import { jsonSchemaToZod } from '@composio/json-schema-to-zod';
 import * as fs from 'fs-extra';
 import * as yaml from 'js-yaml';
@@ -10,7 +11,6 @@ import type {
   UseBoilerplateRequest,
 } from '../types/boilerplateTypes';
 import type { ScaffoldResult } from '../types/scaffold';
-import { log } from '../utils/logger';
 import { FileSystemService } from './FileSystemService';
 import { ScaffoldConfigLoader } from './ScaffoldConfigLoader';
 import { ScaffoldService } from './ScaffoldService';

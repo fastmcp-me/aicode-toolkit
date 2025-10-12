@@ -1,3 +1,4 @@
+import { log } from '@agiflowai/aicode-utils';
 /**
  * GetFileDesignPatternTool
  *
@@ -180,7 +181,7 @@ Your response (numbers only):`;
       // Filter patterns based on LLM response
       return patterns.filter((_, index) => relevantIndices.includes(index + 1));
     } catch (error) {
-      console.error('LLM filtering failed, returning all patterns:', error);
+      log.error('LLM filtering failed, returning all patterns:', error);
       // On error, return all patterns
       return patterns;
     }

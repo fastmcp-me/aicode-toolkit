@@ -1,10 +1,10 @@
 import path from 'node:path';
+import { log } from '@agiflowai/aicode-utils';
 import type {
   IFileSystemService,
   ITemplateService,
   IVariableReplacementService,
 } from '../types/interfaces';
-import { log } from '../utils/logger';
 
 export class VariableReplacementService implements IVariableReplacementService {
   private readonly binaryExtensions = [

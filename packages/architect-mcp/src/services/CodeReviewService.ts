@@ -1,3 +1,4 @@
+import { log } from '@agiflowai/aicode-utils';
 import { ClaudeCodeLLMService } from './ClaudeCodeLLMService.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -123,7 +124,7 @@ export class CodeReviewService {
       // Parse the response
       return this.parseReviewResponse(response.content);
     } catch (error) {
-      console.error('Code review failed:', error);
+      log.error('Code review failed:', error);
       return {
         review_feedback: 'Code review failed due to an error.',
         severity: 'LOW',
@@ -296,7 +297,7 @@ Provide your review in the specified JSON format.`;
         }
       }
     } catch (error) {
-      console.error('Failed to parse review response:', error);
+      log.error('Failed to parse review response:', error);
     }
 
     // Fallback if parsing fails
