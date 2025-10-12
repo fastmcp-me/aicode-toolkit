@@ -88,8 +88,11 @@ export class TemplateFinder {
         projectName: path.basename(projectPath),
         sourceTemplate: projectConfig.sourceTemplate,
       };
-    } catch {
-      // Project config not found or error occurred
+    } catch (error) {
+      // Project config not found or error occurred - this is expected in some cases
+      if (process.env.DEBUG) {
+        console.debug('Failed to find template for file:', filePath, error);
+      }
       return null;
     }
   }

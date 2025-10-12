@@ -187,7 +187,7 @@ describe('ProjectConfigResolver', () => {
 
       expect(TemplatesManagerService.writeToolkitConfig).toHaveBeenCalledWith(
         {
-          version: '1.0',
+          version: '2.0', // Preserves existing version instead of overwriting
           templatesPath: './custom-templates',
           projectType: 'monolith',
           sourceTemplate: 'react-vite',

@@ -196,6 +196,9 @@ export class BoilerplateService {
       }
 
       // After scaffolding, create appropriate config based on project type
+      // NOTE: For monolith mode, toolkit.yaml is created at workspace root after scaffolding.
+      // If running multiple operations concurrently, consider adding a locking mechanism
+      // or creating the config file before scaffolding begins.
       if (monolith) {
         // Create toolkit.yaml for monolith projects
         await ProjectConfigResolver.createToolkitYaml(boilerplate.template_path);

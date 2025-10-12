@@ -9,3 +9,17 @@ export interface ProjectConfigResult {
   configSource: ConfigSource;
   workspaceRoot?: string;
 }
+
+/**
+ * Nx project.json configuration
+ */
+export interface NxProjectJson {
+  name: string;
+  $schema?: string;
+  sourceRoot?: string;
+  projectType?: 'application' | 'library';
+  sourceTemplate?: string;
+  targets?: Record<string, unknown>;
+  tags?: string[];
+  [key: string]: unknown; // Allow additional properties
+}

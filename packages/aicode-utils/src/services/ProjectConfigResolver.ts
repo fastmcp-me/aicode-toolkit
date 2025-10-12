@@ -24,7 +24,7 @@
 import path from 'node:path';
 import * as fs from 'fs-extra';
 import { ConfigSource, ProjectType } from '../constants/projectType';
-import type { ProjectConfigResult } from '../types/projectConfig';
+import type { NxProjectJson, ProjectConfigResult } from '../types/projectConfig';
 import { log } from '../utils/logger';
 import { TemplatesManagerService, type ToolkitConfig } from './TemplatesManagerService';
 
@@ -70,10 +70,15 @@ export class ProjectConfigResolver {
       if (await fs.pathExists(projectJsonPath)) {
         const projectJson = await fs.readJson(projectJsonPath);
 
-        if (projectJson.sourceTemplate) {
+        // Validate sourceTemplate is a non-empty string
+        if (
+          projectJson.sourceTemplate &&
+          typeof projectJson.sourceTemplate === 'string' &&
+          projectJson.sourceTemplate.trim()
+        ) {
           return {
             type: ProjectType.MONOREPO,
-            sourceTemplate: projectJson.sourceTemplate,
+            sourceTemplate: projectJson.sourceTemplate.trim(),
             configSource: ConfigSource.PROJECT_JSON,
           };
         }
@@ -171,7 +176,7 @@ Run 'scaffold-mcp scaffold list --help' for more info.`;
       const existingConfig = await TemplatesManagerService.readToolkitConfig(rootPath);
 
       const toolkitConfig: ToolkitConfig = {
-        version: '1.0',
+        version: existingConfig?.version || '1.0',
         templatesPath: existingConfig?.templatesPath || './templates',
         projectType: 'monolith' as const,
         sourceTemplate,
@@ -201,7 +206,7 @@ Run 'scaffold-mcp scaffold list --help' for more info.`;
     const projectJsonPath = path.join(projectPath, 'project.json');
 
     try {
-      let projectJson: any;
+      let projectJson: NxProjectJson;
 
       if (await fs.pathExists(projectJsonPath)) {
         // Read existing project.json
