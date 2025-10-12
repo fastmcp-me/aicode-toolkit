@@ -1,7 +1,15 @@
 import { exec } from 'node:child_process';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import { icons, messages, ProjectType, print, sections } from '@agiflowai/aicode-utils';
+import {
+  icons,
+  messages,
+  ProjectType,
+  print,
+  sections,
+  TemplatesManagerService,
+  type ToolkitConfig,
+} from '@agiflowai/aicode-utils';
 import { confirm, input, select } from '@inquirer/prompts';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
@@ -255,9 +263,51 @@ export const initCommand = new Command('init')
         print.info(`\n${icons.folder} Project type: ${projectType}`);
       }
 
-      const templatesPath = options.path
+      let templatesPath = options.path
         ? path.join(workspaceRoot, options.path)
         : path.join(workspaceRoot, 'templates');
+
+      // Check if templates folder already exists
+      if (await fs.pathExists(templatesPath)) {
+        messages.warning(`\n⚠️  Templates folder already exists at: ${templatesPath}`);
+
+        const useAlternate = await confirm({
+          message: 'Do you want to use a different folder for templates?',
+          default: false,
+        });
+
+        if (useAlternate) {
+          const alternateFolder = await input({
+            message: 'Enter alternate folder name for templates:',
+            default: 'my-templates',
+            validate: (value) => {
+              if (!value.trim()) {
+                return 'Folder name is required';
+              }
+              // Validate folder name (alphanumeric, hyphens, underscores, forward slashes for paths)
+              if (!/^[a-zA-Z0-9_\-/]+$/.test(value)) {
+                return 'Folder name can only contain letters, numbers, hyphens, underscores, and slashes';
+              }
+              return true;
+            },
+          });
+
+          // Update templates path to the alternate folder
+          templatesPath = path.join(workspaceRoot, alternateFolder.trim());
+
+          // Create toolkit.yaml with the custom templates path
+          const toolkitConfig: ToolkitConfig = {
+            templatesPath: alternateFolder.trim(),
+            projectType,
+          };
+
+          print.info(`\n${icons.config} Creating toolkit.yaml with custom templates path...`);
+          await TemplatesManagerService.writeToolkitConfig(toolkitConfig, workspaceRoot);
+          print.success(`${icons.check} toolkit.yaml created`);
+        } else {
+          print.info(`\n${icons.info} Using existing templates folder`);
+        }
+      }
 
       print.info(`\n${icons.rocket} Initializing templates folder at: ${templatesPath}`);
 

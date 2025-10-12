@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { icons, messages, print, sections } from '@agiflowai/aicode-utils';
+import { icons, messages, print, sections, TemplatesManagerService } from '@agiflowai/aicode-utils';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import { cloneRepository, cloneSubdirectory, parseGitHubUrl } from '../utils';
@@ -11,11 +11,16 @@ export const addCommand = new Command('add')
   .description('Add a template to templates folder')
   .requiredOption('--name <name>', 'Template name')
   .requiredOption('--url <url>', 'URL of the template repository to download')
-  .option('--path <path>', 'Path to templates folder', './templates')
+  .option('--path <path>', 'Override templates folder path (uses toolkit.yaml config by default)')
   .option('--type <type>', 'Template type: boilerplate or scaffold', 'boilerplate')
   .action(async (options) => {
     try {
-      const templatesPath = path.resolve(options.path);
+      // Use TemplatesManagerService to find templates path, or use provided --path override
+      const templatesDir = options.path
+        ? path.resolve(options.path)
+        : await TemplatesManagerService.findTemplatesPath();
+
+      const templatesPath = templatesDir;
       const templateType = options.type.toLowerCase();
       const templateName = options.name;
       const templateUrl = options.url;
