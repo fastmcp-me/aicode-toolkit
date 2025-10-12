@@ -16,11 +16,10 @@ export const addCommand = new Command('add')
   .action(async (options) => {
     try {
       // Use TemplatesManagerService to find templates path, or use provided --path override
-      const templatesDir = options.path
+      const templatesPath = options.path
         ? path.resolve(options.path)
         : await TemplatesManagerService.findTemplatesPath();
 
-      const templatesPath = templatesDir;
       const templateType = options.type.toLowerCase();
       const templateName = options.name;
       const templateUrl = options.url;

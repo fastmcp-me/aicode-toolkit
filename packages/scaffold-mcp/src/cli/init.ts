@@ -1,6 +1,5 @@
-import { exec } from 'node:child_process';
+import { execa } from 'execa';
 import path from 'node:path';
-import { promisify } from 'node:util';
 import {
   icons,
   messages,
@@ -21,7 +20,17 @@ import {
   parseGitHubUrl,
 } from '../utils';
 
-const execAsync = promisify(exec);
+/**
+ * Execute git init safely using execa to prevent command injection
+ */
+async function gitInit(projectPath: string): Promise<void> {
+  try {
+    await execa('git', ['init', projectPath]);
+  } catch (error) {
+    const execaError = error as { stderr?: string; message: string };
+    throw new Error(`Git init failed: ${execaError.stderr || execaError.message}`);
+  }
+}
 
 const DEFAULT_TEMPLATE_REPO = {
   owner: 'AgiFlow',
@@ -49,14 +58,35 @@ async function setupNewProject(
   // Validate and use provided project name, or prompt for it
   let projectName: string;
 
+  // Reserved names that should not be used
+  const reservedNames = ['.', '..', 'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'];
+
+  const validateProjectName = (value: string): true | string => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return 'Project name is required';
+    }
+    // Must start with a letter or number
+    if (!/^[a-zA-Z0-9]/.test(trimmed)) {
+      return 'Project name must start with a letter or number';
+    }
+    // Can only contain alphanumeric, hyphens, and underscores
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(trimmed)) {
+      return 'Project name can only contain letters, numbers, hyphens, and underscores';
+    }
+    // Check against reserved names
+    if (reservedNames.includes(trimmed.toUpperCase())) {
+      return 'Project name uses a reserved name';
+    }
+    return true;
+  };
+
   if (providedName) {
     // Validate provided project name
     const trimmedName = providedName.trim();
-    if (!trimmedName) {
-      throw new Error('Project name cannot be empty');
-    }
-    if (!/^[a-zA-Z0-9_-]+$/.test(trimmedName)) {
-      throw new Error('Project name can only contain letters, numbers, hyphens, and underscores');
+    const validationResult = validateProjectName(trimmedName);
+    if (validationResult !== true) {
+      throw new Error(validationResult);
     }
     projectName = trimmedName;
     print.info(`Project name: ${projectName}`);
@@ -64,16 +94,7 @@ async function setupNewProject(
     // Prompt for project name
     projectName = await input({
       message: 'Enter your project name:',
-      validate: (value) => {
-        if (!value.trim()) {
-          return 'Project name is required';
-        }
-        // Validate project name (alphanumeric, hyphens, underscores)
-        if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
-          return 'Project name can only contain letters, numbers, hyphens, and underscores';
-        }
-        return true;
-      },
+      validate: validateProjectName,
     });
   }
 
@@ -119,14 +140,16 @@ async function setupNewProject(
 
   const projectPath = path.join(process.cwd(), projectName.trim());
 
-  // Check if directory already exists
-  if (await fs.pathExists(projectPath)) {
-    throw new Error(`Directory '${projectName}' already exists. Please choose a different name.`);
+  // Create project directory atomically to avoid race conditions
+  try {
+    await fs.mkdir(projectPath, { recursive: false });
+    print.success(`${icons.check} Created project directory: ${projectPath}`);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      throw new Error(`Directory '${projectName}' already exists. Please choose a different name.`);
+    }
+    throw error;
   }
-
-  // Create project directory
-  await fs.ensureDir(projectPath);
-  print.success(`${icons.check} Created project directory: ${projectPath}`);
 
   if (hasExistingRepo) {
     // Prompt for repository URL
@@ -174,7 +197,7 @@ async function setupNewProject(
     if (initGit) {
       print.info(`${icons.rocket} Initializing Git repository...`);
       try {
-        await execAsync(`git init "${projectPath}"`);
+        await gitInit(projectPath);
         print.success(`${icons.check} Git repository initialized`);
       } catch (error) {
         messages.warning(`Failed to initialize Git: ${(error as Error).message}`);

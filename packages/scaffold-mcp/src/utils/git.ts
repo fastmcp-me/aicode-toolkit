@@ -1,9 +1,18 @@
-import { exec } from 'node:child_process';
+import { execa } from 'execa';
 import path from 'node:path';
-import { promisify } from 'node:util';
 import * as fs from 'fs-extra';
 
-const execAsync = promisify(exec);
+/**
+ * Execute a git command safely using execa to prevent command injection
+ */
+async function execGit(args: string[], cwd?: string): Promise<void> {
+  try {
+    await execa('git', args, { cwd });
+  } catch (error) {
+    const execaError = error as { stderr?: string; message: string };
+    throw new Error(`Git command failed: ${execaError.stderr || execaError.message}`);
+  }
+}
 
 /**
  * Find the workspace root by searching upwards for .git folder
@@ -92,20 +101,20 @@ export async function cloneSubdirectory(
 
   try {
     // Initialize a new git repo
-    await execAsync(`git init "${tempFolder}"`);
+    await execGit(['init', tempFolder]);
 
     // Add remote
-    await execAsync(`git -C "${tempFolder}" remote add origin ${repoUrl}`);
+    await execGit(['remote', 'add', 'origin', repoUrl], tempFolder);
 
     // Enable sparse checkout
-    await execAsync(`git -C "${tempFolder}" config core.sparseCheckout true`);
+    await execGit(['config', 'core.sparseCheckout', 'true'], tempFolder);
 
     // Configure sparse checkout to only include the subdirectory
     const sparseCheckoutFile = path.join(tempFolder, '.git', 'info', 'sparse-checkout');
     await fs.writeFile(sparseCheckoutFile, `${subdirectory}\n`);
 
     // Pull the specific branch
-    await execAsync(`git -C "${tempFolder}" pull --depth=1 origin ${branch}`);
+    await execGit(['pull', '--depth=1', 'origin', branch], tempFolder);
 
     // Move the subdirectory content to target folder
     const sourceDir = path.join(tempFolder, subdirectory);
@@ -113,6 +122,11 @@ export async function cloneSubdirectory(
       throw new Error(
         `Subdirectory '${subdirectory}' not found in repository at branch '${branch}'`,
       );
+    }
+
+    // Check if target folder already exists
+    if (await fs.pathExists(targetFolder)) {
+      throw new Error(`Target folder already exists: ${targetFolder}`);
     }
 
     await fs.move(sourceDir, targetFolder);
@@ -132,13 +146,28 @@ export async function cloneSubdirectory(
  * Clone entire repository
  */
 export async function cloneRepository(repoUrl: string, targetFolder: string): Promise<void> {
-  await execAsync(`git clone ${repoUrl} "${targetFolder}"`);
+  await execGit(['clone', repoUrl, targetFolder]);
 
   // Remove .git folder
   const gitFolder = path.join(targetFolder, '.git');
   if (await fs.pathExists(gitFolder)) {
     await fs.remove(gitFolder);
   }
+}
+
+/**
+ * GitHub API content item interface
+ */
+interface GitHubContentItem {
+  name: string;
+  type: 'file' | 'dir' | 'symlink' | 'submodule';
+  path: string;
+  sha: string;
+  size: number;
+  url: string;
+  html_url: string;
+  git_url: string;
+  download_url: string | null;
 }
 
 /**
@@ -169,7 +198,7 @@ export async function fetchGitHubDirectoryContents(
     throw new Error('Expected directory but got file');
   }
 
-  return data.map((item: any) => ({
+  return data.map((item: GitHubContentItem) => ({
     name: item.name,
     type: item.type,
     path: item.path,
