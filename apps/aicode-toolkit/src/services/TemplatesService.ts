@@ -34,13 +34,8 @@ export class TemplatesService {
    * @param templatesPath - Local path where templates should be downloaded
    * @param repoConfig - Repository configuration (owner, repo, branch, path)
    */
-  async downloadTemplates(
-    templatesPath: string,
-    repoConfig: TemplateRepoConfig,
-  ): Promise<void> {
-    print.info(
-      `Fetching templates from ${repoConfig.owner}/${repoConfig.repo}...`,
-    );
+  async downloadTemplates(templatesPath: string, repoConfig: TemplateRepoConfig): Promise<void> {
+    print.info(`Fetching templates from ${repoConfig.owner}/${repoConfig.repo}...`);
 
     try {
       // Fetch directory listing from GitHub

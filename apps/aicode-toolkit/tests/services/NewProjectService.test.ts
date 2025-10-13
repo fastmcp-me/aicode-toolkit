@@ -73,9 +73,7 @@ describe('NewProjectService', () => {
 
     it('should return error for reserved project names', () => {
       // Test uppercase reserved names (CON, PRN, AUX, etc.)
-      const uppercaseReserved = RESERVED_PROJECT_NAMES.filter((name) =>
-        /^[A-Z]/.test(name),
-      );
+      const uppercaseReserved = RESERVED_PROJECT_NAMES.filter((name) => /^[A-Z]/.test(name));
       for (const reserved of uppercaseReserved) {
         expect(service.validateProjectName(reserved)).toBe('Project name uses a reserved name');
         expect(service.validateProjectName(reserved.toLowerCase())).toBe(

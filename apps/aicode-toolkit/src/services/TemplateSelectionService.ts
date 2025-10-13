@@ -17,7 +17,7 @@
 
 import os from 'node:os';
 import path from 'node:path';
-import { ProjectType, icons, print } from '@agiflowai/aicode-utils';
+import { icons, ProjectType, print } from '@agiflowai/aicode-utils';
 import * as fs from 'fs-extra';
 import { cloneSubdirectory, fetchGitHubDirectoryContents } from '../utils/git';
 import type { TemplateRepoConfig } from './TemplatesService';
@@ -42,9 +42,7 @@ export class TemplateSelectionService {
    * @returns Path to the tmp directory containing templates
    */
   async downloadTemplatesToTmp(repoConfig: TemplateRepoConfig): Promise<string> {
-    print.info(
-      `Downloading templates from ${repoConfig.owner}/${repoConfig.repo}...`,
-    );
+    print.info(`Downloading templates from ${repoConfig.owner}/${repoConfig.repo}...`);
 
     try {
       // Ensure tmp directory exists

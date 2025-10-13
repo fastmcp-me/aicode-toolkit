@@ -1,22 +1,22 @@
 import path from 'node:path';
 import {
   ProjectType,
+  print,
   TemplatesManagerService,
   type ToolkitConfig,
-  print,
 } from '@agiflowai/aicode-utils';
 import { confirm, input, select } from '@inquirer/prompts';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import { createActor, fromPromise } from 'xstate';
 import {
-  CodingAgent,
+  type CodingAgent,
   CodingAgentService,
   NewProjectService,
   TemplateSelectionService,
   TemplatesService,
 } from '../services';
-import { initV2Machine, type InitV2MachineInput } from '../states/initV2';
+import { type InitV2MachineInput, initV2Machine } from '../states/initV2';
 import { displayBanner, findWorkspaceRoot } from '../utils';
 
 const DEFAULT_TEMPLATE_REPO = {
@@ -416,10 +416,7 @@ const initActors = {
 export const initCommand = new Command('init')
   .description('Initialize project with templates and MCP configuration')
   .option('--name <name>', 'Project name (for new projects)')
-  .option(
-    '--project-type <type>',
-    'Project type: monolith or monorepo (for new projects)',
-  )
+  .option('--project-type <type>', 'Project type: monolith or monorepo (for new projects)')
   .option('--skip-templates', 'Skip template download and selection')
   .option('--skip-mcp', 'Skip MCP configuration')
   .action(async (options) => {
@@ -476,7 +473,9 @@ export const initCommand = new Command('init')
       // Display congratulations message with gradient
       const gradient = await import('gradient-string');
       print.newline();
-      console.log(gradient.default.pastel.multiline('🎉 Congratulations! Your project is ready to go!'));
+      console.log(
+        gradient.default.pastel.multiline('🎉 Congratulations! Your project is ready to go!'),
+      );
       print.newline();
     } catch (error) {
       print.error(`\nError: ${(error as Error).message}`);

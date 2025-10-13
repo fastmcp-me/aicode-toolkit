@@ -18,7 +18,7 @@
  * - Direct tool implementation (services should be tool-agnostic)
  */
 
-import { ProjectType, icons, messages, print } from '@agiflowai/aicode-utils';
+import { icons, messages, ProjectType, print } from '@agiflowai/aicode-utils';
 import * as fs from 'fs-extra';
 import { cloneRepository, cloneSubdirectory, gitInit, parseGitHubUrl } from '../utils';
 
@@ -122,7 +122,9 @@ export class NewProjectService {
       print.success(`Created project directory: ${projectPath}`);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
-        throw new Error(`Directory '${projectName}' already exists. Please choose a different name.`);
+        throw new Error(
+          `Directory '${projectName}' already exists. Please choose a different name.`,
+        );
       }
       throw error;
     }

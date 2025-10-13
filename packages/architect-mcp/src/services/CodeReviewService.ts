@@ -1,5 +1,5 @@
 import { log } from '@agiflowai/aicode-utils';
-import { ClaudeCodeLLMService } from './ClaudeCodeLLMService.js';
+import { ClaudeCodeService } from '@agiflowai/coding-agent-bridge';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { RuleFinder } from './RuleFinder.js';
@@ -10,7 +10,7 @@ interface CodeReviewServiceOptions {
 }
 
 export class CodeReviewService {
-  private claudeService?: ClaudeCodeLLMService;
+  private claudeService?: ClaudeCodeService;
   private ruleFinder: RuleFinder;
   private llmTool?: string;
 
@@ -19,7 +19,7 @@ export class CodeReviewService {
 
     // Only initialize Claude service if llmTool is 'claude-code'
     if (this.llmTool === 'claude-code') {
-      this.claudeService = new ClaudeCodeLLMService({
+      this.claudeService = new ClaudeCodeService({
         defaultTimeout: 120000, // 2 minutes for code review
       });
     }
@@ -125,9 +125,11 @@ export class CodeReviewService {
     const userPrompt = this.buildUserPrompt(fileContent, filePath, rules);
 
     try {
-      const response = await this.claudeService.complete({
+      // Update system prompt configuration
+      await this.claudeService.updatePrompt({ systemPrompt });
+
+      const response = await this.claudeService.invokeAsLlm({
         prompt: userPrompt,
-        systemPrompt,
         maxTokens: 4000,
       });
 

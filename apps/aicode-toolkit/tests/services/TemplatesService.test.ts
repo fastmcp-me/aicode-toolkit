@@ -13,8 +13,8 @@
  * - Test behavior, not implementation
  */
 
-import * as fs from 'fs-extra';
 import path from 'node:path';
+import * as fs from 'fs-extra';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TemplateRepoConfig } from '../../src/services/TemplatesService';
 import { TemplatesService } from '../../src/services/TemplatesService';
@@ -121,8 +121,9 @@ describe('TemplatesService', () => {
 
     it('should download new templates', async () => {
       const templatesPath = '/path/to/templates';
-      const { fetchGitHubDirectoryContents, cloneSubdirectory } =
-        await import('../../src/utils/git');
+      const { fetchGitHubDirectoryContents, cloneSubdirectory } = await import(
+        '../../src/utils/git'
+      );
 
       const mockTemplates = [
         { name: 'nextjs-15', type: 'dir', path: 'templates/nextjs-15' },
@@ -146,8 +147,9 @@ describe('TemplatesService', () => {
 
     it('should skip existing templates', async () => {
       const templatesPath = '/path/to/templates';
-      const { fetchGitHubDirectoryContents, cloneSubdirectory } =
-        await import('../../src/utils/git');
+      const { fetchGitHubDirectoryContents, cloneSubdirectory } = await import(
+        '../../src/utils/git'
+      );
 
       const mockTemplates = [
         { name: 'nextjs-15', type: 'dir', path: 'templates/nextjs-15' },
@@ -156,8 +158,8 @@ describe('TemplatesService', () => {
 
       vi.mocked(fetchGitHubDirectoryContents).mockResolvedValue(mockTemplates);
       // First template exists, second doesn't
-      vi.mocked(fs.pathExists).mockImplementation(
-        (pathToCheck) => Promise.resolve(pathToCheck === path.join(templatesPath, 'nextjs-15')),
+      vi.mocked(fs.pathExists).mockImplementation((pathToCheck) =>
+        Promise.resolve(pathToCheck === path.join(templatesPath, 'nextjs-15')),
       );
       vi.mocked(cloneSubdirectory).mockResolvedValue(undefined);
 
@@ -175,8 +177,9 @@ describe('TemplatesService', () => {
 
     it('should filter out non-directory items', async () => {
       const templatesPath = '/path/to/templates';
-      const { fetchGitHubDirectoryContents, cloneSubdirectory } =
-        await import('../../src/utils/git');
+      const { fetchGitHubDirectoryContents, cloneSubdirectory } = await import(
+        '../../src/utils/git'
+      );
 
       const mockContents = [
         { name: 'nextjs-15', type: 'dir', path: 'templates/nextjs-15' },
@@ -198,9 +201,7 @@ describe('TemplatesService', () => {
       const templatesPath = '/path/to/templates';
       const { fetchGitHubDirectoryContents } = await import('../../src/utils/git');
 
-      vi.mocked(fetchGitHubDirectoryContents).mockRejectedValue(
-        new Error('Network error'),
-      );
+      vi.mocked(fetchGitHubDirectoryContents).mockRejectedValue(new Error('Network error'));
 
       await expect(service.downloadTemplates(templatesPath, mockRepoConfig)).rejects.toThrow(
         'Failed to download templates: Network error',

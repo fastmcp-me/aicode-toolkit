@@ -148,7 +148,13 @@ export class CodingAgentService {
       case CodingAgent.CLAUDE_CODE:
         return {
           name: 'Claude Code',
-          configPath: path.join(homeDir, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json'),
+          configPath: path.join(
+            homeDir,
+            'Library',
+            'Application Support',
+            'Claude',
+            'claude_desktop_config.json',
+          ),
           mcpConfigKey: 'mcpServers',
         };
 

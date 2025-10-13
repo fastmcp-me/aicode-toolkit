@@ -13,10 +13,10 @@
  * - Test behavior, not implementation
  */
 
-import { ProjectType } from '@agiflowai/aicode-utils';
-import * as fs from 'fs-extra';
 import os from 'node:os';
 import path from 'node:path';
+import { ProjectType } from '@agiflowai/aicode-utils';
+import * as fs from 'fs-extra';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TemplateSelectionService } from '../../src/services/TemplateSelectionService';
 
@@ -138,9 +138,9 @@ describe('TemplateSelectionService', () => {
       vi.mocked(fs.ensureDir).mockResolvedValue(undefined);
       // Source exists (true), destination doesn't exist (false)
       vi.mocked(fs.pathExists)
-        .mockResolvedValueOnce(true)  // nextjs-15 source exists
+        .mockResolvedValueOnce(true) // nextjs-15 source exists
         .mockResolvedValueOnce(false) // nextjs-15 destination doesn't exist
-        .mockResolvedValueOnce(true)  // typescript-mcp source exists
+        .mockResolvedValueOnce(true) // typescript-mcp source exists
         .mockResolvedValueOnce(false); // typescript-mcp destination doesn't exist
       vi.mocked(fs.copy).mockResolvedValue(undefined);
 

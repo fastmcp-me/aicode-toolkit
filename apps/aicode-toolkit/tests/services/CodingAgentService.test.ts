@@ -13,9 +13,9 @@
  * - Test behavior, not implementation
  */
 
-import * as fs from 'fs-extra';
 import os from 'node:os';
 import path from 'node:path';
+import * as fs from 'fs-extra';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CodingAgent, CodingAgentService } from '../../src/services/CodingAgentService';
 

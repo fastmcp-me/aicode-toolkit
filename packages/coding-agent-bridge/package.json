@@ -19,7 +19,7 @@
   ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.cts",
   "files": [
     "dist",
     "README.md"
@@ -29,12 +29,24 @@
     "test": "vitest --run",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "execa": "^9.5.2",
+    "uuid": "^11.0.5"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/uuid": "^10.0.0",
     "@vitest/coverage-v8": "^3.0.0",
     "tsdown": "^0.15.6",
     "typescript": "5.9.3",
     "vitest": "^3.0.0"
   },
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  }
 }

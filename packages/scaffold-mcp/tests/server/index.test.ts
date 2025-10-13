@@ -1,11 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createServer } from '../../src/server';
 
-vi.mock('../../src/services/TemplatesManager', () => ({
-  TemplatesManager: {
-    findTemplatesPathSync: vi.fn().mockReturnValue('/test/templates'),
-  },
-}));
+vi.mock('@agiflowai/aicode-utils', async () => {
+  const actual = await vi.importActual('@agiflowai/aicode-utils');
+  return {
+    ...actual,
+    TemplatesManagerService: {
+      ...(actual as any).TemplatesManagerService,
+      findTemplatesPathSync: vi.fn().mockReturnValue('/test/templates'),
+    },
+  };
+});
 
 describe('Server', () => {
   describe('createServer', () => {
