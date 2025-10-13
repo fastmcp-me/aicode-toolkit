@@ -11,7 +11,7 @@ import type { CodingAgent } from '../services/CodingAgentService';
 /**
  * Context type for the init machine
  */
-export interface InitV2MachineContext {
+export interface InitMachineContext {
   // Workspace and project info
   workspaceRoot?: string;
   projectName?: string;
@@ -27,6 +27,9 @@ export interface InitV2MachineContext {
   templatesPath?: string;
   tmpTemplatesPath?: string;
   selectedTemplates?: string[];
+
+  // MCP server selection
+  selectedMcpServers?: string[];
 
   // Coding agent setup
   codingAgent?: CodingAgent;
@@ -46,7 +49,7 @@ export interface InitV2MachineContext {
 /**
  * Input type for the init machine
  */
-export interface InitV2MachineInput {
+export interface InitMachineInput {
   options: {
     name?: string;
     projectType?: string;
@@ -56,16 +59,16 @@ export interface InitV2MachineInput {
 }
 
 /**
- * Improved init command state machine
+ * Init command state machine
  * Pure declarative state machine definition
  * Actors are provided externally for better separation of concerns
  */
-export const initV2Machine = createMachine(
+export const initMachine = createMachine(
   {
-    id: 'initV2',
+    id: 'init',
     types: {} as {
-      context: InitV2MachineContext;
-      input: InitV2MachineInput;
+      context: InitMachineContext;
+      input: InitMachineInput;
     },
     initial: 'displayingBanner',
     context: ({ input }) => ({
@@ -79,6 +82,7 @@ export const initV2Machine = createMachine(
       templatesPath: undefined,
       tmpTemplatesPath: undefined,
       selectedTemplates: undefined,
+      selectedMcpServers: undefined,
       codingAgent: undefined,
       options: input.options,
       error: undefined,
@@ -205,7 +209,7 @@ export const initV2Machine = createMachine(
                 }),
               },
               onError: {
-                target: '#initV2.failed',
+                target: '#init.failed',
                 actions: assign({
                   error: ({ event }) => event.error as Error,
                 }),
@@ -230,7 +234,7 @@ export const initV2Machine = createMachine(
                 }),
               },
               onError: {
-                target: '#initV2.failed',
+                target: '#init.failed',
                 actions: assign({
                   error: ({ event }) => event.error as Error,
                 }),
@@ -251,7 +255,7 @@ export const initV2Machine = createMachine(
                 target: 'promptingProjectType',
               },
               onError: {
-                target: '#initV2.failed',
+                target: '#init.failed',
                 actions: assign({
                   error: ({ event }) => event.error as Error,
                 }),
@@ -269,13 +273,13 @@ export const initV2Machine = createMachine(
                 providedProjectType: context.options.projectType,
               }),
               onDone: {
-                target: '#initV2.checkingSkipTemplates',
+                target: '#init.checkingSkipTemplates',
                 actions: assign({
                   projectType: ({ event }) => event.output,
                 }),
               },
               onError: {
-                target: '#initV2.failed',
+                target: '#init.failed',
                 actions: assign({
                   error: ({ event }) => event.error as Error,
                 }),
@@ -291,13 +295,34 @@ export const initV2Machine = createMachine(
       checkingSkipTemplates: {
         always: [
           {
-            target: 'downloadingTemplates',
+            target: 'promptingMcpSelection',
             guard: ({ context }) => !context.options.skipTemplates,
           },
           {
             target: 'checkingSkipMcp',
           },
         ],
+      },
+
+      /**
+       * Prompt user to select MCP servers
+       */
+      promptingMcpSelection: {
+        invoke: {
+          src: 'promptMcpSelection',
+          onDone: {
+            target: 'downloadingTemplates',
+            actions: assign({
+              selectedMcpServers: ({ event }) => event.output,
+            }),
+          },
+          onError: {
+            target: 'failed',
+            actions: assign({
+              error: ({ event }) => event.error as Error,
+            }),
+          },
+        },
       },
 
       /**
@@ -378,6 +403,7 @@ export const initV2Machine = createMachine(
             workspaceRoot: context.workspaceRoot!,
             selectedTemplates: context.selectedTemplates!,
             projectType: context.projectType!,
+            selectedMcpServers: context.selectedMcpServers,
           }),
           onDone: {
             target: 'creatingConfig',

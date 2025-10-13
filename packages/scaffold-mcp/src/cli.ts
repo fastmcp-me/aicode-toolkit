@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import packageJson from '../package.json' assert { type: 'json' };
 import { addCommand } from './commands/add';
 import { boilerplateCommand } from './commands/boilerplate';
 import { initCommand } from './commands/init';
 import { mcpServeCommand } from './commands/mcp-serve';
 import { scaffoldCommand } from './commands/scaffold';
-import packageJson from '../package.json' assert { type: 'json' };
 
 /**
  * Main entry point

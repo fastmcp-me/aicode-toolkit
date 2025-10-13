@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import packageJson from '../package.json' assert { type: 'json' };
 import { addCommand } from './commands/add';
 import { initCommand } from './commands/init';
-import packageJson from '../package.json' assert { type: 'json' };
 
 /**
  * Main entry point

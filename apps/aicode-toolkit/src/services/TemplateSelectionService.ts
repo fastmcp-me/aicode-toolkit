@@ -120,11 +120,13 @@ export class TemplateSelectionService {
    * @param templateNames - Names of templates to copy
    * @param destinationPath - Destination templates folder path
    * @param projectType - Project type (monolith allows only single template)
+   * @param selectedMcpServers - Optional array of selected MCP servers to filter files
    */
   async copyTemplates(
     templateNames: string[],
     destinationPath: string,
     projectType: ProjectType,
+    selectedMcpServers?: string[],
   ): Promise<void> {
     try {
       // Validate template count for monolith
@@ -153,13 +155,77 @@ export class TemplateSelectionService {
         }
 
         print.info(`Copying ${templateName}...`);
-        await fs.copy(sourcePath, targetPath);
+
+        // If MCP server filtering is enabled, copy selectively
+        if (selectedMcpServers && selectedMcpServers.length > 0) {
+          await this.copyTemplateWithMcpFilter(sourcePath, targetPath, selectedMcpServers);
+        } else {
+          // Copy everything
+          await fs.copy(sourcePath, targetPath);
+        }
+
         print.success(`Copied ${templateName}`);
       }
 
       print.success('\nTemplates copied successfully!');
     } catch (error) {
       throw new Error(`Failed to copy templates: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Copy template files with MCP server filtering
+   * @param sourcePath - Source template path
+   * @param targetPath - Target template path
+   * @param selectedMcpServers - Selected MCP servers
+   */
+  private async copyTemplateWithMcpFilter(
+    sourcePath: string,
+    targetPath: string,
+    selectedMcpServers: string[],
+  ): Promise<void> {
+    // Import MCP constants
+    const { MCPServer, MCP_CONFIG_FILES } = await import('../constants/mcp');
+
+    const architectFiles = MCP_CONFIG_FILES[MCPServer.ARCHITECT];
+    const hasArchitect = selectedMcpServers.includes(MCPServer.ARCHITECT);
+    const hasScaffold = selectedMcpServers.includes(MCPServer.SCAFFOLD);
+
+    // Ensure target directory exists
+    await fs.ensureDir(targetPath);
+
+    // Read all files in source
+    const entries = await fs.readdir(sourcePath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      const entrySourcePath = path.join(sourcePath, entry.name);
+      const entryTargetPath = path.join(targetPath, entry.name);
+
+      // Determine if this file should be copied
+      const isArchitectFile = (architectFiles as readonly string[]).includes(entry.name);
+
+      if (hasArchitect && hasScaffold) {
+        // Copy everything
+        if (entry.isDirectory()) {
+          await fs.copy(entrySourcePath, entryTargetPath);
+        } else {
+          await fs.copy(entrySourcePath, entryTargetPath);
+        }
+      } else if (hasArchitect && !hasScaffold) {
+        // Only copy architect files
+        if (isArchitectFile) {
+          await fs.copy(entrySourcePath, entryTargetPath);
+        }
+      } else if (!hasArchitect && hasScaffold) {
+        // Copy everything except architect files
+        if (!isArchitectFile) {
+          if (entry.isDirectory()) {
+            await fs.copy(entrySourcePath, entryTargetPath);
+          } else {
+            await fs.copy(entrySourcePath, entryTargetPath);
+          }
+        }
+      }
     }
   }
 

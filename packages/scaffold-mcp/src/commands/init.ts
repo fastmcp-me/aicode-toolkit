@@ -414,10 +414,14 @@ See existing templates for examples and documentation for more details.
 
       const nextSteps = [];
       if (options.download === false) {
-        nextSteps.push(`Add templates: npx @agiflowai/aicode-toolkit add --name <name> --url <url>`);
+        nextSteps.push(
+          `Add templates: npx @agiflowai/aicode-toolkit add --name <name> --url <url>`,
+        );
       } else {
         nextSteps.push(`List available boilerplates: scaffold-mcp boilerplate list`);
-        nextSteps.push(`Add more templates: npx @agiflowai/aicode-toolkit add --name <name> --url <url>`);
+        nextSteps.push(
+          `Add more templates: npx @agiflowai/aicode-toolkit add --name <name> --url <url>`,
+        );
       }
 
       sections.nextSteps(nextSteps);

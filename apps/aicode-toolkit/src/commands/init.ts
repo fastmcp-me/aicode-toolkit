@@ -9,6 +9,7 @@ import { confirm, input, select } from '@inquirer/prompts';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import { createActor, fromPromise } from 'xstate';
+import { MCP_CONFIG_FILES, MCP_SERVER_INFO, MCPServer } from '../constants';
 import {
   type CodingAgent,
   CodingAgentService,
@@ -16,7 +17,7 @@ import {
   TemplateSelectionService,
   TemplatesService,
 } from '../services';
-import { type InitV2MachineInput, initV2Machine } from '../states/initV2';
+import { type InitMachineInput, initMachine } from '../states/init-machine';
 import { displayBanner, findWorkspaceRoot } from '../utils';
 
 const DEFAULT_TEMPLATE_REPO = {
@@ -239,6 +240,33 @@ const initActors = {
   }),
 
   /**
+   * Prompt user to select MCP servers
+   */
+  promptMcpSelection: fromPromise(async () => {
+    const checkbox = await import('@inquirer/prompts').then((m) => m.checkbox);
+
+    const choices = Object.values(MCPServer).map((server) => ({
+      name: MCP_SERVER_INFO[server].name,
+      value: server,
+      description: MCP_SERVER_INFO[server].description,
+      checked: true, // Both selected by default
+    }));
+
+    const selected = await checkbox({
+      message: 'Select MCP servers to configure:',
+      choices,
+      validate: (answer) => {
+        if (answer.length === 0) {
+          return 'Please select at least one MCP server';
+        }
+        return true;
+      },
+    });
+
+    return selected as MCPServer[];
+  }),
+
+  /**
    * Download templates to tmp folder
    */
   downloadTemplates: fromPromise(async () => {
@@ -327,6 +355,7 @@ const initActors = {
         workspaceRoot: string;
         selectedTemplates: string[];
         projectType: ProjectType;
+        selectedMcpServers?: MCPServer[];
       };
     }) => {
       const templateSelectionService = new TemplateSelectionService();
@@ -336,6 +365,7 @@ const initActors = {
         actorInput.selectedTemplates,
         templatesPath,
         actorInput.projectType,
+        actorInput.selectedMcpServers,
       );
 
       return templatesPath;
@@ -423,7 +453,7 @@ export const initCommand = new Command('init')
     try {
       // Create and start the actor
       const actor = createActor(
-        initV2Machine.provide({
+        initMachine.provide({
           actors: initActors,
         }),
         {
@@ -434,7 +464,7 @@ export const initCommand = new Command('init')
               skipTemplates: options.skipTemplates || false,
               skipMcp: options.skipMcp || false,
             },
-          } as InitV2MachineInput,
+          } as InitMachineInput,
         },
       );
 
