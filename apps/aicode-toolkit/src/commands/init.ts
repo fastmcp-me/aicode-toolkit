@@ -327,6 +327,7 @@ const initActors = {
         name: t.name,
         value: t.name,
         description: t.description,
+        checked: true, // All templates selected by default for monorepo
       }));
 
       const selected = await checkbox({

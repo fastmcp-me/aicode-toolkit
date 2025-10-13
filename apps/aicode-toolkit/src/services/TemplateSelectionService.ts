@@ -56,8 +56,9 @@ export class TemplateSelectionService {
         repoConfig.branch,
       );
 
-      // Filter only directories
+      // Filter directories (templates) and files (like RULES.yaml)
       const templateDirs = contents.filter((item) => item.type === 'dir');
+      const globalFiles = contents.filter((item) => item.type === 'file' && item.name === 'RULES.yaml');
 
       if (templateDirs.length === 0) {
         throw new Error('No templates found in repository');
@@ -75,6 +76,21 @@ export class TemplateSelectionService {
         await cloneSubdirectory(repoUrl, repoConfig.branch, template.path, targetFolder);
 
         print.success(`Downloaded ${template.name}`);
+      }
+
+      // Download global RULES.yaml if exists
+      if (globalFiles.length > 0) {
+        print.info('Downloading global RULES.yaml...');
+
+        const rulesUrl = `https://raw.githubusercontent.com/${repoConfig.owner}/${repoConfig.repo}/${repoConfig.branch}/${repoConfig.path}/RULES.yaml`;
+        const targetFile = path.join(this.tmpDir, 'RULES.yaml');
+
+        const response = await fetch(rulesUrl);
+        if (response.ok) {
+          const content = await response.text();
+          await fs.writeFile(targetFile, content, 'utf-8');
+          print.success('Downloaded global RULES.yaml');
+        }
       }
 
       print.success(`\nAll templates downloaded to ${this.tmpDir}`);
@@ -165,6 +181,18 @@ export class TemplateSelectionService {
         }
 
         print.success(`Copied ${templateName}`);
+      }
+
+      // Copy global RULES.yaml if it exists
+      const globalRulesSource = path.join(this.tmpDir, 'RULES.yaml');
+      const globalRulesTarget = path.join(destinationPath, 'RULES.yaml');
+
+      if (await fs.pathExists(globalRulesSource)) {
+        if (!(await fs.pathExists(globalRulesTarget))) {
+          print.info('Copying global RULES.yaml...');
+          await fs.copy(globalRulesSource, globalRulesTarget);
+          print.success('Copied global RULES.yaml');
+        }
       }
 
       print.success('\nTemplates copied successfully!');

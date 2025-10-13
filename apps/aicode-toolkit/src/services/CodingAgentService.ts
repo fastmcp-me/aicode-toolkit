@@ -100,25 +100,17 @@ export class CodingAgentService {
     const claudeCodeService = new ClaudeCodeService({ workspaceRoot: this.workspaceRoot });
 
     // Build standardized MCP server configurations
-    const templatesPath = path.join(this.workspaceRoot, 'templates');
-
     const mcpServers = {
       'scaffold-mcp': {
         type: 'stdio' as const,
         command: 'npx',
-        args: ['-y', '@agiflowai/scaffold-mcp'],
-        env: {
-          TEMPLATES_PATH: templatesPath,
-        },
+        args: ['-y', '@agiflowai/scaffold-mcp', 'mcp-serve'],
         disabled: false,
       },
       'architect-mcp': {
         type: 'stdio' as const,
         command: 'npx',
-        args: ['-y', '@agiflowai/architect-mcp'],
-        env: {
-          TEMPLATES_PATH: templatesPath,
-        },
+        args: ['-y', '@agiflowai/architect-mcp', 'mcp-serve'],
         disabled: false,
       },
     };
