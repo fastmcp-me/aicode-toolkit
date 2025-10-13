@@ -23,6 +23,7 @@ import { addPatternCommand } from './commands/add-pattern';
 import { addRuleCommand } from './commands/add-rule';
 import { getFileDesignPatternCommand } from './commands/get-file-design-pattern';
 import { reviewCodeChangeCommand } from './commands/review-code-change';
+import packageJson from '../package.json' assert { type: 'json' };
 
 /**
  * Main entry point
@@ -33,7 +34,7 @@ async function main() {
   program
     .name('architect-mcp')
     .description('MCP server for software architecture design and planning')
-    .version('0.4.0');
+    .version(packageJson.version);
 
   // Add all commands
   program.addCommand(mcpServeCommand);

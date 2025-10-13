@@ -5,6 +5,7 @@ import { boilerplateCommand } from './commands/boilerplate';
 import { initCommand } from './commands/init';
 import { mcpServeCommand } from './commands/mcp-serve';
 import { scaffoldCommand } from './commands/scaffold';
+import packageJson from '../package.json' assert { type: 'json' };
 
 /**
  * Main entry point
@@ -15,7 +16,7 @@ async function main() {
   program
     .name('scaffold-mcp')
     .description('MCP server for scaffolding applications with boilerplate templates')
-    .version('0.4.0');
+    .version(packageJson.version);
 
   // Add all commands
   program.addCommand(mcpServeCommand);

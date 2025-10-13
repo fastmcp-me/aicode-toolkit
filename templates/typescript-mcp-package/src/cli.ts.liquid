@@ -19,6 +19,7 @@
  */
 import { Command } from 'commander';
 import { mcpServeCommand } from './commands/mcp-serve';
+import packageJson from '../package.json' assert { type: 'json' };
 
 /**
  * Main entry point
@@ -29,7 +30,7 @@ async function main() {
   program
     .name('{% if binName %}{{ binName }}{% else %}{{ packageName }}{% endif %}')
     .description('{{ description }}')
-    .version('0.1.0');
+    .version(packageJson.version);
 
   // Add all commands
   program.addCommand(mcpServeCommand);

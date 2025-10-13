@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { addCommand } from './commands/add';
 import { initCommand } from './commands/init';
+import packageJson from '../package.json' assert { type: 'json' };
 
 /**
  * Main entry point
@@ -14,7 +15,7 @@ async function main() {
     .description(
       'AI-powered code toolkit CLI for scaffolding, architecture management, and development workflows',
     )
-    .version('0.6.0');
+    .version(packageJson.version);
 
   // Add all commands
   program.addCommand(initCommand);
