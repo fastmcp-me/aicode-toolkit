@@ -25,7 +25,8 @@ const DEFAULT_TEMPLATE_REPO = {
 
 /**
  * Actor implementations for the init state machine
- * These contain the actual business logic and side effects
+ * Each actor handles a single responsibility/user interaction
+ * This follows XState best practices: one interaction per state
  */
 const initActors = {
   /**
@@ -40,17 +41,20 @@ const initActors = {
   }),
 
   /**
-   * Gather project information from user
+   * Display new project setup header
    */
-  gatherProjectInfo: fromPromise(
-    async ({ input: actorInput }: { input: { providedName?: string; providedProjectType?: string } }) => {
-      const newProjectService = new NewProjectService(actorInput.providedName, actorInput.providedProjectType);
+  displayNewProjectHeader: fromPromise(async () => {
+    print.header(`\n${icons.rocket} New Project Setup`);
+    print.info("No Git repository detected. Let's set up a new project!\n");
+  }),
 
-      print.header(`\n${icons.rocket} New Project Setup`);
-      print.info("No Git repository detected. Let's set up a new project!\n");
+  /**
+   * Gather project name from CLI args or prompt user
+   */
+  gatherProjectName: fromPromise(
+    async ({ input: actorInput }: { input: { providedName?: string } }) => {
+      const newProjectService = new NewProjectService(actorInput.providedName, undefined);
 
-      // Get project name
-      let projectName: string;
       const providedNameFromService = newProjectService.getProvidedName();
 
       if (providedNameFromService) {
@@ -59,42 +63,48 @@ const initActors = {
         if (validationResult !== true) {
           throw new Error(validationResult);
         }
-        projectName = trimmedName;
-        print.info(`Project name: ${projectName}`);
-      } else {
-        projectName = await input({
-          message: 'Enter your project name:',
-          validate: (value: string) => newProjectService.validateProjectName(value),
-        });
+        print.info(`Project name: ${trimmedName}`);
+        return trimmedName;
       }
 
-      // Get project type
-      let projectType: ProjectType;
+      return await input({
+        message: 'Enter your project name:',
+        validate: (value: string) => newProjectService.validateProjectName(value),
+      });
+    },
+  ),
+
+  /**
+   * Gather project type from CLI args or prompt user
+   */
+  gatherProjectType: fromPromise(
+    async ({ input: actorInput }: { input: { providedProjectType?: string } }) => {
+      const newProjectService = new NewProjectService(undefined, actorInput.providedProjectType);
+
       const providedProjectTypeFromService = newProjectService.getProvidedProjectType();
 
       if (providedProjectTypeFromService) {
         newProjectService.validateProjectType(providedProjectTypeFromService);
-        projectType = providedProjectTypeFromService as ProjectType;
+        const projectType = providedProjectTypeFromService as ProjectType;
         print.info(`Project type: ${projectType}`);
-      } else {
-        projectType = await select({
-          message: 'Select project type:',
-          choices: [
-            {
-              name: 'Monolith - Single application structure',
-              value: ProjectType.MONOLITH,
-              description: 'Traditional single-application project structure',
-            },
-            {
-              name: 'Monorepo - Multiple packages/apps in one repository',
-              value: ProjectType.MONOREPO,
-              description: 'Multiple packages managed together (uses workspaces)',
-            },
-          ],
-        });
+        return projectType;
       }
 
-      return { projectName, projectType };
+      return await select({
+        message: 'Select project type:',
+        choices: [
+          {
+            name: 'Monolith - Single application structure',
+            value: ProjectType.MONOLITH,
+            description: 'Traditional single-application project structure',
+          },
+          {
+            name: 'Monorepo - Multiple packages/apps in one repository',
+            value: ProjectType.MONOREPO,
+            description: 'Multiple packages managed together (uses workspaces)',
+          },
+        ],
+      });
     },
   ),
 
@@ -115,37 +125,44 @@ const initActors = {
   ),
 
   /**
-   * Handle Git setup (clone or init)
+   * Prompt if user has existing Git repository
    */
-  handleGitSetup: fromPromise(
-    async ({ input: actorInput }: { input: { projectPath: string; projectType: ProjectType } }) => {
-      const newProjectService = new NewProjectService(undefined, undefined);
+  promptExistingRepo: fromPromise(async () => {
+    return await confirm({
+      message: 'Do you have an existing Git repository you want to use?',
+      default: false,
+    });
+  }),
 
-      const hasExistingRepo = await confirm({
-        message: 'Do you have an existing Git repository you want to use?',
-        default: false,
-      });
+  /**
+   * Prompt for Git repository URL and clone it
+   */
+  promptRepoUrl: fromPromise(async ({ input: actorInput }: { input: { projectPath: string } }) => {
+    const newProjectService = new NewProjectService(undefined, undefined);
 
-      if (hasExistingRepo) {
-        const repoUrl = await input({
-          message: 'Enter Git repository URL:',
-          validate: (value: string) => newProjectService.validateRepositoryUrl(value),
-        });
-        await newProjectService.cloneExistingRepository(repoUrl.trim(), actorInput.projectPath);
-      } else {
-        const initGit = await confirm({
-          message: 'Initialize a new Git repository?',
-          default: true,
-        });
+    const repoUrl = await input({
+      message: 'Enter Git repository URL:',
+      validate: (value: string) => newProjectService.validateRepositoryUrl(value),
+    });
 
-        if (initGit) {
-          await newProjectService.initializeGitRepository(actorInput.projectPath);
-        }
-      }
+    await newProjectService.cloneExistingRepository(repoUrl.trim(), actorInput.projectPath);
+  }),
 
-      return { projectPath: actorInput.projectPath };
-    },
-  ),
+  /**
+   * Prompt to initialize new Git repository
+   */
+  promptInitGit: fromPromise(async ({ input: actorInput }: { input: { projectPath: string } }) => {
+    const newProjectService = new NewProjectService(undefined, undefined);
+
+    const initGit = await confirm({
+      message: 'Initialize a new Git repository?',
+      default: true,
+    });
+
+    if (initGit) {
+      await newProjectService.initializeGitRepository(actorInput.projectPath);
+    }
+  }),
 
   /**
    * Check if templates folder exists
@@ -155,47 +172,48 @@ const initActors = {
   }),
 
   /**
-   * Prompt user for alternate folder if templates exist
+   * Prompt if user wants alternate folder
    */
   promptAlternateFolder: fromPromise(
-    async ({
-      input: actorInput,
-    }: {
-      input: { templatesPath: string; workspaceRoot: string; projectType?: ProjectType };
-    }) => {
+    async ({ input: actorInput }: { input: { templatesPath: string } }) => {
       messages.warning(`\n⚠️  Templates folder already exists at: ${actorInput.templatesPath}`);
 
-      const useAlternate = await confirm({
+      return await confirm({
         message: 'Do you want to use a different folder for templates?',
         default: false,
       });
+    },
+  ),
 
-      if (useAlternate) {
-        const alternateFolder = await input({
-          message: 'Enter alternate folder name for templates:',
-          default: 'my-templates',
-          validate: (value: string) => {
-            if (!value.trim()) {
-              return 'Folder name is required';
-            }
-            if (!/^[a-zA-Z0-9_\-/]+$/.test(value)) {
-              return 'Folder name can only contain letters, numbers, hyphens, underscores, and slashes';
-            }
-            return true;
-          },
-        });
+  /**
+   * Prompt for alternate folder name
+   */
+  promptAlternateFolderName: fromPromise(
+    async ({
+      input: actorInput,
+    }: {
+      input: { workspaceRoot: string; projectType?: ProjectType };
+    }) => {
+      const alternateFolder = await input({
+        message: 'Enter alternate folder name for templates:',
+        default: 'my-templates',
+        validate: (value: string) => {
+          if (!value.trim()) {
+            return 'Folder name is required';
+          }
+          if (!/^[a-zA-Z0-9_\-/]+$/.test(value)) {
+            return 'Folder name can only contain letters, numbers, hyphens, underscores, and slashes';
+          }
+          return true;
+        },
+      });
 
-        const templatesPath = path.join(actorInput.workspaceRoot, alternateFolder.trim());
+      const templatesPath = path.join(actorInput.workspaceRoot, alternateFolder.trim());
 
-        return {
-          useAlternate: true,
-          templatesPath,
-          alternateFolder: alternateFolder.trim(),
-        };
-      }
-
-      print.info(`\n${icons.info} Using existing templates folder`);
-      return { useAlternate: false, templatesPath: actorInput.templatesPath };
+      return {
+        templatesPath,
+        alternateFolder: alternateFolder.trim(),
+      };
     },
   ),
 
@@ -247,6 +265,7 @@ const initActors = {
 /**
  * Init command - initialize templates folder structure at workspace root or create new project
  * Uses XState machine with actor implementations for better separation of concerns
+ * Each user interaction is a separate state for proper flow control
  */
 export const initCommand = new Command('init')
   .description('Initialize templates folder structure at workspace root or create new project')

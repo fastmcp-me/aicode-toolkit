@@ -50,6 +50,7 @@ export interface InitMachineInput {
  * Init command state machine
  * Pure declarative state machine definition
  * Actors are provided externally for better separation of concerns
+ * Each user interaction is a separate state for proper flow control
  */
 export const initMachine = createMachine(
   {
@@ -92,23 +93,57 @@ export const initMachine = createMachine(
        * Setup a new project when no workspace is found
        */
       settingUpNewProject: {
-        initial: 'gatheringProjectInfo',
+        initial: 'displayingHeader',
         states: {
           /**
-           * Gather project name and type from CLI args or prompts
+           * Display new project setup header
            */
-          gatheringProjectInfo: {
+          displayingHeader: {
             invoke: {
-              src: 'gatherProjectInfo',
+              src: 'displayNewProjectHeader',
+              onDone: {
+                target: 'gatheringProjectName',
+              },
+            },
+          },
+
+          /**
+           * Gather project name from CLI args or prompt user
+           */
+          gatheringProjectName: {
+            invoke: {
+              src: 'gatherProjectName',
               input: ({ context }) => ({
                 providedName: context.options.name,
+              }),
+              onDone: {
+                target: 'gatheringProjectType',
+                actions: assign({
+                  projectName: ({ event }) => event.output,
+                }),
+              },
+              onError: {
+                target: '#init.failed',
+                actions: assign({
+                  error: ({ event }) => event.error as Error,
+                }),
+              },
+            },
+          },
+
+          /**
+           * Gather project type from CLI args or prompt user
+           */
+          gatheringProjectType: {
+            invoke: {
+              src: 'gatherProjectType',
+              input: ({ context }) => ({
                 providedProjectType: context.options.projectType,
               }),
               onDone: {
                 target: 'creatingProjectDirectory',
                 actions: assign({
-                  projectName: ({ event }) => event.output.projectName,
-                  projectType: ({ event }) => event.output.projectType,
+                  projectType: ({ event }) => event.output,
                 }),
               },
               onError: {
@@ -131,7 +166,7 @@ export const initMachine = createMachine(
                 projectType: context.projectType!,
               }),
               onDone: {
-                target: 'handlingGitSetup',
+                target: 'promptingExistingRepo',
                 actions: assign({
                   projectPath: ({ event }) => event.output.projectPath,
                   workspaceRoot: ({ event }) => event.output.projectPath,
@@ -147,14 +182,59 @@ export const initMachine = createMachine(
           },
 
           /**
-           * Handle Git repository setup (clone existing or init new)
+           * Ask if user has existing Git repository
            */
-          handlingGitSetup: {
+          promptingExistingRepo: {
             invoke: {
-              src: 'handleGitSetup',
+              src: 'promptExistingRepo',
+              onDone: [
+                {
+                  target: 'promptingRepoUrl',
+                  guard: ({ event }) => event.output === true,
+                },
+                {
+                  target: 'promptingInitGit',
+                  guard: ({ event }) => event.output === false,
+                },
+              ],
+              onError: {
+                target: '#init.failed',
+                actions: assign({
+                  error: ({ event }) => event.error as Error,
+                }),
+              },
+            },
+          },
+
+          /**
+           * Prompt for Git repository URL
+           */
+          promptingRepoUrl: {
+            invoke: {
+              src: 'promptRepoUrl',
               input: ({ context }) => ({
                 projectPath: context.projectPath!,
-                projectType: context.projectType!,
+              }),
+              onDone: {
+                target: '#init.determiningTemplatesPath',
+              },
+              onError: {
+                target: '#init.failed',
+                actions: assign({
+                  error: ({ event }) => event.error as Error,
+                }),
+              },
+            },
+          },
+
+          /**
+           * Ask if user wants to initialize new Git repository
+           */
+          promptingInitGit: {
+            invoke: {
+              src: 'promptInitGit',
+              input: ({ context }) => ({
+                projectPath: context.projectPath!,
               }),
               onDone: {
                 target: '#init.determiningTemplatesPath',
@@ -198,7 +278,7 @@ export const initMachine = createMachine(
           }),
           onDone: [
             {
-              target: 'handlingExistingTemplates',
+              target: 'promptingAlternateFolder',
               guard: ({ event }) => event.output === true,
             },
             {
@@ -216,30 +296,50 @@ export const initMachine = createMachine(
       },
 
       /**
-       * Handle case where templates folder already exists
+       * Prompt user if they want alternate folder
        */
-      handlingExistingTemplates: {
+      promptingAlternateFolder: {
         invoke: {
           src: 'promptAlternateFolder',
           input: ({ context }) => ({
             templatesPath: context.templatesPath!,
-            workspaceRoot: context.workspaceRoot!,
-            projectType: context.projectType,
           }),
           onDone: [
             {
-              target: 'creatingToolkitConfig',
-              guard: ({ event }) => event.output.useAlternate === true,
-              actions: assign({
-                templatesPath: ({ event }) => event.output.templatesPath,
-                customTemplatesPath: ({ event }) => event.output.alternateFolder,
-              }),
+              target: 'promptingAlternateFolderName',
+              guard: ({ event }) => event.output === true,
             },
             {
               target: 'checkingDownloadOption',
-              guard: ({ event }) => event.output.useAlternate === false,
+              guard: ({ event }) => event.output === false,
             },
           ],
+          onError: {
+            target: 'failed',
+            actions: assign({
+              error: ({ event }) => event.error as Error,
+            }),
+          },
+        },
+      },
+
+      /**
+       * Prompt for alternate folder name
+       */
+      promptingAlternateFolderName: {
+        invoke: {
+          src: 'promptAlternateFolderName',
+          input: ({ context }) => ({
+            workspaceRoot: context.workspaceRoot!,
+            projectType: context.projectType,
+          }),
+          onDone: {
+            target: 'creatingToolkitConfig',
+            actions: assign({
+              templatesPath: ({ event }) => event.output.templatesPath,
+              customTemplatesPath: ({ event }) => event.output.alternateFolder,
+            }),
+          },
           onError: {
             target: 'failed',
             actions: assign({
