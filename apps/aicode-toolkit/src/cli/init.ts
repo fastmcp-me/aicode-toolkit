@@ -14,7 +14,7 @@ import * as fs from 'fs-extra';
 import { createActor, fromPromise } from 'xstate';
 import { NewProjectService, TemplatesService } from '../services';
 import { initMachine, type InitMachineInput } from '../states/init';
-import { findWorkspaceRoot } from '../utils';
+import { displayBanner, findWorkspaceRoot } from '../utils';
 
 const DEFAULT_TEMPLATE_REPO = {
   owner: 'AgiFlow',
@@ -275,6 +275,9 @@ export const initCommand = new Command('init')
   .option('--project-type <type>', 'Project type: monolith or monorepo (for new projects)')
   .action(async (options) => {
     try {
+      // Display banner at start
+      displayBanner();
+
       // Create and start the actor with input options and actor implementations
       const actor = createActor(
         initMachine.provide({
