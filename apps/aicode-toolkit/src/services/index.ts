@@ -1,11 +1,13 @@
 /**
- * Services Barrel Export
- *
- * This file exports all services for convenient importing.
- * Add new service exports here as you create them.
+ * Services Barrel Exports
  */
 
-export * from './CodingAgentService';
-export * from './NewProjectService';
-export * from './TemplateSelectionService';
-export * from './TemplatesService';
+export {
+  CodingAgentService,
+  CodingAgent,
+  type MCPServerConfig,
+  type AgentConfig,
+} from './CodingAgentService';
+export { NewProjectService } from './NewProjectService';
+export { TemplateSelectionService } from './TemplateSelectionService';
+export { TemplatesService } from './TemplatesService';

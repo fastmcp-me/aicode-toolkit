@@ -159,7 +159,7 @@ rules:
           export function trim(str: string): string { }
       - rule: Mix multiple concerns in one service
       - rule: Use synchronous blocking operations for I/O
-  - pattern: src/cli/**/*.ts
+  - pattern: src/commands/**/*.ts
     description: CLI Command Implementation Standards
     inherits:
       - export-standards
@@ -195,23 +195,68 @@ rules:
       - rule: Missing error handling - always use try-catch
       - rule: Hardcode values - use options or environment variables
   - pattern: src/index.ts
-    description: Main entry point standards
+    description: Main barrel export file for public API
+    inherits:
+      - export-standards
+    must_do:
+      - rule: Export all public-facing modules using named exports
+        codeExample: |-
+          // ✅ GOOD - Named exports
+          export { server } from './server/index';
+          export type * from './types/index';
+          export { MyTool } from './tools/MyTool';
+          export { MyService } from './services/MyService';
+      - rule: Group exports by category with comments
+        codeExample: |-
+          // Server
+          export { server } from './server/index';
+
+          // Types
+          export type * from './types/index';
+
+          // Tools
+          export { MyTool } from './tools/MyTool';
+      - rule: Use 'export type *' for type-only exports
+        codeExample: |-
+          // ✅ GOOD
+          export type * from './types/index';
+
+          // ❌ BAD
+          export * from './types/index';
+    must_not_do:
+      - rule: Export CLI or command-related modules
+        codeExample: |-
+          // ❌ BAD - CLI is for bin usage only
+          export { mcpServeCommand } from './commands/mcp-serve';
+
+          // ✅ GOOD - Only library/server API
+          export { server } from './server/index';
+      - rule: Use wildcard exports (be explicit)
+        codeExample: |-
+          // ❌ BAD
+          export * from './tools/index';
+
+          // ✅ GOOD
+          export { Tool1, Tool2 } from './tools/index';
+      - rule: Use default exports
+      - rule: Export internal implementation details
+  - pattern: src/cli.ts
+    description: Main CLI entry point standards
     inherits:
       - export-standards
       - error-handling
     must_do:
-      - rule: Export all public APIs and tools
       - rule: Register all CLI commands in main program
         codeExample: |
           // ✅ GOOD
-          import { myCommand } from './cli/my-command';
+          import { myCommand } from './commands/my-command';
 
           program.addCommand(myCommand);
       - rule: Include shebang for executable scripts
         codeExample: |
           #!/usr/bin/env node
     must_not_do:
-      - rule: Hardcode command logic in index.ts - use separate command files
+      - rule: Hardcode command logic in cli.ts - use separate command files
   - pattern: src/server/index.ts
     description: MCP Server setup standards
     inherits:
@@ -492,24 +537,24 @@ rules:
 
           // ✅ GOOD
           export interface Config { }
-  - pattern: src/cli/index.ts
+  - pattern: src/commands/index.ts
     description: CLI Barrel Export Standards
     inherits:
       - export-standards
     must_do:
       - rule: Export all CLI commands from index.ts using barrel exports
         codeExample: |-
-          export { myCommand } from './my-command.js';
-          export { anotherCommand } from './another-command.js';
-          export { utilityCommand } from './utility-command.js';
+          export { myCommand } from './my-command';
+          export { anotherCommand } from './another-command';
+          export { utilityCommand } from './utility-command';
       - rule: Use named exports for all commands
         codeExample: |-
           // ✅ GOOD - Named exports
-          export { processCommand } from './process.js';
-          export { analyzeCommand } from './analyze.js';
+          export { processCommand } from './process';
+          export { analyzeCommand } from './analyze';
 
           // ❌ BAD - Default exports
-          export { default as processCommand } from './process.js';
+          export { default as processCommand } from './process';
     must_not_do:
       - rule: Include implementation in index.ts - only exports
         codeExample: |-
@@ -517,14 +562,14 @@ rules:
           export const myCommand = new Command('my').action(() => {});
 
           // ✅ GOOD - Only exports
-          export { myCommand } from './my-command.js';
+          export { myCommand } from './my-command';
       - rule: Use wildcard exports - be explicit
         codeExample: |-
           // ❌ BAD
-          export * from './commands.js';
+          export * from './commandss';
 
           // ✅ GOOD
-          export { command1, command2 } from './commands.js';
+          export { command1, command2 } from './commands';
   - pattern: src/tools/index.ts
     description: Tools Barrel Export Standards
     inherits:
@@ -532,13 +577,13 @@ rules:
     must_do:
       - rule: Export all tools from index.ts using barrel exports
         codeExample: |-
-          export { MyTool } from './MyTool.js';
-          export { AnotherTool } from './AnotherTool.js';
+          export { MyTool } from './MyTool';
+          export { AnotherTool } from './AnotherTool';
       - rule: Use named exports for all tools
         codeExample: |-
           // ✅ GOOD
-          export { FileTool } from './FileTool.js';
-          export { CodeTool } from './CodeTool.js';
+          export { FileTool } from './FileTool';
+          export { CodeTool } from './CodeTool';
     must_not_do:
       - rule: Include tool implementation in index.ts
         codeExample: |-
@@ -546,14 +591,14 @@ rules:
           export class MyTool implements Tool { }
 
           // ✅ GOOD
-          export { MyTool } from './MyTool.js';
+          export { MyTool } from './MyTool';
       - rule: Use wildcard exports
         codeExample: |-
           // ❌ BAD
-          export * from './tools.js';
+          export * from './tools';
 
           // ✅ GOOD
-          export { Tool1, Tool2 } from './tools.js';
+          export { Tool1, Tool2 } from './tools';
   - pattern: src/services/index.ts
     description: Services Barrel Export Standards
     inherits:
@@ -561,18 +606,18 @@ rules:
     must_do:
       - rule: Export all services from index.ts using barrel exports
         codeExample: |-
-          export { UserService } from './UserService.js';
-          export { DataService } from './DataService.js';
-          export { FileService } from './FileService.js';
+          export { UserService } from './UserService';
+          export { DataService } from './DataService';
+          export { FileService } from './FileService';
       - rule: Group related services together in exports
         codeExample: |-
           // Database services
-          export { UserService } from './UserService.js';
-          export { OrderService } from './OrderService.js';
+          export { UserService } from './UserService';
+          export { OrderService } from './OrderService';
 
           // Utility services
-          export { LoggerService } from './LoggerService.js';
-          export { CacheService } from './CacheService.js';
+          export { LoggerService } from './LoggerService';
+          export { CacheService } from './CacheService';
     must_not_do:
       - rule: Include service implementation in index.ts
         codeExample: |-
@@ -580,11 +625,11 @@ rules:
           export class UserService { }
 
           // ✅ GOOD
-          export { UserService } from './UserService.js';
+          export { UserService } from './UserService';
       - rule: Use wildcard exports
         codeExample: |-
           // ❌ BAD
-          export * from './services.js';
+          export * from './services';
 
           // ✅ GOOD  
-          export { Service1, Service2 } from './services.js';
+          export { Service1, Service2 } from './services';

@@ -1,27 +1,30 @@
-#!/usr/bin/env node
-import { Command } from 'commander';
-import { addCommand } from './cli/add';
-import { initCommand } from './cli/init';
-
 /**
- * Main entry point
+ * AICode Toolkit Library Exports
+ *
+ * This file provides library exports for programmatic usage.
+ * For CLI usage, see cli.ts instead.
  */
-async function main() {
-  const program = new Command();
 
-  program
-    .name('aicode')
-    .description(
-      'AI-powered code toolkit CLI for scaffolding, architecture management, and development workflows',
-    )
-    .version('0.6.0');
-
-  // Add all commands
-  program.addCommand(initCommand);
-  program.addCommand(addCommand);
-
-  // Parse arguments
-  await program.parseAsync(process.argv);
-}
-
-main();
+// Constants
+export { BANNER_GRADIENT, THEME } from './constants/index';
+// Services
+export {
+  CodingAgentService,
+  CodingAgent,
+  type MCPServerConfig,
+  type AgentConfig,
+  NewProjectService,
+  TemplateSelectionService,
+  TemplatesService,
+} from './services/index';
+// Utils
+export {
+  cloneRepository,
+  cloneSubdirectory,
+  displayBanner,
+  displayCompactBanner,
+  fetchGitHubDirectoryContents,
+  findWorkspaceRoot,
+  gitInit,
+  parseGitHubUrl,
+} from './utils/index';

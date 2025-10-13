@@ -25,15 +25,17 @@
     "vite"
   ],
   "bin": {
-    "aicode": "./dist/index.cjs"
+    "aicode": "./dist/cli.cjs"
   },
   "main": "./dist/index.cjs",
+  "types": "./dist/index.d.cts",
+  "module": "./dist/index.js",
   "files": [
     "dist",
     "README.md"
   ],
   "scripts": {
-    "dev": "node --loader ts-node/esm src/index.ts",
+    "dev": "node --loader ts-node/esm src/cli.ts",
     "build": "tsdown",
     "test": "vitest --run",
     "typecheck": "tsc --noEmit"
@@ -67,5 +69,16 @@
   "publishConfig": {
     "access": "public"
   },
-  "type": "module"
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./cli": {
+      "import": "./dist/cli.js",
+      "require": "./dist/cli.cjs"
+    },
+    "./package.json": "./package.json"
+  }
 }

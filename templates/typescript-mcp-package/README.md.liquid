@@ -34,8 +34,8 @@ Add to your Claude Code configuration:
 {
   "mcpServers": {
     "{{ packageName }}": {
-      "command": "node",
-      "args": ["/path/to/{{ packageName }}/dist/index.js"]
+      "command": "npx",
+      "args": ["{{ packageName }}", "mcp-serve"]
     }
   }
 }
