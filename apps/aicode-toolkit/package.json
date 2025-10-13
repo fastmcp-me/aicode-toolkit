@@ -1,0 +1,70 @@
+{
+  "name": "@agiflowai/aicode-toolkit",
+  "description": "AI-powered code toolkit CLI for scaffolding, architecture management, and development workflows",
+  "version": "0.6.0",
+  "license": "AGPL-3.0",
+  "author": "AgiflowIO",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AgiFlow/aicode-toolkit.git",
+    "directory": "apps/aicode-toolkit"
+  },
+  "homepage": "https://github.com/AgiFlow/aicode-toolkit#readme",
+  "bugs": {
+    "url": "https://github.com/AgiFlow/aicode-toolkit/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "scaffold",
+    "boilerplate",
+    "template",
+    "code-generation",
+    "nextjs",
+    "react",
+    "vite"
+  ],
+  "bin": {
+    "aicode": "./dist/index.cjs"
+  },
+  "main": "./dist/index.cjs",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "build": "tsdown",
+    "test": "vitest --run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agiflowai/aicode-utils": "workspace:*",
+    "@composio/json-schema-to-zod": "0.1.15",
+    "@inquirer/prompts": "^7.8.6",
+    "@modelcontextprotocol/sdk": "1.19.1",
+    "chalk": "5.6.2",
+    "commander": "14.0.1",
+    "execa": "^9.5.2",
+    "express": "^4.21.2",
+    "fs-extra": "11.3.2",
+    "js-yaml": "4.1.0",
+    "liquidjs": "10.21.1",
+    "pino": "^10.0.0",
+    "pino-pretty": "^13.1.1",
+    "xstate": "^5.23.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/fs-extra": "^11.0.4",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "tsdown": "^0.15.6",
+    "typescript": "5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module"
+}

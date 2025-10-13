@@ -5,6 +5,7 @@ module.exports = {
       2,
       'always',
       [
+        'aicode-toolkit',
         'aicode-utils',
         'scaffold-mcp',
         'architect-mcp',

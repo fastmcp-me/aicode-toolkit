@@ -1,0 +1,43 @@
+{
+  "name": "@agiflowai/aicode-toolkit",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/aicode-toolkit/src",
+  "projectType": "application",
+  "sourceTemplate": "typescript-mcp-package",
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "script": "build"
+      }
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "outputs": ["{workspaceRoot}/coverage/apps/aicode-toolkit"],
+      "options": {
+        "reportsDirectory": "../../coverage/apps/aicode-toolkit"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit",
+        "cwd": "apps/aicode-toolkit"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "biome check apps/aicode-toolkit"
+      }
+    },
+    "lint:fix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "biome check --write apps/aicode-toolkit"
+      }
+    }
+  },
+  "tags": ["type:cli", "scope:tools"]
+}
