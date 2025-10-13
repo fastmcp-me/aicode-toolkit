@@ -2,11 +2,11 @@
 
 > Scale your AI coding agents with scaffolding, architecture patterns, and validation rules
 
-
-![AI Code Toolkit Banner](./docs/banner.jpg)
 [![npm version](https://img.shields.io/npm/v/@agiflowai/scaffold-mcp.svg?style=flat-square)](https://www.npmjs.com/package/@agiflowai/scaffold-mcp)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg?style=flat-square)](https://opensource.org/licenses/AGPL-3.0)
 [![Discord](https://dcbadge.limes.pink/api/server/https://discord.gg/NsB6q9Vas9?style=flat-square)](https://discord.gg/NsB6q9Vas9)
+
+![AI Code Toolkit Banner](./docs/banner.jpg)
 
 A collection of [Model Context Protocol (MCP)](https://modelcontextprotocol.io) servers and tools that help AI coding agents maintain consistency, follow conventions, and scale with your codebase.
 
@@ -63,15 +63,15 @@ Whether you're bootstrapping a new project or managing a complex monorepo, these
 
 ## Core Pillars
 
-### 1. 🏗️ Scaffolding Templates
+### 1. Scaffolding Templates
 
 Combine templating with LLMs to generate standardized code that follows your internal conventions while reducing maintenance overhead.
 
-### 2. 🎨 Architecture + Design Patterns
+### 2. Architecture + Design Patterns
 
 Convention over configuration scales. Like Ruby on Rails or Angular, opinionated approaches make code predictable—for both humans and AI agents.
 
-### 3. ✅ Rules
+### 3. Rules
 
 Pre-flight guidance + post-flight validation = consistent output. Rules provide programmatic checks (quantitative or qualitative) to enforce your processes.
 
@@ -79,13 +79,13 @@ Pre-flight guidance + post-flight validation = consistent output. Rules provide 
 
 ## Our Approach
 
-### 🤖 Agent Agnostic
+### Agent Agnostic
 
 Works with any AI coding agent (Claude Code, Cursor, Windsurf, etc.). Each library provides:
 - **MCP tools** for integration with MCP-compatible agents
 - **CLI commands** for scripting deterministic workflows
 
-### 🛠️ Tech Stack Agnostic
+### Tech Stack Agnostic
 
 Built-in templates for popular frameworks:
 - Next.js 15
@@ -94,7 +94,7 @@ Built-in templates for popular frameworks:
 
 Don't see your stack? Use the built-in MCP tools to generate custom templates—the system is fully extensible.
 
-### 🎯 Coding Tool Specific
+### Coding Tool Specific
 
 Maximize effectiveness by combining three layers:
 
@@ -429,34 +429,44 @@ Result: Validates against RULES.yaml (named exports, error handling, etc.)
 
 ## Packages
 
-### [@agiflowai/scaffold-mcp](./packages/scaffold-mcp)
+### [@agiflowai/aicode-toolkit](./apps/aicode-toolkit)
 
-MCP server for scaffolding applications with boilerplate templates and feature generators.
+Unified CLI for initializing projects, managing templates, and configuring MCP servers. Provides interactive workflows for project setup with automatic detection of coding agents (Claude Code, Codex, Gemini CLI).
 
 **Key Features:**
-- 🚀 Create projects from boilerplate templates
-- 🎯 Add features to existing projects (pages, components, services)
-- 📦 Template management (initialize, add from repositories)
-- 🔧 Built-in templates: Next.js 15, TypeScript libraries, MCP packages
-- 🌐 Multiple transport modes: stdio, HTTP, SSE
-- 💻 Standalone CLI mode
-- 🎙️ Slash command prompts for AI coding agents
+- Interactive project initialization (monorepo or monolith)
+- Template management and download from GitHub
+- Automatic MCP server configuration
+- Coding agent auto-detection
+- New project scaffolding with git setup
+
+[View full documentation →](./apps/aicode-toolkit/README.md)
+
+### [@agiflowai/scaffold-mcp](./packages/scaffold-mcp)
+
+MCP server for scaffolding applications with boilerplate templates and feature generators. Works with any MCP-compatible coding agent.
+
+**Key Features:**
+- Create projects from boilerplate templates
+- Add features to existing projects (pages, components, services)
+- Template management (initialize, add from repositories)
+- Built-in templates: Next.js 15, TypeScript libraries, MCP packages
+- Multiple transport modes: stdio, HTTP, SSE
+- Standalone CLI and slash command prompts
 
 [View full documentation →](./packages/scaffold-mcp/README.md)
 
 ### [@agiflowai/architect-mcp](./packages/architect-mcp)
 
-MCP server for software architecture design, code quality enforcement, and design pattern guidance.
+MCP server for architecture design, code quality enforcement, and design pattern guidance. Validates code against project-specific rules and patterns.
 
 **Key Features:**
-- 🎨 Design pattern guidance for specific files
-- ✅ Code review against template-specific rules
-- 📐 Architecture patterns (architect.yaml)
-- 📋 Coding standards and rules (RULES.yaml)
-- 🤖 Optional LLM-powered analysis with Claude Code CLI
-- 🌐 Multiple transport modes: stdio, HTTP, SSE
-- 💻 Standalone CLI mode
-- 🔧 Admin tools for pattern and rule management
+- Design pattern guidance for specific files
+- Code review against template-specific rules
+- Architecture patterns (architect.yaml)
+- Coding standards and rules (RULES.yaml)
+- Optional LLM-powered analysis
+- Multiple transport modes: stdio, HTTP, SSE
 
 [View full documentation →](./packages/architect-mcp/README.md)
 
