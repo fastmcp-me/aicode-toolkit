@@ -6,5 +6,5 @@ export default defineConfig({
   clean: true,
   shims: true,
   dts: true,
-  packageExports: true,
+  exports: true,
 });

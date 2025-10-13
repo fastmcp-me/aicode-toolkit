@@ -24,7 +24,7 @@
   ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.cts",
   "files": [
     "dist",
     "README.md"
@@ -52,5 +52,12 @@
   "type": "module",
   "publishConfig": {
     "access": "public"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
   }
 }
