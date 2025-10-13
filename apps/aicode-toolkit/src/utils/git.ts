@@ -15,6 +15,18 @@ async function execGit(args: string[], cwd?: string): Promise<void> {
 }
 
 /**
+ * Execute git init safely using execa to prevent command injection
+ */
+export async function gitInit(projectPath: string): Promise<void> {
+  try {
+    await execa('git', ['init', projectPath]);
+  } catch (error) {
+    const execaError = error as { stderr?: string; message: string };
+    throw new Error(`Git init failed: ${execaError.stderr || execaError.message}`);
+  }
+}
+
+/**
  * Find the workspace root by searching upwards for .git folder
  * Returns null if no .git folder is found (indicating a new project setup is needed)
  */

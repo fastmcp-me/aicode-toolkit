@@ -10,27 +10,9 @@ import {
 } from '@agiflowai/aicode-utils';
 import { confirm, input, select } from '@inquirer/prompts';
 import { Command } from 'commander';
-import { execa } from 'execa';
 import * as fs from 'fs-extra';
-import {
-  cloneRepository,
-  cloneSubdirectory,
-  fetchGitHubDirectoryContents,
-  findWorkspaceRoot,
-  parseGitHubUrl,
-} from '../utils';
-
-/**
- * Execute git init safely using execa to prevent command injection
- */
-async function gitInit(projectPath: string): Promise<void> {
-  try {
-    await execa('git', ['init', projectPath]);
-  } catch (error) {
-    const execaError = error as { stderr?: string; message: string };
-    throw new Error(`Git init failed: ${execaError.stderr || execaError.message}`);
-  }
-}
+import { NewProjectService, TemplatesService } from '../services';
+import { findWorkspaceRoot } from '../utils';
 
 const DEFAULT_TEMPLATE_REPO = {
   owner: 'AgiFlow',
@@ -52,64 +34,20 @@ async function setupNewProject(
   projectPath: string;
   projectType: ProjectType;
 }> {
+  const newProjectService = new NewProjectService(providedName, providedProjectType);
+
   print.header(`\n${icons.rocket} New Project Setup`);
   print.info("No Git repository detected. Let's set up a new project!\n");
 
   // Validate and use provided project name, or prompt for it
   let projectName: string;
 
-  // Reserved names that should not be used
-  const reservedNames = [
-    '.',
-    '..',
-    'CON',
-    'PRN',
-    'AUX',
-    'NUL',
-    'COM1',
-    'COM2',
-    'COM3',
-    'COM4',
-    'COM5',
-    'COM6',
-    'COM7',
-    'COM8',
-    'COM9',
-    'LPT1',
-    'LPT2',
-    'LPT3',
-    'LPT4',
-    'LPT5',
-    'LPT6',
-    'LPT7',
-    'LPT8',
-    'LPT9',
-  ];
+  const providedNameFromService = newProjectService.getProvidedName();
 
-  const validateProjectName = (value: string): true | string => {
-    const trimmed = value.trim();
-    if (!trimmed) {
-      return 'Project name is required';
-    }
-    // Must start with a letter or number
-    if (!/^[a-zA-Z0-9]/.test(trimmed)) {
-      return 'Project name must start with a letter or number';
-    }
-    // Can only contain alphanumeric, hyphens, and underscores
-    if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(trimmed)) {
-      return 'Project name can only contain letters, numbers, hyphens, and underscores';
-    }
-    // Check against reserved names
-    if (reservedNames.includes(trimmed.toUpperCase())) {
-      return 'Project name uses a reserved name';
-    }
-    return true;
-  };
-
-  if (providedName) {
+  if (providedNameFromService) {
     // Validate provided project name
-    const trimmedName = providedName.trim();
-    const validationResult = validateProjectName(trimmedName);
+    const trimmedName = providedNameFromService.trim();
+    const validationResult = newProjectService.validateProjectName(trimmedName);
     if (validationResult !== true) {
       throw new Error(validationResult);
     }
@@ -119,24 +57,19 @@ async function setupNewProject(
     // Prompt for project name
     projectName = await input({
       message: 'Enter your project name:',
-      validate: validateProjectName,
+      validate: (value) => newProjectService.validateProjectName(value),
     });
   }
 
   // Validate and use provided project type, or prompt for it
   let projectType: ProjectType;
 
-  if (providedProjectType) {
+  const providedProjectTypeFromService = newProjectService.getProvidedProjectType();
+
+  if (providedProjectTypeFromService) {
     // Validate provided project type
-    if (
-      providedProjectType !== ProjectType.MONOLITH &&
-      providedProjectType !== ProjectType.MONOREPO
-    ) {
-      throw new Error(
-        `Invalid project type '${providedProjectType}'. Must be '${ProjectType.MONOLITH}' or '${ProjectType.MONOREPO}'`,
-      );
-    }
-    projectType = providedProjectType as ProjectType;
+    newProjectService.validateProjectType(providedProjectTypeFromService);
+    projectType = providedProjectTypeFromService as ProjectType;
     print.info(`Project type: ${projectType}`);
   } else {
     // Prompt for project type
@@ -157,61 +90,26 @@ async function setupNewProject(
     });
   }
 
+  const projectPath = path.join(process.cwd(), projectName.trim());
+
+  // Create project directory using service
+  await newProjectService.createProjectDirectory(projectPath, projectName);
+
   // Prompt for Git repository
   const hasExistingRepo = await confirm({
     message: 'Do you have an existing Git repository you want to use?',
     default: false,
   });
 
-  const projectPath = path.join(process.cwd(), projectName.trim());
-
-  // Create project directory atomically to avoid race conditions
-  try {
-    await fs.mkdir(projectPath, { recursive: false });
-    print.success(`${icons.check} Created project directory: ${projectPath}`);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
-      throw new Error(`Directory '${projectName}' already exists. Please choose a different name.`);
-    }
-    throw error;
-  }
-
   if (hasExistingRepo) {
     // Prompt for repository URL
     const repoUrl = await input({
       message: 'Enter Git repository URL:',
-      validate: (value) => {
-        if (!value.trim()) {
-          return 'Repository URL is required';
-        }
-        // Basic URL validation
-        if (!value.match(/^(https?:\/\/|git@)/)) {
-          return 'Please enter a valid Git repository URL';
-        }
-        return true;
-      },
+      validate: (value) => newProjectService.validateRepositoryUrl(value),
     });
 
-    print.info(`${icons.download} Cloning repository...`);
-
-    try {
-      // Parse URL to check if it's a subdirectory
-      const parsed = parseGitHubUrl(repoUrl.trim());
-
-      if (parsed.isSubdirectory && parsed.branch && parsed.subdirectory) {
-        // Clone subdirectory
-        await cloneSubdirectory(parsed.repoUrl, parsed.branch, parsed.subdirectory, projectPath);
-      } else {
-        // Clone entire repository
-        await cloneRepository(parsed.repoUrl, projectPath);
-      }
-
-      print.success(`${icons.check} Repository cloned successfully`);
-    } catch (error) {
-      // Clean up on error
-      await fs.remove(projectPath);
-      throw new Error(`Failed to clone repository: ${(error as Error).message}`);
-    }
+    // Clone repository using service
+    await newProjectService.cloneExistingRepository(repoUrl.trim(), projectPath);
   } else {
     // Ask if user wants to initialize a new Git repository
     const initGit = await confirm({
@@ -220,13 +118,8 @@ async function setupNewProject(
     });
 
     if (initGit) {
-      print.info(`${icons.rocket} Initializing Git repository...`);
-      try {
-        await gitInit(projectPath);
-        print.success(`${icons.check} Git repository initialized`);
-      } catch (error) {
-        messages.warning(`Failed to initialize Git: ${(error as Error).message}`);
-      }
+      // Initialize git repository using service
+      await newProjectService.initializeGitRepository(projectPath);
     }
   }
 
@@ -234,58 +127,6 @@ async function setupNewProject(
     projectPath,
     projectType,
   };
-}
-
-/**
- * Download templates from GitHub repository
- */
-async function downloadTemplates(templatesPath: string): Promise<void> {
-  try {
-    print.info(
-      `${icons.download} Fetching templates from ${DEFAULT_TEMPLATE_REPO.owner}/${DEFAULT_TEMPLATE_REPO.repo}...`,
-    );
-
-    // Fetch directory listing from GitHub
-    const contents = await fetchGitHubDirectoryContents(
-      DEFAULT_TEMPLATE_REPO.owner,
-      DEFAULT_TEMPLATE_REPO.repo,
-      DEFAULT_TEMPLATE_REPO.path,
-      DEFAULT_TEMPLATE_REPO.branch,
-    );
-
-    // Filter only directories
-    const templateDirs = contents.filter((item) => item.type === 'dir');
-
-    if (templateDirs.length === 0) {
-      messages.warning('No templates found in repository');
-      return;
-    }
-
-    print.info(`${icons.folder} Found ${templateDirs.length} template(s)`);
-
-    // Download each template
-    for (const template of templateDirs) {
-      const targetFolder = path.join(templatesPath, template.name);
-
-      // Skip if already exists
-      if (await fs.pathExists(targetFolder)) {
-        print.info(`${icons.skip} Skipping ${template.name} (already exists)`);
-        continue;
-      }
-
-      print.info(`${icons.download} Downloading ${template.name}...`);
-
-      const repoUrl = `https://github.com/${DEFAULT_TEMPLATE_REPO.owner}/${DEFAULT_TEMPLATE_REPO.repo}.git`;
-
-      await cloneSubdirectory(repoUrl, DEFAULT_TEMPLATE_REPO.branch, template.path, targetFolder);
-
-      print.success(`${icons.check} Downloaded ${template.name}`);
-    }
-
-    print.success(`\n${icons.check} All templates downloaded successfully!`);
-  } catch (error) {
-    throw new Error(`Failed to download templates: ${(error as Error).message}`);
-  }
 }
 
 /**
@@ -359,52 +200,15 @@ export const initCommand = new Command('init')
 
       print.info(`\n${icons.rocket} Initializing templates folder at: ${templatesPath}`);
 
-      // Create templates directory
-      await fs.ensureDir(templatesPath);
-
-      // Create README.md
-      const readme = `# Templates
-
-This folder contains boilerplate templates and scaffolding methods for your projects.
-
-## Templates
-
-Templates are organized by framework/technology and include configuration files (\`scaffold.yaml\`) that define:
-- Boilerplates: Full project starter templates
-- Features: Code scaffolding methods for adding new features to existing projects
-
-## Adding More Templates
-
-Use the \`add\` command to add templates from remote repositories:
-
-\`\`\`bash
-scaffold-mcp add --name my-template --url https://github.com/user/template
-\`\`\`
-
-Or add templates from subdirectories:
-
-\`\`\`bash
-scaffold-mcp add --name nextjs-template --url https://github.com/user/repo/tree/main/templates/nextjs
-\`\`\`
-
-## Creating Custom Templates
-
-Each template should have a \`scaffold.yaml\` configuration file defining:
-- \`boilerplate\`: Array of boilerplate configurations
-- \`features\`: Array of feature scaffold configurations
-
-Template files use Liquid syntax for variable placeholders: \`{{ variableName }}\`
-
-See existing templates for examples and documentation for more details.
-`;
-
-      await fs.writeFile(path.join(templatesPath, 'README.md'), readme);
+      // Initialize templates folder using service
+      const templatesService = new TemplatesService();
+      await templatesService.initializeTemplatesFolder(templatesPath);
 
       print.success(`${icons.check} Templates folder created!`);
 
       // Download templates if not skipped
       if (options.download !== false) {
-        await downloadTemplates(templatesPath);
+        await templatesService.downloadTemplates(templatesPath, DEFAULT_TEMPLATE_REPO);
       } else {
         print.info(`${icons.skip} Skipping template download (use --download to enable)`);
       }
