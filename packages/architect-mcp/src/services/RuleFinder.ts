@@ -272,13 +272,23 @@ export class RuleFinder {
         projectRoot = project.root;
         projectName = project.name;
       } else {
-        // No project.json found - try monolith mode with workspace root
+        // No project found - try workspace root for monolith mode
         projectConfig = await ProjectConfigResolver.resolveProjectConfig(this.workspaceRoot);
         projectRoot = projectConfig.workspaceRoot || this.workspaceRoot;
         projectName = path.basename(projectRoot);
       }
 
       if (!projectConfig || !projectConfig.sourceTemplate) {
+        return null;
+      }
+
+      // IMPORTANT: Verify the file is actually within the project
+      // This prevents returning project config for files outside the project
+      const relativeToProject = path.relative(projectRoot, filePath);
+      const isInProject = !relativeToProject.startsWith('..') && !path.isAbsolute(relativeToProject);
+
+      if (!isInProject) {
+        // File is outside the project, cannot determine rules
         return null;
       }
 

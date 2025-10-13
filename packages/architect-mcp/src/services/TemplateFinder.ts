@@ -59,12 +59,22 @@ export class TemplateFinder {
         projectConfig = await ProjectConfigResolver.resolveProjectConfig(project.root);
         projectPath = project.root;
       } else {
-        // No project.json found - try monolith mode with workspace root
+        // No project found - try workspace root for monolith mode
         projectConfig = await ProjectConfigResolver.resolveProjectConfig(this.workspaceRoot);
         projectPath = projectConfig.workspaceRoot || this.workspaceRoot;
       }
 
       if (!projectConfig || !projectConfig.sourceTemplate) {
+        return null;
+      }
+
+      // IMPORTANT: Verify the file is actually within the project
+      // This prevents returning project config for files outside the project
+      const relativeToProject = path.relative(projectPath, normalizedPath);
+      const isInProject = !relativeToProject.startsWith('..') && !path.isAbsolute(relativeToProject);
+
+      if (!isInProject) {
+        // File is outside the project, cannot determine template
         return null;
       }
 

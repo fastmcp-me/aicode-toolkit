@@ -1,49 +1,45 @@
-#!/usr/bin/env node
 /**
- * MCP Server Entry Point
+ * @agiflowai/architect-mcp - Public API
  *
  * DESIGN PATTERNS:
- * - CLI pattern with Commander for argument parsing
- * - Command pattern for organizing CLI commands
- * - Transport abstraction for multiple communication methods
+ * - Barrel export pattern for clean public API
+ * - Named exports only (no default exports)
+ * - Organized by module type (server, types, transports, tools, services)
  *
  * CODING STANDARDS:
- * - Use async/await for asynchronous operations
- * - Handle errors gracefully with try-catch
- * - Log important events for debugging
- * - Register all commands in main entry point
+ * - Export only public-facing interfaces and classes
+ * - Group related exports with comments
+ * - Use explicit named exports (no wildcard exports)
+ * - Keep in sync with module structure
  *
  * AVOID:
- * - Hardcoding command logic in index.ts (use separate command files)
- * - Missing error handling for command execution
+ * - Default exports (use named exports)
+ * - Wildcard exports (be explicit)
+ * - Exporting internal implementation details
+ * - Mixing CLI and library concerns
  */
-import { Command } from 'commander';
-import { mcpServeCommand } from './cli/mcp-serve';
-import { addPatternCommand } from './cli/add-pattern';
-import { addRuleCommand } from './cli/add-rule';
-import { getFileDesignPatternCommand } from './cli/get-file-design-pattern';
-import { reviewCodeChangeCommand } from './cli/review-code-change';
 
-/**
- * Main entry point
- */
-async function main() {
-  const program = new Command();
+// Types
+export type * from './types/index';
 
-  program
-    .name('architect-mcp')
-    .description('MCP server for software architecture design and planning')
-    .version('0.4.0');
+// Transports
+export { StdioTransportHandler } from './transports/stdio';
+export { SseTransportHandler } from './transports/sse';
+export { HttpTransportHandler } from './transports/http';
 
-  // Add all commands
-  program.addCommand(mcpServeCommand);
-  program.addCommand(addPatternCommand);
-  program.addCommand(addRuleCommand);
-  program.addCommand(getFileDesignPatternCommand);
-  program.addCommand(reviewCodeChangeCommand);
+// Tools
+export {
+  GetFileDesignPatternTool,
+  ReviewCodeChangeTool,
+  AddDesignPatternTool,
+  AddRuleTool,
+} from './tools/index';
 
-  // Parse arguments
-  await program.parseAsync(process.argv);
-}
-
-main();
+// Services
+export {
+  TemplateFinder,
+  ArchitectParser,
+  CodeReviewService,
+  PatternMatcher,
+  RuleFinder,
+} from './services/index';

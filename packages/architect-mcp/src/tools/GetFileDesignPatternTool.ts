@@ -30,7 +30,7 @@ import type {
 import { TemplateFinder } from '../services/TemplateFinder.js';
 import { ArchitectParser } from '../services/ArchitectParser.js';
 import { PatternMatcher } from '../services/PatternMatcher.js';
-import { ClaudeCodeLLMService } from '../services/ClaudeCodeLLMService.js';
+import { ClaudeCodeService } from '@agiflowai/coding-agent-bridge';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -44,7 +44,7 @@ export class GetFileDesignPatternTool implements Tool<GetFileDesignPatternToolIn
   private templateFinder: TemplateFinder;
   private architectParser: ArchitectParser;
   private patternMatcher: PatternMatcher;
-  private llmService?: ClaudeCodeLLMService;
+  private llmService?: ClaudeCodeService;
 
   constructor(options?: { llmTool?: 'claude-code' }) {
     this.templateFinder = new TemplateFinder();
@@ -53,7 +53,7 @@ export class GetFileDesignPatternTool implements Tool<GetFileDesignPatternToolIn
 
     // Only initialize LLM service if llm_tool is specified
     if (options?.llmTool === 'claude-code') {
-      this.llmService = new ClaudeCodeLLMService();
+      this.llmService = new ClaudeCodeService();
     }
   }
 
@@ -181,10 +181,15 @@ Example response: "1,3" or "2" or "none"
 
 Your response (numbers only):`;
 
-      const response = await this.llmService.ask(userPrompt, systemPrompt);
+      // Update system prompt configuration
+      await this.llmService.updatePrompt({ systemPrompt });
+
+      const response = await this.llmService.invokeAsLlm({
+        prompt: userPrompt,
+      });
 
       // Parse LLM response
-      const relevantIndices = this.parsePatternIndices(response.trim());
+      const relevantIndices = this.parsePatternIndices(response.content.trim());
 
       if (relevantIndices.length === 0) {
         return [];

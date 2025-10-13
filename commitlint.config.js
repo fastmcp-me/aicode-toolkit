@@ -5,7 +5,9 @@ module.exports = {
       2,
       'always',
       [
+        'aicode-toolkit',
         'aicode-utils',
+        'coding-agent-bridge',
         'scaffold-mcp',
         'architect-mcp',
         'release', // Allow 'release' scope for nx release commits

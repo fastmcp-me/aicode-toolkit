@@ -10,7 +10,6 @@ A Model Context Protocol (MCP) server for scaffolding applications with boilerpl
 - **Liquid templating**: Use powerful templating engine for dynamic file generation
 - **Variable replacement**: Customize generated code with context-aware variable substitution
 - **Dynamic template discovery**: Automatically finds templates in your workspace
-- **Template management**: Initialize templates folder and add templates from remote repositories
 - **Multiple frameworks**: Support for Next.js, Vite React, and custom boilerplates
 - **Multiple modes**: MCP server mode (stdio/HTTP/SSE) and standalone CLI mode
 - **MCP integration**: Seamlessly works with Claude Code and other MCP-compatible clients
@@ -149,36 +148,9 @@ Or if installed globally:
 
 ### 2. CLI Commands
 
-Use scaffold-mcp as a standalone CLI tool for template management and scaffolding.
+Use scaffold-mcp as a standalone CLI tool for scaffolding projects and adding features.
 
-#### Template Management
-
-```bash
-# Initialize templates folder and auto-download official templates
-scaffold-mcp init
-
-# Initialize at custom path
-scaffold-mcp init --path ./custom-templates
-
-# Initialize without downloading templates
-scaffold-mcp init --no-download
-
-# Add templates from repositories (full or subdirectory)
-scaffold-mcp add --name my-template --url https://github.com/user/template
-scaffold-mcp add --name nextjs-custom --url https://github.com/user/repo/tree/main/templates/nextjs
-```
-
-**What `init` does:**
-1. Creates `templates/` folder in your workspace root
-2. Automatically downloads official templates from [AgiFlow/aicode-toolkit](https://github.com/AgiFlow/aicode-toolkit/tree/main/templates)
-3. Creates a README.md with usage instructions
-4. Skips templates that already exist (safe to re-run)
-
-**What `add` does:**
-1. Parses GitHub URL to detect full repository vs subdirectory
-2. Downloads template using git clone (full repo) or sparse checkout (subdirectory)
-3. Validates template has required configuration files (scaffold.yaml)
-4. Saves template to your templates folder
+**Note:** Template management (init, add) is now handled by the `@agiflowai/aicode-toolkit` CLI. See [aicode-toolkit documentation](../../apps/aicode-toolkit/README.md) for details.
 
 #### Boilerplate Commands
 
@@ -220,53 +192,21 @@ scaffold-mcp scaffold add scaffold-nextjs-page \
 
 ## Quick Start
 
-### 1. Initialize Templates
+### 1. Setup Templates
 
-The `init` command sets up your templates folder and **automatically downloads official templates** from the AgiFlow repository:
-
-```bash
-# Initialize templates folder and download official templates
-scaffold-mcp init
-
-# Or specify a custom path
-scaffold-mcp init --path ./my-templates
-
-# Skip auto-download if you want to add templates manually
-scaffold-mcp init --no-download
-```
-
-**What gets downloaded:**
-- ✅ `nextjs-15-drizzle` - Next.js 15 with App Router, TypeScript, Tailwind CSS 4, Storybook, and optional Drizzle ORM
-- ✅ More templates coming soon...
-
-All templates from [github.com/AgiFlow/aicode-toolkit/templates](https://github.com/AgiFlow/aicode-toolkit/tree/main/templates) are automatically pulled into your workspace.
-
-### 2. Add Custom Templates
-
-Add additional templates from GitHub repositories or subdirectories:
+For template management (downloading and managing templates), use the `@agiflowai/aicode-toolkit` CLI:
 
 ```bash
-# Add a template from a full repository
-scaffold-mcp add --name my-template --url https://github.com/yourorg/nextjs-template
+# Initialize workspace and download templates
+npx @agiflowai/aicode-toolkit init
 
-# Add a template from a repository subdirectory (NEW!)
-scaffold-mcp add \
-  --name nextjs-15-drizzle \
-  --url https://github.com/AgiFlow/aicode-toolkit/tree/main/templates/nextjs-15-drizzle
-
-# Add to a specific type folder
-scaffold-mcp add \
-  --name react-component \
-  --url https://github.com/yourorg/react-component-scaffold \
-  --type scaffold
+# Add custom templates
+npx @agiflowai/aicode-toolkit add --name my-template --url https://github.com/user/template
 ```
 
-**Supported URL formats:**
-- Full repository: `https://github.com/user/repo`
-- Subdirectory: `https://github.com/user/repo/tree/branch/path/to/template`
-- With `.git` extension: `https://github.com/user/repo.git`
+See the [aicode-toolkit documentation](../../apps/aicode-toolkit/README.md) for complete setup instructions.
 
-### 3. Create a New Project
+### 2. Create a New Project
 
 ```bash
 # List available boilerplates
@@ -280,7 +220,7 @@ scaffold-mcp boilerplate create nextjs-15-boilerplate \
   --vars '{"projectName":"my-app","packageName":"@myorg/my-app","appName":"My App"}'
 ```
 
-### 4. Add Features to Existing Projects
+### 3. Add Features to Existing Projects
 
 ```bash
 # List available features for your project

@@ -243,18 +243,18 @@ rules:
     must_do:
       - rule: Export all services from index.ts using barrel exports
         codeExample: |-
-          export { UserService } from './UserService.js';
-          export { ProductService } from './ProductService.js';
-          export { OrderService } from './OrderService.js';
+          export { UserService } from './UserService';
+          export { ProductService } from './ProductService';
+          export { OrderService } from './OrderService';
       - rule: Group related services together in exports
         codeExample: |-
           // Domain services
-          export { UserService } from './UserService.js';
-          export { OrderService } from './OrderService.js';
+          export { UserService } from './UserService';
+          export { OrderService } from './OrderService';
 
           // Utility services
-          export { EmailService } from './EmailService.js';
-          export { CacheService } from './CacheService.js';
+          export { EmailService } from './EmailService';
+          export { CacheService } from './CacheService';
     must_not_do:
       - rule: Include service implementation in index.ts - only exports
         codeExample: |-
@@ -262,32 +262,32 @@ rules:
           export class UserService { async getAll() {} }
 
           // ✅ GOOD - Only exports
-          export { UserService } from './UserService.js';
+          export { UserService } from './UserService';
       - rule: Use wildcard exports - be explicit
         codeExample: |-
           // ❌ BAD
-          export * from './UserService.js';
+          export * from './UserService';
 
           // ✅ GOOD
-          export { UserService } from './UserService.js';
+          export { UserService } from './UserService';
   - pattern: src/utils/index.ts
     description: Utility Functions Barrel Export Standards
     must_do:
       - rule: Export all utility functions from index.ts using barrel exports
         codeExample: |-
-          export { formatDate, parseDate } from './dateUtils.js';
-          export { validateEmail, sanitizeInput } from './validationUtils.js';
-          export { chunk, debounce, throttle } from './arrayUtils.js';
+          export { formatDate, parseDate } from './dateUtils';
+          export { validateEmail, sanitizeInput } from './validationUtils';
+          export { chunk, debounce, throttle } from './arrayUtils';
       - rule: Group utilities by category in exports
         codeExample: |-
           // Date utilities
-          export { formatDate, parseDate } from './dateUtils.js';
+          export { formatDate, parseDate } from './dateUtils';
 
           // Validation utilities
-          export { validateEmail, sanitizeInput } from './validationUtils.js';
+          export { validateEmail, sanitizeInput } from './validationUtils';
 
           // Array utilities
-          export { chunk, debounce, throttle } from './arrayUtils.js';
+          export { chunk, debounce, throttle } from './arrayUtils';
     must_not_do:
       - rule: Include utility implementation in index.ts - only exports
         codeExample: |-
@@ -295,32 +295,32 @@ rules:
           export function formatDate(date: Date) { return date.toISOString(); }
 
           // ✅ GOOD - Only exports
-          export { formatDate } from './dateUtils.js';
+          export { formatDate } from './dateUtils';
       - rule: Use wildcard exports - be explicit
         codeExample: |-
           // ❌ BAD
-          export * from './dateUtils.js';
+          export * from './dateUtils';
 
           // ✅ GOOD
-          export { formatDate, parseDate } from './dateUtils.js';
+          export { formatDate, parseDate } from './dateUtils';
   - pattern: src/types/index.ts
     description: Type Definitions Barrel Export Standards
     must_do:
       - rule: Export all types, interfaces, and type utilities from index.ts
         codeExample: |-
-          export type { User, UserRole, UserPermissions } from './user.js';
-          export type { Product, ProductCategory } from './product.js';
-          export type { ApiResponse, ApiError } from './api.js';
+          export type { User, UserRole, UserPermissions } from './user';
+          export type { Product, ProductCategory } from './product';
+          export type { ApiResponse, ApiError } from './api';
       - rule: Group related types together in exports
         codeExample: |-
           // User types
-          export type { User, UserRole, UserPermissions } from './user.js';
+          export type { User, UserRole, UserPermissions } from './user';
 
           // Product types
-          export type { Product, ProductCategory } from './product.js';
+          export type { Product, ProductCategory } from './product';
 
           // API types
-          export type { ApiResponse, ApiError } from './api.js';
+          export type { ApiResponse, ApiError } from './api';
     must_not_do:
       - rule: Include type definitions in index.ts - only exports
         codeExample: |-
@@ -328,11 +328,152 @@ rules:
           export type User = { id: string; name: string; };
 
           // ✅ GOOD - Only exports
-          export type { User } from './user.js';
+          export type { User } from './user';
       - rule: Use wildcard type exports - be explicit
         codeExample: |-
           // ❌ BAD
-          export * from './user.js';
+          export * from './user';
 
           // ✅ GOOD
-          export type { User, UserRole } from './user.js';
+          export type { User, UserRole } from './user';
+  - pattern: src/constants/**/*.constants.ts
+    description: Constants Module Standards
+    inherits:
+      - export-standards
+      - type-safety
+      - documentation-standards
+    must_do:
+      - rule: Use UPPER_SNAKE_CASE for primitive constants
+        codeExample: |-
+          export const DEFAULT_TIMEOUT = 5000;
+          export const MAX_RETRIES = 3;
+          export const API_VERSION = 'v1';
+      - rule: Use PascalCase with 'as const' for object constants
+        codeExample: |-
+          export const ApiConfig = {
+            baseUrl: 'https://api.example.com',
+            timeout: 5000,
+            retries: 3,
+          } as const;
+
+          export const ErrorCodes = {
+            NOT_FOUND: 404,
+            UNAUTHORIZED: 401,
+            SERVER_ERROR: 500,
+          } as const;
+      - rule: Export inferred types for object constants
+        codeExample: |-
+          export const StatusConfig = {
+            PENDING: 'pending',
+            COMPLETED: 'completed',
+            FAILED: 'failed',
+          } as const;
+
+          export type Status = typeof StatusConfig[keyof typeof StatusConfig];
+      - rule: Add JSDoc comments for all exported constants
+        codeExample: |-
+          /**
+           * Maximum number of retry attempts for API calls
+           * @default 3
+           */
+          export const MAX_RETRIES = 3;
+
+          /**
+           * API endpoint configuration
+           * @property baseUrl - Base URL for API calls
+           * @property timeout - Request timeout in milliseconds
+           */
+          export const ApiConfig = {
+            baseUrl: 'https://api.example.com',
+            timeout: 5000,
+          } as const;
+      - rule: Group related constants in const objects
+        codeExample: |-
+          export const HttpConfig = {
+            timeout: 5000,
+            retries: 3,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          } as const;
+    must_not_do:
+      - rule: Use mutable exports (let or var)
+        codeExample: |-
+          // ❌ BAD - Mutable
+          export let API_URL = 'https://api.example.com';
+
+          // ✅ GOOD - Immutable
+          export const API_URL = 'https://api.example.com';
+      - rule: Export magic numbers without context
+        codeExample: |-
+          // ❌ BAD - No context
+          export const TIMEOUT = 5000;
+
+          // ✅ GOOD - Clear purpose
+          /**
+           * Default timeout for HTTP requests in milliseconds
+           */
+          export const DEFAULT_HTTP_TIMEOUT = 5000;
+      - rule: Mix unrelated constants in same file
+        codeExample: |-
+          // ❌ BAD - Mixing HTTP, database, and email configs
+          export const HTTP_TIMEOUT = 5000;
+          export const DB_POOL_SIZE = 10;
+          export const EMAIL_FROM = 'noreply@example.com';
+
+          // ✅ GOOD - Separate by domain
+          // http.constants.ts
+          export const HTTP_TIMEOUT = 5000;
+          // db.constants.ts
+          export const DB_POOL_SIZE = 10;
+      - rule: Create objects without 'as const' assertion
+        codeExample: |-
+          // ❌ BAD - No type safety
+          export const Config = {
+            apiUrl: 'https://api.example.com',
+          };
+
+          // ✅ GOOD - Type-safe with 'as const'
+          export const Config = {
+            apiUrl: 'https://api.example.com',
+          } as const;
+  - pattern: src/constants/index.ts
+    description: Constants Barrel Export Standards
+    must_do:
+      - rule: Export all constants from index.ts using barrel exports
+        codeExample: |-
+          export * from './api.constants';
+          export * from './config.constants';
+          export * from './errors.constants';
+      - rule: Group related constants together in exports
+        codeExample: |-
+          // API constants
+          export * from './api.constants';
+          export * from './endpoints.constants';
+
+          // Configuration constants
+          export * from './config.constants';
+          export * from './env.constants';
+
+          // Error constants
+          export * from './errors.constants';
+          export * from './statusCodes.constants';
+      - rule: Re-export types from constant files
+        codeExample: |-
+          export * from './api.constants';
+          export type { ApiConfigType, EndpointKeys } from './api.constants';
+    must_not_do:
+      - rule: Include constant definitions in index.ts - only exports
+        codeExample: |-
+          // ❌ BAD - Definition in barrel file
+          export const API_URL = 'https://api.example.com';
+
+          // ✅ GOOD - Only exports
+          export * from './api.constants';
+      - rule: Selectively export some constants - export all
+        codeExample: |-
+          // ❌ BAD - Selective exports
+          export { API_URL } from './api.constants'; // Missing other exports
+
+          // ✅ GOOD - Export all
+          export * from './api.constants';

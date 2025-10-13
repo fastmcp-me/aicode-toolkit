@@ -407,3 +407,141 @@ features:
         expect(validateEmail(email)).toBe(expected);
       });
       ```
+  - name: constants-pattern
+    design_pattern: Strongly-Typed Constants Pattern
+    includes:
+      - src/constants/**/*.constants.ts
+      - src/constants/index.ts
+    description: |-
+      ## Pattern Overview
+      Design pattern for organizing strongly-typed, immutable constants in a centralized constants directory with barrel exports for clean imports. Constants are grouped by domain and use 'as const' for type safety.
+
+      ## What TO DO ✅
+
+      - Use UPPER_SNAKE_CASE for primitive constants (MAX_RETRIES, API_VERSION)
+      - Use PascalCase with 'as const' for object constants (ApiConfig, ErrorCodes)
+      - Export inferred types from object constants using typeof
+      - Add JSDoc comments for all exported constants
+      - Group related constants in const objects
+      - Place constants in src/constants/{domain}.constants.ts files
+      - Re-export all constants through src/constants/index.ts barrel
+      - Use wildcard exports in barrel file (export * from './api.constants')
+      - Keep constants immutable with const and 'as const'
+      - Separate constants by domain/category (api, config, errors)
+
+      ## What NOT TO DO ❌
+
+      - Don't use mutable exports (let or var) - always use const
+      - Don't export magic numbers without context or JSDoc
+      - Don't mix unrelated constants in same file
+      - Don't create objects without 'as const' assertion
+      - Don't use enums (prefer const objects with 'as const')
+      - Don't add business logic to constant files
+      - Don't forget to export from barrel file (index.ts)
+      - Don't use selective exports in barrel (use export *)
+
+      ## Examples
+
+      ### Primitive Constants
+      ```typescript
+      /**
+       * Maximum number of retry attempts for API calls
+       * @default 3
+       */
+      export const MAX_RETRIES = 3;
+
+      /**
+       * Default timeout for HTTP requests in milliseconds
+       */
+      export const DEFAULT_HTTP_TIMEOUT = 5000;
+
+      /**
+       * API version identifier
+       */
+      export const API_VERSION = 'v1';
+      ```
+
+      ### Object Constants with Types
+      ```typescript
+      /**
+       * API endpoint configuration
+       * @property baseUrl - Base URL for API calls
+       * @property timeout - Request timeout in milliseconds
+       * @property retries - Number of retry attempts
+       */
+      export const ApiConfig = {
+        baseUrl: 'https://api.example.com',
+        timeout: 5000,
+        retries: 3,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      } as const;
+
+      /** Inferred type from ApiConfig */
+      export type ApiConfigType = typeof ApiConfig;
+      ```
+
+      ### Status/Error Code Constants
+      ```typescript
+      /**
+       * HTTP status codes used throughout the application
+       */
+      export const HttpStatus = {
+        OK: 200,
+        CREATED: 201,
+        BAD_REQUEST: 400,
+        UNAUTHORIZED: 401,
+        NOT_FOUND: 404,
+        SERVER_ERROR: 500,
+      } as const;
+
+      /** HTTP status code type */
+      export type HttpStatusCode = typeof HttpStatus[keyof typeof HttpStatus];
+
+      /**
+       * Application error codes
+       */
+      export const ErrorCode = {
+        INVALID_INPUT: 'INVALID_INPUT',
+        NOT_FOUND: 'NOT_FOUND',
+        UNAUTHORIZED: 'UNAUTHORIZED',
+      } as const;
+
+      export type ErrorCodeType = typeof ErrorCode[keyof typeof ErrorCode];
+      ```
+
+      ### Barrel Export (src/constants/index.ts)
+      ```typescript
+      /**
+       * Constants Barrel Export
+       * Centralized export point for all application constants
+       */
+
+      // API constants
+      export * from './api.constants';
+      export * from './endpoints.constants';
+
+      // Configuration constants
+      export * from './config.constants';
+
+      // Error constants
+      export * from './errors.constants';
+      export * from './statusCodes.constants';
+      ```
+
+      ### Usage in Code
+      ```typescript
+      import { MAX_RETRIES, ApiConfig, HttpStatus } from '@package/constants';
+
+      async function fetchData() {
+        const response = await fetch(ApiConfig.baseUrl, {
+          method: 'GET',
+          headers: ApiConfig.headers,
+        });
+
+        if (response.status === HttpStatus.OK) {
+          return response.json();
+        }
+      }
+      ```

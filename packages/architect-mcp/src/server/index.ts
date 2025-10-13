@@ -23,12 +23,67 @@ export function createServer(options?: {
   reviewTool?: 'claude-code';
   adminEnabled?: boolean;
 }): Server {
+  const adminEnabled = options?.adminEnabled ?? false;
+
+  // Build instructions based on admin mode
+  const baseInstructions = `Use this MCP server to enforce design patterns and coding standards in your codebase.
+
+## Workflow:
+
+1. **Before Editing Files**: Use \`get-file-design-pattern\` to understand applicable patterns and rules
+2. **After Editing Files**: Use \`review-code-change\` to check for violations and code smells
+
+## AI Usage Guidelines:
+
+- Always call \`get-file-design-pattern\` BEFORE editing a file to understand:
+  - Project information and source template
+  - Applicable design patterns from architect.yaml
+  - Coding rules from RULES.yaml (must_do, should_do, must_not_do)
+  - Code examples showing the patterns
+- Always call \`review-code-change\` AFTER editing a file to check for:
+  - Must not do violations (critical issues)
+  - Must do missing (required patterns not followed)
+  - Should do suggestions (best practices)
+- Fix any violations found before proceeding to the next task
+- The tools work with architect.yaml (project patterns) and RULES.yaml (coding rules) in your project`;
+
+  const adminInstructions = adminEnabled
+    ? `
+
+## Admin Mode (Pattern Configuration):
+
+When setting up or customizing design patterns and coding rules:
+
+1. **Add Design Pattern**: Use \`add-design-pattern\` to register a new design pattern in architect.yaml
+   - Specify pattern name, description, and glob patterns to match files
+   - Add code examples demonstrating the pattern
+   - Patterns are automatically applied to matching files
+
+2. **Add Coding Rule**: Use \`add-rule\` to add a new coding rule in RULES.yaml
+   - Specify rule category (must_do, should_do, must_not_do)
+   - Add rule description and glob patterns
+   - Include examples of good and bad code
+   - Rules are enforced during code review
+
+Example workflow:
+\`\`\`
+1. add-design-pattern { name: "service-pattern", description: "...", patterns: ["**/*Service.ts"], ... }
+2. add-rule { category: "must_do", rule: "All services must implement error handling", patterns: ["**/*Service.ts"], ... }
+3. get-file-design-pattern { filePath: "src/MyService.ts" } (verify pattern appears)
+4. review-code-change { filePath: "src/MyService.ts" } (verify rule is enforced)
+\`\`\`
+`
+    : '';
+
+  const instructions = baseInstructions + adminInstructions;
+
   const server = new Server(
     {
       name: 'architect-mcp',
       version: '0.4.0',
     },
     {
+      instructions,
       capabilities: {
         tools: {},
       },
@@ -42,7 +97,6 @@ export function createServer(options?: {
   const reviewCodeChangeTool = new ReviewCodeChangeTool({ llmTool: options?.reviewTool });
 
   // Initialize admin tools if enabled
-  const adminEnabled = options?.adminEnabled ?? false;
   const addDesignPatternTool = adminEnabled ? new AddDesignPatternTool() : null;
   const addRuleTool = adminEnabled ? new AddRuleTool() : null;
 

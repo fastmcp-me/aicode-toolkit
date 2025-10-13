@@ -1,8 +1,9 @@
 /**
- * Services Barrel Export
- *
- * This file exports all services for convenient importing.
- * Add new service exports here as you create them.
+ * Services Barrel Exports
  */
 
-export * from './TemplateFinder';
+export { TemplateFinder } from './TemplateFinder';
+export { ArchitectParser } from './ArchitectParser';
+export { CodeReviewService } from './CodeReviewService';
+export { PatternMatcher } from './PatternMatcher';
+export { RuleFinder } from './RuleFinder';

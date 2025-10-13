@@ -9,15 +9,17 @@
     "typescript"
   ],
   "bin": {
-    "{% if binName %}{{ binName }}{% else %}{{ packageName }}{% endif %}": "./dist/index.js"
+    "{% if binName %}{{ binName }}{% else %}{{ packageName }}{% endif %}": "./dist/cli.cjs"
   },
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
   "files": [
     "dist",
     "README.md"
   ],
   "scripts": {
-    "dev": "node --loader ts-node/esm src/index.ts mcp-serve",
+    "dev": "node --loader ts-node/esm src/cli.ts mcp-serve",
     "build": "tsdown",
     "test": "vitest --run",
     "typecheck": "tsc --noEmit"

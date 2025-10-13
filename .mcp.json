@@ -3,7 +3,7 @@
     "scaffold-mcp": {
       "type": "stdio",
       "command": "bun",
-      "args": ["run", "packages/scaffold-mcp/src/index.ts", "mcp-serve", "--admin-enable"],
+      "args": ["run", "packages/scaffold-mcp/src/cli.ts", "mcp-serve", "--admin-enable"],
       "disabled": false
     },
     "architect-mcp": {
@@ -11,7 +11,7 @@
       "command": "bun",
       "args": [
         "run",
-        "packages/architect-mcp/src/index.ts",
+        "packages/architect-mcp/src/cli.ts",
         "mcp-serve",
         "--admin-enable",
         "--design-pattern-tool",

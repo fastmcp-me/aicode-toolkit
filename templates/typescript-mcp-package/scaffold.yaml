@@ -30,10 +30,12 @@ boilerplate:
     includes:
       - package.json
       - tsconfig.json
+      - tsdown.config.ts
       - .gitignore
       - README.md
       - src/index.ts
-      - src/cli/mcp-serve.ts
+      - src/cli.ts
+      - src/commands/mcp-serve.ts
       - src/server/index.ts
       - src/types/index.ts
       - src/transports/stdio.ts
@@ -46,8 +48,10 @@ boilerplate:
       File purposes:
       - package.json: NPM package configuration with MCP SDK, TypeScript, Vitest, and build tools
       - tsconfig.json: TypeScript configuration with strict mode and ESNext module support
-      - src/index.ts: Main CLI entry point that sets up Commander and registers all commands
-      - src/cli/mcp-serve.ts: MCP server command with transport selection (stdio, http, sse)
+      - tsdown.config.ts: Build configuration for tsdown bundler (builds both index.ts and cli.ts)
+      - src/index.ts: Public API barrel exports for library usage (import from other packages)
+      - src/cli.ts: Main CLI entry point that sets up Commander and registers all commands
+      - src/commands/mcp-serve.ts: MCP server command with transport selection (stdio, http, sse)
       - src/server/index.ts: MCP server setup with tool, resource, and prompt registration
       - src/types/index.ts: Shared TypeScript types and interfaces
       - src/tools/: Directory for tool implementations (use scaffold-mcp-tool to add tools)
@@ -247,7 +251,7 @@ features:
       Testing approach: Write unit tests for prompt generation with various argument combinations. Verify message structure, content, and metadata. Ensure arguments are properly validated. Use Vitest for testing framework.
     patterns:
       - src/prompts/**/*.ts
-  - name: scaffold-cli-command
+  - name: scaffold-command
     description: Generate a new CLI command for MCP packages using Commander.js pattern. Creates a command file with options, argument parsing, and action handler with proper error handling. Perfect for adding new CLI commands to extend MCP server functionality with custom operations and workflows.
     variables_schema:
       type: object
@@ -271,21 +275,21 @@ features:
         - commandDescription
       additionalProperties: false
     includes:
-      - src/cli/example.ts->src/cli/{{ commandName }}.ts
-      - tests/cli/example.test.ts->tests/cli/{{ commandName }}.test.ts?withTest=true
+      - src/commands/example.ts->src/commands/{{ commandName }}.ts
+      - tests/commands/example.test.ts->tests/commands/{{ commandName }}.test.ts?withTest=true
     instruction: |-
-      CLI commands follow the Commander.js pattern with a Command instance exported from each command file. Each command is registered in src/index.ts.
+      CLI commands follow the Commander.js pattern with a Command instance exported from each command file. Each command is registered in src/cli.ts.
 
-      Pattern explanation: Commands are separate TypeScript modules that export a Commander Command instance. They define the command name, description, options/arguments, and an action handler. Commands are added to the main program in src/index.ts using program.addCommand().
+      Pattern explanation: Commands are separate TypeScript modules that export a Commander Command instance. They define the command name, description, options/arguments, and an action handler. Commands are added to the main program in src/cli.ts using program.addCommand().
 
-      File organization: CLI commands live in src/cli/{commandName}.ts. Test files go in tests/cli/{commandName}.test.ts. The main entry point (src/index.ts) imports and registers all commands.
+      File organization: CLI commands live in src/commands/{commandName}.ts. Test files go in tests/commands/{commandName}.test.ts. The main entry point (src/cli.ts) imports and registers all commands.
 
       Naming conventions: Command files use kebab-case (e.g., health-check.ts). Export variable should be camelCase with 'Command' suffix (e.g., healthCheckCommand). Command names in Commander use kebab-case.
 
-      Usage guidelines: Import Command from 'commander'. Export a new Command instance with name, description, options, and action handler. Use async action handlers for asynchronous operations. Handle errors with try-catch and process.exit() for failures. Register in src/index.ts by importing and calling program.addCommand().
+      Usage guidelines: Import Command from 'commander'. Export a new Command instance with name, description, options, and action handler. Use async action handlers for asynchronous operations. Handle errors with try-catch and process.exit() for failures. Register in src/cli.ts by importing and calling program.addCommand().
 
       Registration steps:
-      1. Import your command: import { myCommand } from './cli/my-command';
+      1. Import your command: import { myCommand } from './commands/my-command';
       2. Register: program.addCommand(myCommand);
 
       Testing approach: Write unit tests that verify command options, argument parsing, and action handler behavior. Mock external dependencies. Test error handling paths. Use Vitest for testing framework.

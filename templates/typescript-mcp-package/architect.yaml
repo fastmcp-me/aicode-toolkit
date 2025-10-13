@@ -102,7 +102,7 @@ features:
       ### Basic MCP Server
       ```typescript
       import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-      import { MyTool } from '../tools/MyTool.js';
+      import { MyTool } from '../tools/MyTool';
 
       const server = new Server(
         {
@@ -127,10 +127,10 @@ features:
 
       export { server };
       ```
-  - name: cli-command-pattern
+  - name: command-pattern
     design_pattern: CLI Command Pattern
     includes:
-      - src/cli/**/*.ts
+      - src/commands/**/*.ts
     description: |-
       ## Pattern Overview
       Design pattern for implementing CLI commands using Commander.js with proper argument parsing and help text.
@@ -158,7 +158,7 @@ features:
       ### Basic CLI Command
       ```typescript
       import { Command } from 'commander';
-      import { MyService } from '../services/MyService.js';
+      import { MyService } from '../services/MyService';
 
       const program = new Command();
 
@@ -185,11 +185,57 @@ features:
 
       program.parse();
       ```
+  - name: barrel-export-pattern
+    design_pattern: Barrel Export Pattern
+    includes:
+      - src/index.ts
+    description: |-
+      ## Pattern Overview
+      Design pattern for creating a clean public API using barrel exports in src/index.ts. This file serves as the main entry point for library consumers.
+
+      ## What TO DO ✅
+
+      - Export all public-facing modules (server, tools, services, types)
+      - Use named exports only (no default exports)
+      - Group exports by category with comments
+      - Use 'export type *' for type-only exports
+      - Keep in sync with module structure
+      - Export only what's needed for library consumers
+
+      ## What NOT TO DO ❌
+
+      - Don't export CLI commands or command-related modules
+      - Don't use wildcard exports (be explicit)
+      - Don't use default exports
+      - Don't export internal implementation details
+      - Don't mix CLI and library concerns
+
+      ## Examples
+
+      ### Public API Barrel Export
+      ```typescript
+      // Server
+      export { server } from './server';
+
+      // Types
+      export type * from './types';
+
+      // Transports
+      export { StdioTransportHandler } from './transports/stdio';
+      export { SseTransportHandler } from './transports/sse';
+
+      // Tools
+      export { FileTool } from './tools/FileTool';
+      export { CodeTool } from './tools/CodeTool';
+
+      // Services
+      export { FileService } from './services/FileService';
+      ```
   - name: mcp-transport-pattern
     design_pattern: MCP Transport Pattern
     includes:
       - src/transports/**/*.ts
-      - src/index.ts
+      - src/cli.ts
     description: |-
       ## Pattern Overview
       Design pattern for setting up MCP server transports (stdio, SSE) with proper connection handling.
@@ -216,7 +262,7 @@ features:
       ### Stdio Transport
       ```typescript
       import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-      import { server } from './server/index.js';
+      import { server } from './server/index';
 
       async function main() {
         const transport = new StdioServerTransport();
@@ -232,7 +278,7 @@ features:
       ### SSE Transport
       ```typescript
       import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-      import { server } from './server/index.js';
+      import { server } from './server/index';
 
       async function startSSEServer(port = 3000) {
         const transport = new SSEServerTransport('/message', (response) => {
@@ -274,7 +320,7 @@ features:
 
       ### Basic Prompt
       ```typescript
-      import type { Prompt, GetPromptResult } from '../types/index.js';
+      import type { Prompt, GetPromptResult } from '../types';
 
       export class MyPrompt implements Prompt {
         getDefinition() {

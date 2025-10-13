@@ -1,8 +1,8 @@
 /**
- * Tools Barrel Export
- *
- * This file exports all tools for convenient importing.
- * Add new tool exports here as you create them.
+ * Tools Barrel Exports
  */
 
-export * from './GetFileDesignPatternTool';
+export { GetFileDesignPatternTool } from './GetFileDesignPatternTool';
+export { ReviewCodeChangeTool } from './ReviewCodeChangeTool';
+export { AddDesignPatternTool } from './AddDesignPatternTool';
+export { AddRuleTool } from './AddRuleTool';

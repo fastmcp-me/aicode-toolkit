@@ -1,41 +1,43 @@
-#!/usr/bin/env node
 /**
- * MCP Server Entry Point
+ * {{ packageName }} - Public API
  *
  * DESIGN PATTERNS:
- * - CLI pattern with Commander for argument parsing
- * - Command pattern for organizing CLI commands
- * - Transport abstraction for multiple communication methods
+ * - Barrel export pattern for clean public API
+ * - Named exports only (no default exports)
+ * - Organized by module type (server, types, transports)
  *
  * CODING STANDARDS:
- * - Use async/await for asynchronous operations
- * - Handle errors gracefully with try-catch
- * - Log important events for debugging
- * - Register all commands in main entry point
+ * - Export only public-facing interfaces and classes
+ * - Group related exports with comments
+ * - Use explicit named exports (no wildcard exports)
+ * - Keep in sync with module structure
  *
  * AVOID:
- * - Hardcoding command logic in index.ts (use separate command files)
- * - Missing error handling for command execution
+ * - Default exports (use named exports)
+ * - Wildcard exports (be explicit)
+ * - Exporting internal implementation details
+ * - Mixing CLI and library concerns
  */
-import { Command } from 'commander';
-import { mcpServeCommand } from './cli/mcp-serve';
 
-/**
- * Main entry point
- */
-async function main() {
-  const program = new Command();
+// Server
+export { server } from './server/index.js';
 
-  program
-    .name('{% if binName %}{{ binName }}{% else %}{{ packageName }}{% endif %}')
-    .description('{{ description }}')
-    .version('0.1.0');
+// Types
+export type * from './types/index.js';
 
-  // Add all commands
-  program.addCommand(mcpServeCommand);
+// Transports
+export { StdioTransportHandler } from './transports/stdio.js';{% if withHttpTransport %}
+export { SseTransportHandler } from './transports/sse.js';
+export { HttpTransportHandler } from './transports/http.js';{% endif %}
 
-  // Parse arguments
-  await program.parseAsync(process.argv);
-}
+// Tools - Add tool exports here as you create them
+// Example: export { MyTool } from './tools/MyTool.js';
 
-main();
+// Services - Add service exports here as you create them
+// Example: export { MyService } from './services/MyService.js';
+
+// Prompts - Add prompt exports here as you create them
+// Example: export { MyPrompt } from './prompts/MyPrompt.js';
+
+// Utils - Add utility exports here as you create them
+// Example: export { formatHelper } from './utils/formatHelper.js';
