@@ -31,9 +31,9 @@ export interface TemplateInfo {
 export class TemplateSelectionService {
   private tmpDir: string;
 
-  constructor() {
-    // Create a unique tmp directory for this session
-    this.tmpDir = path.join(os.tmpdir(), `aicode-templates-${Date.now()}`);
+  constructor(existingTmpDir?: string) {
+    // Reuse existing tmp directory if provided, otherwise create a new unique one
+    this.tmpDir = existingTmpDir || path.join(os.tmpdir(), `aicode-templates-${Date.now()}`);
   }
 
   /**

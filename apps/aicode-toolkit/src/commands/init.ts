@@ -9,13 +9,12 @@ import { confirm, input, select } from '@inquirer/prompts';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import { createActor, fromPromise } from 'xstate';
-import { MCP_CONFIG_FILES, MCP_SERVER_INFO, MCPServer } from '../constants';
+import { MCP_SERVER_INFO, MCPServer } from '../constants';
 import {
   type CodingAgent,
   CodingAgentService,
   NewProjectService,
   TemplateSelectionService,
-  TemplatesService,
 } from '../services';
 import { type InitMachineInput, initMachine } from '../states/init-machine';
 import { displayBanner, findWorkspaceRoot } from '../utils';
@@ -279,7 +278,7 @@ const initActors = {
    * List templates
    */
   listTemplates: fromPromise(async ({ input }: { input: { tmpTemplatesPath: string } }) => {
-    const templateSelectionService = new TemplateSelectionService();
+    const templateSelectionService = new TemplateSelectionService(input.tmpTemplatesPath);
     const templates = await templateSelectionService.listTemplates();
 
     print.header('\nAvailable templates:');
@@ -299,7 +298,7 @@ const initActors = {
     }: {
       input: { tmpTemplatesPath: string; projectType: ProjectType };
     }) => {
-      const templateSelectionService = new TemplateSelectionService();
+      const templateSelectionService = new TemplateSelectionService(actorInput.tmpTemplatesPath);
       const templates = await templateSelectionService.listTemplates();
 
       if (templates.length === 0) {
@@ -358,7 +357,7 @@ const initActors = {
         selectedMcpServers?: MCPServer[];
       };
     }) => {
-      const templateSelectionService = new TemplateSelectionService();
+      const templateSelectionService = new TemplateSelectionService(actorInput.tmpTemplatesPath);
       const templatesPath = path.join(actorInput.workspaceRoot, 'templates');
 
       await templateSelectionService.copyTemplates(
@@ -398,22 +397,48 @@ const initActors = {
   ),
 
   /**
+   * Detect coding agent automatically
+   */
+  detectCodingAgent: fromPromise(
+    async ({ input: actorInput }: { input: { workspaceRoot: string } }) => {
+      print.info('\nDetecting coding agent...');
+      const detectedAgent = await CodingAgentService.detectCodingAgent(actorInput.workspaceRoot);
+
+      if (detectedAgent) {
+        print.success(`Detected ${detectedAgent} in workspace`);
+      } else {
+        print.info('No coding agent detected automatically');
+      }
+
+      return detectedAgent;
+    },
+  ),
+
+  /**
    * Prompt for coding agent selection
    */
-  promptCodingAgent: fromPromise(async () => {
-    const agents = CodingAgentService.getAvailableAgents();
+  promptCodingAgent: fromPromise(
+    async ({ input: actorInput }: { input: { detectedAgent?: CodingAgent | null } }) => {
+      // If already detected, use it
+      if (actorInput.detectedAgent) {
+        print.info(`Using detected coding agent: ${actorInput.detectedAgent}`);
+        return actorInput.detectedAgent;
+      }
 
-    const selected = await select({
-      message: 'Select coding agent for MCP configuration:',
-      choices: agents.map((agent) => ({
-        name: agent.name,
-        value: agent.value,
-        description: agent.description,
-      })),
-    });
+      const agents = CodingAgentService.getAvailableAgents();
 
-    return selected;
-  }),
+      const selected = await select({
+        message: 'Select coding agent for MCP configuration:',
+        choices: agents.map((agent) => ({
+          name: agent.name,
+          value: agent.value,
+          description: agent.description,
+        })),
+      });
+
+      return selected;
+    },
+  ),
 
   /**
    * Configure MCP for coding agent
@@ -434,7 +459,7 @@ const initActors = {
    */
   cleanup: fromPromise(async ({ input }: { input: { tmpTemplatesPath?: string } }) => {
     if (input.tmpTemplatesPath) {
-      const templateSelectionService = new TemplateSelectionService();
+      const templateSelectionService = new TemplateSelectionService(input.tmpTemplatesPath);
       await templateSelectionService.cleanup();
     }
   }),

@@ -16,10 +16,9 @@
  * - Hard-coding agent configurations (use strategies)
  */
 
-import os from 'node:os';
 import path from 'node:path';
-import { icons, print } from '@agiflowai/aicode-utils';
-import * as fs from 'fs-extra';
+import { ClaudeCodeService } from '@agiflowai/coding-agent-bridge';
+import { print } from '@agiflowai/aicode-utils';
 
 export enum CodingAgent {
   CLAUDE_CODE = 'claude-code',
@@ -29,23 +28,28 @@ export enum CodingAgent {
   NONE = 'none',
 }
 
-export interface MCPServerConfig {
-  command: string;
-  args: string[];
-  env?: Record<string, string>;
-}
-
-export interface AgentConfig {
-  name: string;
-  configPath: string;
-  mcpConfigKey: string;
-}
-
 export class CodingAgentService {
   private workspaceRoot: string;
 
   constructor(workspaceRoot: string) {
     this.workspaceRoot = workspaceRoot;
+  }
+
+  /**
+   * Detect if Claude Code is enabled in the workspace
+   * Uses ClaudeCodeService to check for .claude folder or CLAUDE.md file
+   * @param workspaceRoot - The workspace root directory
+   * @returns Promise resolving to CodingAgent.CLAUDE_CODE if detected, null otherwise
+   */
+  static async detectCodingAgent(workspaceRoot: string): Promise<CodingAgent | null> {
+    const claudeCodeService = new ClaudeCodeService({ workspaceRoot });
+    const isClaudeCodeEnabled = await claudeCodeService.isEnabled();
+
+    if (isClaudeCodeEnabled) {
+      return CodingAgent.CLAUDE_CODE;
+    }
+
+    return null;
   }
 
   /**
@@ -59,24 +63,9 @@ export class CodingAgentService {
         description: 'Anthropic Claude Code CLI agent',
       },
       {
-        value: CodingAgent.CURSOR,
-        name: 'Cursor',
-        description: 'Cursor IDE with AI capabilities',
-      },
-      {
-        value: CodingAgent.GEMINI_CLI,
-        name: 'Gemini CLI',
-        description: 'Google Gemini CLI agent',
-      },
-      {
-        value: CodingAgent.CLINE,
-        name: 'Cline (formerly Claude Dev)',
-        description: 'VSCode extension for AI coding',
-      },
-      {
         value: CodingAgent.NONE,
-        name: 'Skip',
-        description: 'Skip MCP configuration for now',
+        name: 'Other',
+        description: 'Other coding agent or skip MCP configuration',
       },
     ];
   }
@@ -93,185 +82,55 @@ export class CodingAgentService {
 
     print.info(`\nSetting up MCP for ${agent}...`);
 
-    try {
-      const agentConfig = this.getAgentConfig(agent);
-      const configPath = this.resolveConfigPath(agentConfig.configPath);
-
-      // Ensure config directory exists
-      await fs.ensureDir(path.dirname(configPath));
-
-      // Read or create config
-      let config: any = {};
-      if (await fs.pathExists(configPath)) {
-        const content = await fs.readFile(configPath, 'utf-8');
-        config = JSON.parse(content);
-        print.info(`Found existing config at ${configPath}`);
-      } else {
-        print.info(`Creating new config at ${configPath}`);
-      }
-
-      // Add MCP servers configuration
-      if (!config[agentConfig.mcpConfigKey]) {
-        config[agentConfig.mcpConfigKey] = {};
-      }
-
-      // Add our MCP servers
-      const servers = this.getMCPServers();
-
-      for (const [serverName, serverConfig] of Object.entries(servers)) {
-        if (!config[agentConfig.mcpConfigKey][serverName]) {
-          config[agentConfig.mcpConfigKey][serverName] = serverConfig;
-          print.success(`Added ${serverName} MCP server`);
-        } else {
-          print.info(`${serverName} already configured`);
-        }
-      }
-
-      // Write config back
-      await fs.writeFile(configPath, JSON.stringify(config, null, 2));
-      print.success(`\nMCP configuration completed for ${agent}!`);
-
-      // Show next steps
-      this.showNextSteps(agent);
-    } catch (error) {
-      throw new Error(`Failed to setup MCP for ${agent}: ${(error as Error).message}`);
+    if (agent === CodingAgent.CLAUDE_CODE) {
+      await this.setupClaudeCodeMCP();
+    } else {
+      print.info(`MCP configuration for ${agent} is not yet supported.`);
+      print.info('Please configure MCP servers manually for this coding agent.');
     }
+
+    print.success('\nMCP configuration completed!');
   }
 
   /**
-   * Get agent-specific configuration
+   * Setup MCP configuration for Claude Code
+   * Passes standardized MCP config to ClaudeCodeService
    */
-  private getAgentConfig(agent: CodingAgent): AgentConfig {
-    const homeDir = os.homedir();
+  private async setupClaudeCodeMCP(): Promise<void> {
+    const claudeCodeService = new ClaudeCodeService({ workspaceRoot: this.workspaceRoot });
 
-    switch (agent) {
-      case CodingAgent.CLAUDE_CODE:
-        return {
-          name: 'Claude Code',
-          configPath: path.join(
-            homeDir,
-            'Library',
-            'Application Support',
-            'Claude',
-            'claude_desktop_config.json',
-          ),
-          mcpConfigKey: 'mcpServers',
-        };
+    // Build standardized MCP server configurations
+    const templatesPath = path.join(this.workspaceRoot, 'templates');
 
-      case CodingAgent.CURSOR:
-        return {
-          name: 'Cursor',
-          configPath: path.join(homeDir, '.cursor', 'mcp.json'),
-          mcpConfigKey: 'mcpServers',
-        };
-
-      case CodingAgent.GEMINI_CLI:
-        return {
-          name: 'Gemini CLI',
-          configPath: path.join(homeDir, '.config', 'gemini-cli', 'config.json'),
-          mcpConfigKey: 'mcpServers',
-        };
-
-      case CodingAgent.CLINE:
-        return {
-          name: 'Cline',
-          configPath: path.join(homeDir, '.vscode', 'extensions', 'cline', 'mcp-settings.json'),
-          mcpConfigKey: 'mcpServers',
-        };
-
-      default:
-        throw new Error(`Unknown coding agent: ${agent}`);
-    }
-  }
-
-  /**
-   * Resolve config path (handle cross-platform)
-   */
-  private resolveConfigPath(configPath: string): string {
-    const platform = os.platform();
-
-    // Adjust for platform differences
-    if (platform === 'win32') {
-      // Windows uses AppData instead of Library
-      return configPath.replace('Library/Application Support', 'AppData/Roaming');
-    }
-
-    if (platform === 'linux') {
-      // Linux uses .config
-      return configPath.replace('Library/Application Support', '.config');
-    }
-
-    // macOS - use as is
-    return configPath;
-  }
-
-  /**
-   * Get MCP servers configuration
-   */
-  private getMCPServers(): Record<string, MCPServerConfig> {
-    return {
+    const mcpServers = {
       'scaffold-mcp': {
+        type: 'stdio' as const,
         command: 'npx',
         args: ['-y', '@agiflowai/scaffold-mcp'],
         env: {
-          TEMPLATES_PATH: path.join(this.workspaceRoot, 'templates'),
+          TEMPLATES_PATH: templatesPath,
         },
+        disabled: false,
       },
       'architect-mcp': {
+        type: 'stdio' as const,
         command: 'npx',
         args: ['-y', '@agiflowai/architect-mcp'],
         env: {
-          TEMPLATES_PATH: path.join(this.workspaceRoot, 'templates'),
+          TEMPLATES_PATH: templatesPath,
         },
+        disabled: false,
       },
     };
-  }
 
-  /**
-   * Show next steps after MCP setup
-   */
-  private showNextSteps(agent: CodingAgent): void {
+    // Update MCP settings using ClaudeCodeService (it handles format conversion)
+    await claudeCodeService.updateMcpSettings({
+      servers: mcpServers,
+    });
+
+    print.success('Added scaffold-mcp and architect-mcp to .mcp.json');
     print.info('\nNext steps:');
-
-    switch (agent) {
-      case CodingAgent.CLAUDE_CODE:
-        print.indent('1. Restart Claude Code to load the new MCP servers');
-        print.indent('2. The scaffold-mcp and architect-mcp servers will be available');
-        break;
-
-      case CodingAgent.CURSOR:
-        print.indent('1. Restart Cursor to load the new MCP servers');
-        print.indent('2. Open MCP settings in Cursor to verify configuration');
-        break;
-
-      case CodingAgent.GEMINI_CLI:
-        print.indent('1. Restart Gemini CLI');
-        print.indent('2. Use MCP commands to interact with the servers');
-        break;
-
-      case CodingAgent.CLINE:
-        print.indent('1. Restart VSCode');
-        print.indent('2. Open Cline extension settings to verify MCP configuration');
-        break;
-    }
-  }
-
-  /**
-   * Check if agent is already configured
-   * @param agent - The coding agent to check
-   * @returns true if configuration file exists
-   */
-  async isConfigured(agent: CodingAgent): Promise<boolean> {
-    if (agent === CodingAgent.NONE) {
-      return false;
-    }
-
-    try {
-      const agentConfig = this.getAgentConfig(agent);
-      const configPath = this.resolveConfigPath(agentConfig.configPath);
-      return await fs.pathExists(configPath);
-    } catch {
-      return false;
-    }
+    print.indent('1. Restart Claude Code to load the new MCP servers');
+    print.indent('2. The scaffold-mcp and architect-mcp servers will be available');
   }
 }

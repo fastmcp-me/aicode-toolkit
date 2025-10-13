@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "@agiflowai/aicode-utils": "workspace:*",
+    "@agiflowai/coding-agent-bridge": "workspace:*",
     "@composio/json-schema-to-zod": "0.1.15",
     "@inquirer/prompts": "^7.8.6",
     "@modelcontextprotocol/sdk": "1.19.1",

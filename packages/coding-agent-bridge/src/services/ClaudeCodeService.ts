@@ -23,6 +23,8 @@
  */
 
 import { execa } from 'execa';
+import * as fs from 'fs-extra';
+import * as path from 'node:path';
 import * as readline from 'readline';
 import { v4 as uuidv4 } from 'uuid';
 import type {
@@ -87,20 +89,22 @@ const CLAUDE_CODE_BUILTIN_TOOLS = [
  * Provides standard LLM interface using Claude Code's stream-json output format
  */
 export class ClaudeCodeService implements CodingAgentService {
-  private enabled = true;
   private mcpSettings: McpSettings = {};
   private promptConfig: PromptConfig = {};
+  private readonly workspaceRoot: string;
   private readonly claudePath: string;
   private readonly defaultTimeout: number;
   private readonly defaultModel: string;
   private readonly defaultEnv: Record<string, string>;
 
   constructor(options?: {
+    workspaceRoot?: string;
     claudePath?: string;
     defaultTimeout?: number;
     defaultModel?: string;
     defaultEnv?: Record<string, string>;
   }) {
+    this.workspaceRoot = options?.workspaceRoot || process.cwd();
     this.claudePath = options?.claudePath || 'claude';
     this.defaultTimeout = options?.defaultTimeout || 60000; // 1 minute default
     this.defaultModel = options?.defaultModel || 'claude-sonnet-4-20250514';
@@ -114,19 +118,66 @@ export class ClaudeCodeService implements CodingAgentService {
 
   /**
    * Check if the Claude Code service is enabled
+   * Detects Claude Code by checking for .claude folder or CLAUDE.md file in workspace root
    */
   async isEnabled(): Promise<boolean> {
-    return this.enabled;
+    const claudeFolder = path.join(this.workspaceRoot, '.claude');
+    const claudeMdFile = path.join(this.workspaceRoot, 'CLAUDE.md');
+
+    const hasClaude = await fs.pathExists(claudeFolder);
+    const hasClaudeMd = await fs.pathExists(claudeMdFile);
+
+    return hasClaude || hasClaudeMd;
   }
 
   /**
    * Update MCP (Model Context Protocol) settings for Claude Code
+   * Writes MCP server configuration to .mcp.json in workspace root
+   * Converts standardized McpServerConfig to Claude Code format
    */
   async updateMcpSettings(settings: McpSettings): Promise<void> {
     this.mcpSettings = { ...this.mcpSettings, ...settings };
-    if (settings.enabled !== undefined) {
-      this.enabled = settings.enabled;
+
+    // Claude Code uses .mcp.json in workspace root
+    const configPath = path.join(this.workspaceRoot, '.mcp.json');
+
+    // Read or create config
+    let config: any = {};
+    if (await fs.pathExists(configPath)) {
+      const content = await fs.readFile(configPath, 'utf-8');
+      config = JSON.parse(content);
     }
+
+    // Ensure mcpServers key exists
+    if (!config.mcpServers) {
+      config.mcpServers = {};
+    }
+
+    // Convert standardized MCP server configs to Claude Code format
+    if (settings.servers) {
+      for (const [serverName, serverConfig] of Object.entries(settings.servers)) {
+        const claudeConfig: any = {
+          type: serverConfig.type,
+          disabled: serverConfig.disabled ?? false,
+        };
+
+        // Add type-specific fields
+        if (serverConfig.type === 'stdio') {
+          claudeConfig.command = serverConfig.command;
+          claudeConfig.args = serverConfig.args;
+          if (serverConfig.env) {
+            claudeConfig.env = serverConfig.env;
+          }
+        } else if (serverConfig.type === 'http' || serverConfig.type === 'sse') {
+          claudeConfig.url = serverConfig.url;
+        }
+
+        config.mcpServers[serverName] = claudeConfig;
+      }
+    }
+
+    // Write config back with pretty formatting
+    await fs.writeFile(configPath, JSON.stringify(config, null, 2) + '\n');
   }
 
   /**
@@ -141,12 +192,7 @@ export class ClaudeCodeService implements CodingAgentService {
    * Executes Claude Code CLI with stream-json output format
    */
   async invokeAsLlm(params: LlmInvocationParams): Promise<LlmInvocationResponse> {
-    if (!this.enabled) {
-      throw new Error('Claude Code service is not enabled');
-    }
-
     const sessionId = uuidv4();
-    const startTime = Date.now();
 
     // Build command arguments for single-turn LLM invocation
     const args = [

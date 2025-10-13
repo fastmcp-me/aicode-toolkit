@@ -9,10 +9,8 @@
 export { BANNER_GRADIENT, THEME } from './constants/index';
 // Services
 export {
-  type AgentConfig,
   CodingAgent,
   CodingAgentService,
-  type MCPServerConfig,
   NewProjectService,
   TemplateSelectionService,
   TemplatesService,

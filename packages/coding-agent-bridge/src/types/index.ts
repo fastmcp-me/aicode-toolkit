@@ -19,6 +19,46 @@
  */
 
 /**
+ * MCP server transport type
+ */
+export type McpServerType = 'stdio' | 'http' | 'sse';
+
+/**
+ * Standardized MCP server configuration
+ * Format-agnostic server definition that each coding agent converts to its specific format
+ * @example
+ * ```ts
+ * // stdio server
+ * const stdioServer: McpServerConfig = {
+ *   type: 'stdio',
+ *   command: 'npx',
+ *   args: ['-y', '@agiflowai/scaffold-mcp'],
+ *   env: { TEMPLATES_PATH: '/path/to/templates' }
+ * };
+ *
+ * // http server
+ * const httpServer: McpServerConfig = {
+ *   type: 'http',
+ *   url: 'https://mcp.example.com/mcp'
+ * };
+ * ```
+ */
+export interface McpServerConfig {
+  /** Server transport type */
+  type: McpServerType;
+  /** Command to execute (for stdio type) */
+  command?: string;
+  /** Command arguments (for stdio type) */
+  args?: string[];
+  /** Environment variables (for stdio type) */
+  env?: Record<string, string>;
+  /** Server URL (for http/sse type) */
+  url?: string;
+  /** Whether the server is disabled */
+  disabled?: boolean;
+}
+
+/**
  * MCP (Model Context Protocol) settings configuration
  * Used to configure MCP server connections and enable/disable features
  * @example
@@ -26,7 +66,11 @@
  * const settings: McpSettings = {
  *   enabled: true,
  *   servers: {
- *     'my-server': { url: 'http://localhost:3000' }
+ *     'scaffold-mcp': {
+ *       command: 'npx',
+ *       args: ['-y', '@agiflowai/scaffold-mcp'],
+ *       env: { TEMPLATES_PATH: '/path/to/templates' }
+ *     }
  *   }
  * };
  * ```
@@ -35,7 +79,7 @@ export interface McpSettings {
   /** Whether MCP integration is enabled */
   enabled?: boolean;
   /** MCP server configurations keyed by server name */
-  servers?: Record<string, unknown>;
+  servers?: Record<string, McpServerConfig>;
   /** Additional configuration properties for future extensibility */
   [key: string]: unknown;
 }

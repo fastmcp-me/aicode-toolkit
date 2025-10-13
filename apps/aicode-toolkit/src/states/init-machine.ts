@@ -32,6 +32,7 @@ export interface InitMachineContext {
   selectedMcpServers?: string[];
 
   // Coding agent setup
+  detectedCodingAgent?: CodingAgent | null;
   codingAgent?: CodingAgent;
 
   // CLI options
@@ -83,6 +84,7 @@ export const initMachine = createMachine(
       tmpTemplatesPath: undefined,
       selectedTemplates: undefined,
       selectedMcpServers: undefined,
+      detectedCodingAgent: undefined,
       codingAgent: undefined,
       options: input.options,
       error: undefined,
@@ -449,7 +451,7 @@ export const initMachine = createMachine(
       checkingSkipMcp: {
         always: [
           {
-            target: 'promptingCodingAgent',
+            target: 'detectingCodingAgent',
             guard: ({ context }) => !context.options.skipMcp,
           },
           {
@@ -459,11 +461,38 @@ export const initMachine = createMachine(
       },
 
       /**
+       * Detect coding agent automatically
+       */
+      detectingCodingAgent: {
+        invoke: {
+          src: 'detectCodingAgent',
+          input: ({ context }) => ({
+            workspaceRoot: context.workspaceRoot!,
+          }),
+          onDone: {
+            target: 'promptingCodingAgent',
+            actions: assign({
+              detectedCodingAgent: ({ event }) => event.output,
+            }),
+          },
+          onError: {
+            target: 'failed',
+            actions: assign({
+              error: ({ event }) => event.error as Error,
+            }),
+          },
+        },
+      },
+
+      /**
        * Prompt for coding agent selection
        */
       promptingCodingAgent: {
         invoke: {
           src: 'promptCodingAgent',
+          input: ({ context }) => ({
+            detectedAgent: context.detectedCodingAgent,
+          }),
           onDone: {
             target: 'configuringMCP',
             actions: assign({
