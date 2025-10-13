@@ -269,9 +269,12 @@ export class TemplateSelectionService {
       // Try reading from scaffold.yaml first
       const scaffoldYamlPath = path.join(templatePath, 'scaffold.yaml');
       if (await fs.pathExists(scaffoldYamlPath)) {
-        const yaml = await import('yaml');
+        const yaml = await import('js-yaml');
         const content = await fs.readFile(scaffoldYamlPath, 'utf-8');
-        const scaffoldConfig = yaml.parse(content);
+        const scaffoldConfig = yaml.load(content) as {
+          description?: string;
+          boilerplate?: Array<{ description?: string }>;
+        };
 
         if (scaffoldConfig?.description) {
           return scaffoldConfig.description;
