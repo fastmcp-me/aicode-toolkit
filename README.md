@@ -2,6 +2,8 @@
 
 > Scale your AI coding agents with scaffolding, architecture patterns, and validation rules
 
+
+![AI Code Toolkit Banner](./docs/banner.jpg)
 [![npm version](https://img.shields.io/npm/v/@agiflowai/scaffold-mcp.svg?style=flat-square)](https://www.npmjs.com/package/@agiflowai/scaffold-mcp)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg?style=flat-square)](https://opensource.org/licenses/AGPL-3.0)
 [![Discord](https://dcbadge.limes.pink/api/server/https://discord.gg/NsB6q9Vas9?style=flat-square)](https://discord.gg/NsB6q9Vas9)
@@ -123,7 +125,7 @@ Get started with AI Code Toolkit in 3 simple steps:
 Run the init command to download official templates:
 
 ```bash
-npx @agiflowai/scaffold-mcp init
+npx @agiflowai/aicode-toolkit init
 ```
 
 This automatically downloads official templates (Next.js 15, TypeScript libraries, MCP packages) to your workspace.
@@ -134,10 +136,10 @@ Run init without a git repository and it will guide you through creating a new p
 
 ```bash
 # Interactive mode (recommended)
-npx @agiflowai/scaffold-mcp init
+npx @agiflowai/aicode-toolkit init
 
 # Non-interactive mode
-npx @agiflowai/scaffold-mcp init --name my-project --project-type monolith
+npx @agiflowai/aicode-toolkit init --name my-project --project-type monolith
 ```
 
 The command will prompt you for project details, initialize git, and download templates.
@@ -259,7 +261,7 @@ sourceTemplate: react-vite  # Your template identifier
 **New Project with Interactive Setup** (recommended):
 ```bash
 # Run init without a git repository - it will prompt for project details
-npx @agiflowai/scaffold-mcp init
+npx @agiflowai/aicode-toolkit init
 
 # Interactive prompts will ask for:
 # - Project name
@@ -271,12 +273,12 @@ npx @agiflowai/scaffold-mcp init
 **New Project with CLI Options** (non-interactive):
 ```bash
 # Create a monolith project
-npx @agiflowai/scaffold-mcp init \
+npx @agiflowai/aicode-toolkit init \
   --name my-app \
   --project-type monolith
 
 # Create a monorepo project
-npx @agiflowai/scaffold-mcp init \
+npx @agiflowai/aicode-toolkit init \
   --name my-workspace \
   --project-type monorepo
 ```
@@ -284,27 +286,22 @@ npx @agiflowai/scaffold-mcp init \
 **Existing Workspace** (just initialize templates):
 ```bash
 # In an existing git repository
-npx @agiflowai/scaffold-mcp init
+npx @agiflowai/aicode-toolkit init
 
 # With custom templates path
-npx @agiflowai/scaffold-mcp init --path custom-templates
+npx @agiflowai/aicode-toolkit init --path custom-templates
 ```
 
 ### Adding Features
 
-The tools automatically detect your project type:
+Use scaffold-mcp MCP tools to add features. The tools automatically detect your project type:
 
-```bash
-# Monorepo
-scaffold-mcp scaffold add scaffold-nextjs-page \
-  --project apps/web-app \
-  --vars '{"pageName": "dashboard"}'
+**MCP Tools:**
+- `list-scaffolding-methods` - See available features for your project
+- `use-scaffold-method` - Add pages, components, routes, etc.
 
-# Monolith
-scaffold-mcp scaffold add scaffold-react-component \
-  --project . \
-  --vars '{"componentName": "Header"}'
-```
+**CLI Alternative:**
+For manual usage, see the [@agiflowai/aicode-toolkit](./apps/aicode-toolkit/README.md) CLI documentation.
 
 **Key Points**:
 - Templates are **architecture-agnostic** (same templates work for both)
@@ -321,9 +318,9 @@ The AI Code Toolkit packages work together to create a complete development work
 ### Complete Workflow: From Project Creation to Code Review
 
 ```
-1. Bootstrap Project (scaffold-mcp)
+1. Bootstrap Project (aicode-toolkit)
    ↓
-   scaffold-mcp boilerplate create → Creates project with template
+   aicode init → Creates project with template
    ↓
    Result: Project with architect.yaml + RULES.yaml from template
 
@@ -347,7 +344,7 @@ The AI Code Toolkit packages work together to create a complete development work
 
 5. Add Features (scaffold-mcp)
    ↓
-   scaffold-mcp scaffold add → Adds new features/components
+   scaffold-mcp MCP tools → Adds new features/components
    ↓
    Result: Consistent code following patterns
 ```
@@ -388,24 +385,18 @@ The AI Code Toolkit packages work together to create a complete development work
 ### Example: Building a Next.js Application
 
 **Step 1: Create Project**
-```bash
-scaffold-mcp boilerplate create scaffold-nextjs-app \
-  --vars '{"appName":"my-store","withDrizzle":true}'
-```
+AI agent uses scaffold-mcp MCP tool `use-boilerplate` to create the application.
+
 Result: Project created with Next.js structure, architect.yaml, and RULES.yaml
 
 **Step 2: Understand Patterns** (Before writing custom code)
-```bash
-architect-mcp get-file-design-pattern apps/my-store/src/app/products/page.tsx
-```
+AI agent uses architect-mcp MCP tool `get-file-design-pattern` to understand patterns.
+
 Result: Shows "Next.js App Router Pattern" and applicable rules
 
 **Step 3: Add Feature** (Standard features)
-```bash
-scaffold-mcp scaffold add scaffold-nextjs-route \
-  --project apps/my-store \
-  --vars '{"routePath":"products","pageTitle":"Products"}'
-```
+AI agent uses scaffold-mcp MCP tool `use-scaffold-method` to add a route.
+
 Result: Route created following template patterns
 
 **Step 4: Write Custom Code** (AI agent writes business logic)
@@ -418,9 +409,8 @@ export default async function ProductsPage() {
 ```
 
 **Step 5: Review Code**
-```bash
-architect-mcp review-code-change apps/my-store/src/app/products/page.tsx
-```
+AI agent uses architect-mcp MCP tool `review-code-change` to validate the code.
+
 Result: Validates against RULES.yaml (named exports, error handling, etc.)
 
 ### Why This Approach Works
