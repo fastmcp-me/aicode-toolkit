@@ -28,13 +28,16 @@
  * Supported coding agent identifiers
  * @example
  * ```ts
- * import { CLAUDE_CODE, CODEX, GEMINI_CLI } from '@agiflowai/coding-agent-bridge/constants';
+ * import { CLAUDE_CODE, CODEX, GEMINI_CLI, CURSOR, CLINE, NONE } from '@agiflowai/coding-agent-bridge/constants';
  * console.log(CLAUDE_CODE); // 'claude-code'
  * ```
  */
 export const CLAUDE_CODE = 'claude-code';
 export const CODEX = 'codex';
 export const GEMINI_CLI = 'gemini-cli';
+export const CURSOR = 'cursor';
+export const CLINE = 'cline';
+export const NONE = 'none';
 
 /**
  * Type-safe configuration of all supported coding agents
@@ -62,12 +65,33 @@ export const SupportedCodingAgents = {
     displayName: 'Gemini CLI',
     description: 'Google Gemini CLI - Command-line interface for Gemini coding capabilities',
   },
+  [CURSOR]: {
+    id: CURSOR,
+    displayName: 'Cursor',
+    description: 'Cursor - AI-first code editor with intelligent code completion',
+  },
+  [CLINE]: {
+    id: CLINE,
+    displayName: 'Cline',
+    description: 'Cline - CLI-based AI coding assistant',
+  },
+  [NONE]: {
+    id: NONE,
+    displayName: 'Other',
+    description: 'Other coding agent or skip MCP configuration',
+  },
 } as const;
 
 /**
  * Union type of all supported coding agent identifiers
  */
-export type CodingAgentId = typeof CLAUDE_CODE | typeof CODEX | typeof GEMINI_CLI;
+export type CodingAgentId =
+  | typeof CLAUDE_CODE
+  | typeof CODEX
+  | typeof GEMINI_CLI
+  | typeof CURSOR
+  | typeof CLINE
+  | typeof NONE;
 
 /**
  * Inferred type from the SupportedCodingAgents configuration

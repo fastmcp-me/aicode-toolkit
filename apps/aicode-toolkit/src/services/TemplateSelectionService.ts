@@ -58,7 +58,9 @@ export class TemplateSelectionService {
 
       // Filter directories (templates) and files (like RULES.yaml)
       const templateDirs = contents.filter((item) => item.type === 'dir');
-      const globalFiles = contents.filter((item) => item.type === 'file' && item.name === 'RULES.yaml');
+      const globalFiles = contents.filter(
+        (item) => item.type === 'file' && item.name === 'RULES.yaml',
+      );
 
       if (templateDirs.length === 0) {
         throw new Error('No templates found in repository');

@@ -16,17 +16,20 @@
  * - Hard-coding agent configurations (use strategies)
  */
 
-import path from 'node:path';
-import { ClaudeCodeService } from '@agiflowai/coding-agent-bridge';
+import {
+  CLAUDE_CODE,
+  CODEX,
+  GEMINI_CLI,
+  NONE,
+  ClaudeCodeService,
+  CodexService,
+  GeminiCliService,
+  type CodingAgentId,
+} from '@agiflowai/coding-agent-bridge';
 import { print } from '@agiflowai/aicode-utils';
 
-export enum CodingAgent {
-  CLAUDE_CODE = 'claude-code',
-  CURSOR = 'cursor',
-  GEMINI_CLI = 'gemini-cli',
-  CLINE = 'cline',
-  NONE = 'none',
-}
+// Re-export the type for convenience
+export type CodingAgent = CodingAgentId;
 
 export class CodingAgentService {
   private workspaceRoot: string;
@@ -36,17 +39,34 @@ export class CodingAgentService {
   }
 
   /**
-   * Detect if Claude Code is enabled in the workspace
-   * Uses ClaudeCodeService to check for .claude folder or CLAUDE.md file
+   * Detect which coding agent is enabled in the workspace
+   * Checks for Claude Code, Codex, and Gemini CLI installations
    * @param workspaceRoot - The workspace root directory
-   * @returns Promise resolving to CodingAgent.CLAUDE_CODE if detected, null otherwise
+   * @returns Promise resolving to detected agent ID or null
    */
   static async detectCodingAgent(workspaceRoot: string): Promise<CodingAgent | null> {
+    // Check for Claude Code
     const claudeCodeService = new ClaudeCodeService({ workspaceRoot });
     const isClaudeCodeEnabled = await claudeCodeService.isEnabled();
 
     if (isClaudeCodeEnabled) {
-      return CodingAgent.CLAUDE_CODE;
+      return CLAUDE_CODE;
+    }
+
+    // Check for Codex
+    const codexService = new CodexService({ workspaceRoot });
+    const isCodexEnabled = await codexService.isEnabled();
+
+    if (isCodexEnabled) {
+      return CODEX;
+    }
+
+    // Check for Gemini CLI
+    const geminiService = new GeminiCliService({ workspaceRoot });
+    const isGeminiEnabled = await geminiService.isEnabled();
+
+    if (isGeminiEnabled) {
+      return GEMINI_CLI;
     }
 
     return null;
@@ -58,12 +78,22 @@ export class CodingAgentService {
   static getAvailableAgents(): Array<{ value: CodingAgent; name: string; description: string }> {
     return [
       {
-        value: CodingAgent.CLAUDE_CODE,
+        value: CLAUDE_CODE,
         name: 'Claude Code',
         description: 'Anthropic Claude Code CLI agent',
       },
       {
-        value: CodingAgent.NONE,
+        value: CODEX,
+        name: 'Codex',
+        description: 'OpenAI Codex CLI agent',
+      },
+      {
+        value: GEMINI_CLI,
+        name: 'Gemini CLI',
+        description: 'Google Gemini CLI agent',
+      },
+      {
+        value: NONE,
         name: 'Other',
         description: 'Other coding agent or skip MCP configuration',
       },
@@ -75,29 +105,37 @@ export class CodingAgentService {
    * @param agent - The coding agent to configure
    */
   async setupMCP(agent: CodingAgent): Promise<void> {
-    if (agent === CodingAgent.NONE) {
+    if (agent === NONE) {
       print.info('Skipping MCP configuration');
       return;
     }
 
     print.info(`\nSetting up MCP for ${agent}...`);
 
-    if (agent === CodingAgent.CLAUDE_CODE) {
-      await this.setupClaudeCodeMCP();
-    } else {
-      print.info(`MCP configuration for ${agent} is not yet supported.`);
-      print.info('Please configure MCP servers manually for this coding agent.');
+    // Initialize the appropriate service based on agent type
+    let service: ClaudeCodeService | CodexService | GeminiCliService | null = null;
+    let configLocation = '';
+    let restartInstructions = '';
+
+    if (agent === CLAUDE_CODE) {
+      service = new ClaudeCodeService({ workspaceRoot: this.workspaceRoot });
+      configLocation = '.mcp.json';
+      restartInstructions = 'Restart Claude Code to load the new MCP servers';
+    } else if (agent === CODEX) {
+      service = new CodexService({ workspaceRoot: this.workspaceRoot });
+      configLocation = '~/.codex/config.toml';
+      restartInstructions = 'Restart Codex CLI to load the new MCP servers';
+    } else if (agent === GEMINI_CLI) {
+      service = new GeminiCliService({ workspaceRoot: this.workspaceRoot });
+      configLocation = '~/.gemini/settings.json';
+      restartInstructions = 'Restart Gemini CLI to load the new MCP servers';
     }
 
-    print.success('\nMCP configuration completed!');
-  }
-
-  /**
-   * Setup MCP configuration for Claude Code
-   * Passes standardized MCP config to ClaudeCodeService
-   */
-  private async setupClaudeCodeMCP(): Promise<void> {
-    const claudeCodeService = new ClaudeCodeService({ workspaceRoot: this.workspaceRoot });
+    if (!service) {
+      print.info(`MCP configuration for ${agent} is not yet supported.`);
+      print.info('Please configure MCP servers manually for this coding agent.');
+      return;
+    }
 
     // Build standardized MCP server configurations
     const mcpServers = {
@@ -115,14 +153,16 @@ export class CodingAgentService {
       },
     };
 
-    // Update MCP settings using ClaudeCodeService (it handles format conversion)
-    await claudeCodeService.updateMcpSettings({
+    // Update MCP settings using the service (each service handles its own format conversion)
+    await service.updateMcpSettings({
       servers: mcpServers,
     });
 
-    print.success('Added scaffold-mcp and architect-mcp to .mcp.json');
+    print.success(`Added scaffold-mcp and architect-mcp to ${configLocation}`);
     print.info('\nNext steps:');
-    print.indent('1. Restart Claude Code to load the new MCP servers');
+    print.indent(`1. ${restartInstructions}`);
     print.indent('2. The scaffold-mcp and architect-mcp servers will be available');
+
+    print.success('\nMCP configuration completed!');
   }
 }

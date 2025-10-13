@@ -25,7 +25,7 @@
 import { execa } from 'execa';
 import * as fs from 'fs-extra';
 import * as path from 'node:path';
-import * as readline from 'readline';
+import * as readline from 'node:readline';
 import { v4 as uuidv4 } from 'uuid';
 import type {
   CodingAgentService,
@@ -177,7 +177,7 @@ export class ClaudeCodeService implements CodingAgentService {
     }
 
     // Write config back with pretty formatting
-    await fs.writeFile(configPath, JSON.stringify(config, null, 2) + '\n');
+    await fs.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
   }
 
   /**
@@ -234,12 +234,12 @@ export class ClaudeCodeService implements CodingAgentService {
     });
 
     // Write prompt to stdin and close it
-    child.stdin!.write(params.prompt);
-    child.stdin!.end();
+    child.stdin?.write(params.prompt);
+    child.stdin?.end();
 
     // Create readline interface for streaming output
     const rl = readline.createInterface({
-      input: child.stdout!,
+      input: child.stdout,
     });
 
     // Collect response data

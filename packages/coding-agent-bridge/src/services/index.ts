@@ -16,3 +16,5 @@
  */
 
 export * from './ClaudeCodeService';
+export * from './CodexService';
+export * from './GeminiCliService';

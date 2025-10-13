@@ -9,7 +9,7 @@
 export { BANNER_GRADIENT, THEME } from './constants/index';
 // Services
 export {
-  CodingAgent,
+  type CodingAgent,
   CodingAgentService,
   NewProjectService,
   TemplateSelectionService,

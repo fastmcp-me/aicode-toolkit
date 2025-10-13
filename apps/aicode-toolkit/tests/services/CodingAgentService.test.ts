@@ -15,9 +15,10 @@
 
 import os from 'node:os';
 import path from 'node:path';
+import { CLAUDE_CODE, CODEX, CURSOR, GEMINI_CLI, NONE } from '@agiflowai/coding-agent-bridge';
 import * as fs from 'fs-extra';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { CodingAgent, CodingAgentService } from '../../src/services/CodingAgentService';
+import { type CodingAgent, CodingAgentService } from '../../src/services/CodingAgentService';
 
 // Mock dependencies
 vi.mock('fs-extra', async () => {
@@ -26,8 +27,21 @@ vi.mock('fs-extra', async () => {
 });
 
 vi.mock('@agiflowai/coding-agent-bridge', () => ({
+  CLAUDE_CODE: 'claude-code',
+  CODEX: 'codex',
+  GEMINI_CLI: 'gemini-cli',
+  CURSOR: 'cursor',
+  NONE: 'none',
   ClaudeCodeService: vi.fn().mockImplementation(() => ({
     isEnabled: vi.fn().mockResolvedValue(true),
+    updateMcpSettings: vi.fn().mockResolvedValue(undefined),
+  })),
+  CodexService: vi.fn().mockImplementation(() => ({
+    isEnabled: vi.fn().mockResolvedValue(false),
+    updateMcpSettings: vi.fn().mockResolvedValue(undefined),
+  })),
+  GeminiCliService: vi.fn().mockImplementation(() => ({
+    isEnabled: vi.fn().mockResolvedValue(false),
     updateMcpSettings: vi.fn().mockResolvedValue(undefined),
   })),
 }));
@@ -45,9 +59,11 @@ describe('CodingAgentService', () => {
     it('should return list of available agents', () => {
       const agents = CodingAgentService.getAvailableAgents();
 
-      expect(agents).toHaveLength(2);
-      expect(agents.map((a) => a.value)).toContain(CodingAgent.CLAUDE_CODE);
-      expect(agents.map((a) => a.value)).toContain(CodingAgent.NONE);
+      expect(agents).toHaveLength(4);
+      expect(agents.map((a) => a.value)).toContain(CLAUDE_CODE);
+      expect(agents.map((a) => a.value)).toContain(CODEX);
+      expect(agents.map((a) => a.value)).toContain(GEMINI_CLI);
+      expect(agents.map((a) => a.value)).toContain(NONE);
     });
 
     it('should return agents with name and description', () => {
@@ -63,7 +79,7 @@ describe('CodingAgentService', () => {
 
   describe('setupMCP', () => {
     it('should skip setup for NONE agent', async () => {
-      await service.setupMCP(CodingAgent.NONE);
+      await service.setupMCP(NONE);
 
       expect(fs.ensureDir).not.toHaveBeenCalled();
       expect(fs.writeFile).not.toHaveBeenCalled();
@@ -73,11 +89,25 @@ describe('CodingAgentService', () => {
       vi.mocked(fs.pathExists).mockResolvedValue(false);
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
 
-      await expect(service.setupMCP(CodingAgent.CLAUDE_CODE)).resolves.not.toThrow();
+      await expect(service.setupMCP(CLAUDE_CODE)).resolves.not.toThrow();
+    });
+
+    it('should setup MCP for Codex', async () => {
+      vi.mocked(fs.pathExists).mockResolvedValue(false);
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      await expect(service.setupMCP(CODEX)).resolves.not.toThrow();
+    });
+
+    it('should setup MCP for Gemini CLI', async () => {
+      vi.mocked(fs.pathExists).mockResolvedValue(false);
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      await expect(service.setupMCP(GEMINI_CLI)).resolves.not.toThrow();
     });
 
     it('should print message for unsupported agents', async () => {
-      await expect(service.setupMCP(CodingAgent.CURSOR)).resolves.not.toThrow();
+      await expect(service.setupMCP(CURSOR)).resolves.not.toThrow();
     });
   });
 
@@ -85,7 +115,7 @@ describe('CodingAgentService', () => {
     it('should detect Claude Code when indicators exist', async () => {
       const result = await CodingAgentService.detectCodingAgent(workspaceRoot);
       // The mock ClaudeCodeService always returns isEnabled = true
-      expect(result).toBe(CodingAgent.CLAUDE_CODE);
+      expect(result).toBe(CLAUDE_CODE);
     });
   });
 });
