@@ -375,16 +375,16 @@ Templates are organized by framework/technology and include configuration files 
 
 ## Adding More Templates
 
-Use the \`add\` command to add templates from remote repositories:
+Use the \`aicode-toolkit\` CLI to add templates from remote repositories:
 
 \`\`\`bash
-scaffold-mcp add --name my-template --url https://github.com/user/template
+npx @agiflowai/aicode-toolkit add --name my-template --url https://github.com/user/template
 \`\`\`
 
 Or add templates from subdirectories:
 
 \`\`\`bash
-scaffold-mcp add --name nextjs-template --url https://github.com/user/repo/tree/main/templates/nextjs
+npx @agiflowai/aicode-toolkit add --name nextjs-template --url https://github.com/user/repo/tree/main/templates/nextjs
 \`\`\`
 
 ## Creating Custom Templates
@@ -414,11 +414,10 @@ See existing templates for examples and documentation for more details.
 
       const nextSteps = [];
       if (options.download === false) {
-        nextSteps.push(`Download templates: scaffold-mcp init --download`);
-        nextSteps.push(`Add templates manually: scaffold-mcp add --name <name> --url <url>`);
+        nextSteps.push(`Add templates: npx @agiflowai/aicode-toolkit add --name <name> --url <url>`);
       } else {
         nextSteps.push(`List available boilerplates: scaffold-mcp boilerplate list`);
-        nextSteps.push(`Add more templates: scaffold-mcp add --name <name> --url <url>`);
+        nextSteps.push(`Add more templates: npx @agiflowai/aicode-toolkit add --name <name> --url <url>`);
       }
 
       sections.nextSteps(nextSteps);
