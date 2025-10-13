@@ -53,17 +53,17 @@ export const print = {
   },
 
   /**
-   * Log item in a list (gray with prefix)
+   * Log item in a list (white with prefix)
    */
   item: (message: string) => {
-    console.log(chalk.gray(`   - ${message}`));
+    console.log(chalk.white(`   - ${message}`));
   },
 
   /**
-   * Log indented text (gray)
+   * Log indented text (white)
    */
   indent: (message: string) => {
-    console.log(chalk.gray(`   ${message}`));
+    console.log(chalk.white(`   ${message}`));
   },
 
   /**
