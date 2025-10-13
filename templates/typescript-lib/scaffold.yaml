@@ -139,3 +139,40 @@ features:
       Testing approach: Write unit tests for each exported function. Test edge cases, invalid inputs, and expected outputs. Use Vitest for testing framework. Test pure function behavior without mocking.
     patterns:
       - src/utils/**/*.ts
+  - name: scaffold-constants
+    description: Generate a new constants file for TypeScript libraries following best practices. Creates a strongly-typed constants module with proper exports and barrel export in src/constants/index.ts. Perfect for defining application-wide constants, configuration values, or enumerated types that need to be shared across the library.
+    variables_schema:
+      type: object
+      properties:
+        constantsName:
+          type: string
+          description: Name of the constants module (e.g., 'config', 'errors', 'api')
+        withTypes:
+          type: boolean
+          description: Include TypeScript type definitions for the constants
+          default: true
+        withTests:
+          type: boolean
+          description: Generate test file for the constants
+          default: false
+      required:
+        - constantsName
+      additionalProperties: false
+    includes:
+      - src/constants/constants.ts->src/constants/{{ constantsName }}.constants.ts
+      - src/constants/index.ts
+      - tests/constants/constants.test.ts->tests/constants/{{ constantsName }}.constants.test.ts?withTests=true
+    instruction: |-
+      Constants follow a strongly-typed module pattern with clear export structure and barrel exports. Constants should be organized by category and exported as const objects to ensure immutability and type safety.
+
+      Pattern explanation: Constants are collocated in src/constants/ folder with each domain having its own file (e.g., api.constants.ts, config.constants.ts). All constants are re-exported through src/constants/index.ts barrel export for clean imports.
+
+      File organization: Place constants in src/constants/{name}.constants.ts. Test files mirror the source structure in tests/constants/{name}.constants.test.ts. Export all constants through src/constants/index.ts.
+
+      Naming conventions: Constants files use camelCase names with .constants.ts suffix. Primitive constant names use UPPER_SNAKE_CASE. Object constants use PascalCase with 'as const' assertion.
+
+      Usage guidelines: Import constants using: import { API_CONFIG } from '@package/constants'. Always include JSDoc comments explaining purpose and usage. Use type inference over explicit types. Keep related constants grouped in const objects.
+
+      Testing approach: Write tests to verify constants maintain expected types and values. Test immutability using 'as const'. Test type inference and exported structure.
+    patterns:
+      - src/constants/**/*.constants.ts
