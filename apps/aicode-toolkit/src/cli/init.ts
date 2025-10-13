@@ -3,17 +3,20 @@ import {
   ProjectType,
   TemplatesManagerService,
   type ToolkitConfig,
-  icons,
-  messages,
   print,
-  sections,
 } from '@agiflowai/aicode-utils';
 import { confirm, input, select } from '@inquirer/prompts';
 import { Command } from 'commander';
 import * as fs from 'fs-extra';
 import { createActor, fromPromise } from 'xstate';
-import { NewProjectService, TemplatesService } from '../services';
-import { initMachine, type InitMachineInput } from '../states/init';
+import {
+  CodingAgent,
+  CodingAgentService,
+  NewProjectService,
+  TemplateSelectionService,
+  TemplatesService,
+} from '../services';
+import { initV2Machine, type InitV2MachineInput } from '../states/initV2';
 import { displayBanner, findWorkspaceRoot } from '../utils';
 
 const DEFAULT_TEMPLATE_REPO = {
@@ -24,70 +27,128 @@ const DEFAULT_TEMPLATE_REPO = {
 };
 
 /**
- * Actor implementations for the init state machine
- * Each actor handles a single responsibility/user interaction
- * This follows XState best practices: one interaction per state
+ * Actor implementations for the init V2 state machine
  */
 const initActors = {
   /**
-   * Find workspace root by looking for .git folder
+   * Display welcome banner
    */
-  findWorkspaceRoot: fromPromise(async () => {
+  displayBanner: fromPromise(async () => {
+    displayBanner();
+  }),
+
+  /**
+   * Check if workspace exists by looking for .git folder
+   */
+  checkWorkspaceExists: fromPromise(async () => {
     const workspaceRoot = await findWorkspaceRoot();
-    if (!workspaceRoot) {
-      throw new Error('No workspace found');
+    if (workspaceRoot) {
+      print.info(`Found workspace at: ${workspaceRoot}`);
+      return { exists: true, workspaceRoot };
     }
-    return workspaceRoot;
+    return { exists: false };
   }),
 
   /**
-   * Display new project setup header
+   * Detect project type (monorepo vs monolith)
    */
-  displayNewProjectHeader: fromPromise(async () => {
-    print.header(`\n${icons.rocket} New Project Setup`);
-    print.info("No Git repository detected. Let's set up a new project!\n");
-  }),
+  detectProjectType: fromPromise(async ({ input }: { input: { workspaceRoot: string } }) => {
+    print.info('\nDetecting project type...');
 
-  /**
-   * Gather project name from CLI args or prompt user
-   */
-  gatherProjectName: fromPromise(
-    async ({ input: actorInput }: { input: { providedName?: string } }) => {
-      const newProjectService = new NewProjectService(actorInput.providedName, undefined);
+    // Check for monorepo indicators
+    const nxJsonPath = path.join(input.workspaceRoot, 'nx.json');
+    const lernaJsonPath = path.join(input.workspaceRoot, 'lerna.json');
+    const pnpmWorkspacePath = path.join(input.workspaceRoot, 'pnpm-workspace.yaml');
+    const turboJsonPath = path.join(input.workspaceRoot, 'turbo.json');
 
-      const providedNameFromService = newProjectService.getProvidedName();
+    const indicators: string[] = [];
+    let projectType: ProjectType | undefined;
+    let confidence: 'high' | 'medium' | 'low' = 'low';
 
-      if (providedNameFromService) {
-        const trimmedName = providedNameFromService.trim();
-        const validationResult = newProjectService.validateProjectName(trimmedName);
-        if (validationResult !== true) {
-          throw new Error(validationResult);
-        }
-        print.info(`Project name: ${trimmedName}`);
-        return trimmedName;
+    // High confidence indicators
+    if (await fs.pathExists(nxJsonPath)) {
+      indicators.push('nx.json found');
+      projectType = ProjectType.MONOREPO;
+      confidence = 'high';
+    }
+
+    if (await fs.pathExists(lernaJsonPath)) {
+      indicators.push('lerna.json found');
+      projectType = ProjectType.MONOREPO;
+      confidence = 'high';
+    }
+
+    if (await fs.pathExists(pnpmWorkspacePath)) {
+      indicators.push('pnpm-workspace.yaml found');
+      projectType = ProjectType.MONOREPO;
+      confidence = 'high';
+    }
+
+    if (await fs.pathExists(turboJsonPath)) {
+      indicators.push('turbo.json found');
+      projectType = ProjectType.MONOREPO;
+      confidence = 'high';
+    }
+
+    // Check package.json for workspaces
+    const packageJsonPath = path.join(input.workspaceRoot, 'package.json');
+    if (await fs.pathExists(packageJsonPath)) {
+      const packageJson = await fs.readJson(packageJsonPath);
+      if (packageJson.workspaces) {
+        indicators.push('package.json with workspaces found');
+        projectType = ProjectType.MONOREPO;
+        if (confidence !== 'high') confidence = 'medium';
       }
+    }
 
-      return await input({
-        message: 'Enter your project name:',
-        validate: (value: string) => newProjectService.validateProjectName(value),
-      });
-    },
-  ),
+    // Check toolkit.yaml
+    const toolkitYamlPath = path.join(input.workspaceRoot, 'toolkit.yaml');
+    if (await fs.pathExists(toolkitYamlPath)) {
+      const toolkitConfig = await TemplatesManagerService.readToolkitConfig(input.workspaceRoot);
+      if (toolkitConfig?.projectType) {
+        indicators.push(`toolkit.yaml specifies ${toolkitConfig.projectType}`);
+        projectType = toolkitConfig.projectType as ProjectType;
+        confidence = 'high';
+      }
+    }
+
+    // Default to monolith if nothing found
+    if (!projectType) {
+      projectType = ProjectType.MONOLITH;
+      indicators.push('No monorepo indicators found, assuming monolith');
+      confidence = 'low';
+    }
+
+    if (confidence === 'high') {
+      print.success(`Detected ${projectType} project (high confidence)`);
+    }
+
+    return { projectType, confidence, indicators };
+  }),
 
   /**
-   * Gather project type from CLI args or prompt user
+   * Prompt user to select project type
    */
-  gatherProjectType: fromPromise(
-    async ({ input: actorInput }: { input: { providedProjectType?: string } }) => {
-      const newProjectService = new NewProjectService(undefined, actorInput.providedProjectType);
-
-      const providedProjectTypeFromService = newProjectService.getProvidedProjectType();
-
-      if (providedProjectTypeFromService) {
-        newProjectService.validateProjectType(providedProjectTypeFromService);
-        const projectType = providedProjectTypeFromService as ProjectType;
+  promptProjectType: fromPromise(
+    async ({
+      input: actorInput,
+    }: {
+      input: { providedProjectType?: string; detectionIndicators?: string[] };
+    }) => {
+      // If provided via CLI, use it
+      if (actorInput.providedProjectType) {
+        const projectType = actorInput.providedProjectType as ProjectType;
         print.info(`Project type: ${projectType}`);
         return projectType;
+      }
+
+      // Show detection hints if available
+      if (actorInput.detectionIndicators && actorInput.detectionIndicators.length > 0) {
+        print.info('\nDetection results:');
+        for (const indicator of actorInput.detectionIndicators) {
+          print.indent(`• ${indicator}`);
+        }
+        print.newline();
       }
 
       return await select({
@@ -109,199 +170,284 @@ const initActors = {
   ),
 
   /**
+   * Prompt for project name
+   */
+  promptProjectName: fromPromise(
+    async ({ input: actorInput }: { input: { providedName?: string } }) => {
+      const newProjectService = new NewProjectService(actorInput.providedName, undefined);
+      const providedName = newProjectService.getProvidedName();
+
+      if (providedName) {
+        const trimmedName = providedName.trim();
+        const validationResult = newProjectService.validateProjectName(trimmedName);
+        if (validationResult !== true) {
+          throw new Error(validationResult);
+        }
+        print.info(`Project name: ${trimmedName}`);
+        return trimmedName;
+      }
+
+      return await input({
+        message: 'Enter your project name:',
+        validate: (value: string) => newProjectService.validateProjectName(value),
+      });
+    },
+  ),
+
+  /**
    * Create project directory
    */
   createProjectDirectory: fromPromise(
-    async ({ input: actorInput }: { input: { projectName: string; projectType: ProjectType } }) => {
+    async ({ input: actorInput }: { input: { projectName: string } }) => {
       const projectPath = path.join(process.cwd(), actorInput.projectName.trim());
       const newProjectService = new NewProjectService(undefined, undefined);
 
       await newProjectService.createProjectDirectory(projectPath, actorInput.projectName);
 
-      print.info(`\n${icons.folder} Project type: ${actorInput.projectType}`);
-
-      return { projectPath, projectType: actorInput.projectType };
+      return { projectPath };
     },
   ),
 
   /**
-   * Prompt if user has existing Git repository
+   * Setup Git repository (clone or init)
    */
-  promptExistingRepo: fromPromise(async () => {
-    return await confirm({
+  promptGitSetup: fromPromise(async ({ input: actorInput }: { input: { projectPath: string } }) => {
+    const newProjectService = new NewProjectService(undefined, undefined);
+
+    const hasExistingRepo = await confirm({
       message: 'Do you have an existing Git repository you want to use?',
       default: false,
     });
-  }),
 
-  /**
-   * Prompt for Git repository URL and clone it
-   */
-  promptRepoUrl: fromPromise(async ({ input: actorInput }: { input: { projectPath: string } }) => {
-    const newProjectService = new NewProjectService(undefined, undefined);
+    if (hasExistingRepo) {
+      const repoUrl = await input({
+        message: 'Enter Git repository URL:',
+        validate: (value: string) => newProjectService.validateRepositoryUrl(value),
+      });
 
-    const repoUrl = await input({
-      message: 'Enter Git repository URL:',
-      validate: (value: string) => newProjectService.validateRepositoryUrl(value),
-    });
+      await newProjectService.cloneExistingRepository(repoUrl.trim(), actorInput.projectPath);
+    } else {
+      const initGit = await confirm({
+        message: 'Initialize a new Git repository?',
+        default: true,
+      });
 
-    await newProjectService.cloneExistingRepository(repoUrl.trim(), actorInput.projectPath);
-  }),
-
-  /**
-   * Prompt to initialize new Git repository
-   */
-  promptInitGit: fromPromise(async ({ input: actorInput }: { input: { projectPath: string } }) => {
-    const newProjectService = new NewProjectService(undefined, undefined);
-
-    const initGit = await confirm({
-      message: 'Initialize a new Git repository?',
-      default: true,
-    });
-
-    if (initGit) {
-      await newProjectService.initializeGitRepository(actorInput.projectPath);
+      if (initGit) {
+        await newProjectService.initializeGitRepository(actorInput.projectPath);
+      }
     }
   }),
 
   /**
-   * Check if templates folder exists
+   * Download templates to tmp folder
    */
-  checkTemplatesExistence: fromPromise(async ({ input }: { input: { templatesPath: string } }) => {
-    return await fs.pathExists(input.templatesPath);
+  downloadTemplates: fromPromise(async () => {
+    const templateSelectionService = new TemplateSelectionService();
+    const tmpPath = await templateSelectionService.downloadTemplatesToTmp(DEFAULT_TEMPLATE_REPO);
+    return tmpPath;
   }),
 
   /**
-   * Prompt if user wants alternate folder
+   * List templates
    */
-  promptAlternateFolder: fromPromise(
-    async ({ input: actorInput }: { input: { templatesPath: string } }) => {
-      messages.warning(`\n⚠️  Templates folder already exists at: ${actorInput.templatesPath}`);
+  listTemplates: fromPromise(async ({ input }: { input: { tmpTemplatesPath: string } }) => {
+    const templateSelectionService = new TemplateSelectionService();
+    const templates = await templateSelectionService.listTemplates();
 
-      return await confirm({
-        message: 'Do you want to use a different folder for templates?',
-        default: false,
-      });
-    },
-  ),
+    print.header('\nAvailable templates:');
+    for (const template of templates) {
+      print.item(`${template.name}${template.description ? ` - ${template.description}` : ''}`);
+    }
+
+    return templates;
+  }),
 
   /**
-   * Prompt for alternate folder name
+   * Prompt user to select templates
    */
-  promptAlternateFolderName: fromPromise(
+  promptTemplateSelection: fromPromise(
     async ({
       input: actorInput,
     }: {
-      input: { workspaceRoot: string; projectType?: ProjectType };
+      input: { tmpTemplatesPath: string; projectType: ProjectType };
     }) => {
-      const alternateFolder = await input({
-        message: 'Enter alternate folder name for templates:',
-        default: 'my-templates',
-        validate: (value: string) => {
-          if (!value.trim()) {
-            return 'Folder name is required';
-          }
-          if (!/^[a-zA-Z0-9_\-/]+$/.test(value)) {
-            return 'Folder name can only contain letters, numbers, hyphens, underscores, and slashes';
-          }
-          return true;
-        },
+      const templateSelectionService = new TemplateSelectionService();
+      const templates = await templateSelectionService.listTemplates();
+
+      if (templates.length === 0) {
+        throw new Error('No templates available');
+      }
+
+      // For monolith, only allow single selection
+      if (actorInput.projectType === ProjectType.MONOLITH) {
+        const choices = templates.map((t) => ({
+          name: t.name,
+          value: t.name,
+          description: t.description,
+        }));
+
+        const selected = await select({
+          message: 'Select template (monolith allows only one):',
+          choices,
+        });
+
+        return [selected];
+      }
+
+      // For monorepo, allow multiple selections
+      const checkbox = await import('@inquirer/prompts').then((m) => m.checkbox);
+      const choices = templates.map((t) => ({
+        name: t.name,
+        value: t.name,
+        description: t.description,
+      }));
+
+      const selected = await checkbox({
+        message: 'Select templates (use space to select, enter to confirm):',
+        choices,
       });
 
-      const templatesPath = path.join(actorInput.workspaceRoot, alternateFolder.trim());
+      if (selected.length === 0) {
+        throw new Error('Please select at least one template');
+      }
 
-      return {
-        templatesPath,
-        alternateFolder: alternateFolder.trim(),
-      };
+      return selected;
     },
   ),
 
   /**
-   * Create toolkit.yaml with custom templates path
+   * Copy templates to workspace
    */
-  createToolkitConfig: fromPromise(
+  copyTemplates: fromPromise(
     async ({
-      input,
+      input: actorInput,
     }: {
       input: {
-        customTemplatesPath: string;
+        tmpTemplatesPath: string;
         workspaceRoot: string;
-        projectType?: ProjectType;
+        selectedTemplates: string[];
+        projectType: ProjectType;
       };
     }) => {
-      const toolkitConfig: ToolkitConfig = {
-        templatesPath: input.customTemplatesPath,
-        projectType: input.projectType,
-      };
+      const templateSelectionService = new TemplateSelectionService();
+      const templatesPath = path.join(actorInput.workspaceRoot, 'templates');
 
-      print.info(`\n${icons.config} Creating toolkit.yaml with custom templates path...`);
-      await TemplatesManagerService.writeToolkitConfig(toolkitConfig, input.workspaceRoot);
-      print.success(`${icons.check} toolkit.yaml created`);
+      await templateSelectionService.copyTemplates(
+        actorInput.selectedTemplates,
+        templatesPath,
+        actorInput.projectType,
+      );
+
+      return templatesPath;
     },
   ),
 
   /**
-   * Initialize templates folder structure
+   * Create configuration (toolkit.yaml for monolith)
    */
-  initializeTemplates: fromPromise(async ({ input }: { input: { templatesPath: string } }) => {
-    print.info(`\n${icons.rocket} Initializing templates folder at: ${input.templatesPath}`);
+  createConfig: fromPromise(
+    async ({
+      input: actorInput,
+    }: {
+      input: { workspaceRoot: string; projectType: ProjectType; selectedTemplates: string[] };
+    }) => {
+      // Only create toolkit.yaml for monolith
+      if (actorInput.projectType === ProjectType.MONOLITH) {
+        const toolkitConfig: ToolkitConfig = {
+          version: '1.0',
+          templatesPath: 'templates',
+          projectType: 'monolith',
+          sourceTemplate: actorInput.selectedTemplates[0], // Monolith has only one template
+        };
 
-    const templatesService = new TemplatesService();
-    await templatesService.initializeTemplatesFolder(input.templatesPath);
+        print.info('\nCreating toolkit.yaml...');
+        await TemplatesManagerService.writeToolkitConfig(toolkitConfig, actorInput.workspaceRoot);
+        print.success('toolkit.yaml created');
+      }
+    },
+  ),
 
-    print.success(`${icons.check} Templates folder created!`);
+  /**
+   * Prompt for coding agent selection
+   */
+  promptCodingAgent: fromPromise(async () => {
+    const agents = CodingAgentService.getAvailableAgents();
+
+    const selected = await select({
+      message: 'Select coding agent for MCP configuration:',
+      choices: agents.map((agent) => ({
+        name: agent.name,
+        value: agent.value,
+        description: agent.description,
+      })),
+    });
+
+    return selected;
   }),
 
   /**
-   * Download templates from repository
+   * Configure MCP for coding agent
    */
-  downloadTemplates: fromPromise(async ({ input }: { input: { templatesPath: string } }) => {
-    const templatesService = new TemplatesService();
-    await templatesService.downloadTemplates(input.templatesPath, DEFAULT_TEMPLATE_REPO);
+  configureMCP: fromPromise(
+    async ({
+      input: actorInput,
+    }: {
+      input: { workspaceRoot: string; codingAgent: CodingAgent };
+    }) => {
+      const codingAgentService = new CodingAgentService(actorInput.workspaceRoot);
+      await codingAgentService.setupMCP(actorInput.codingAgent);
+    },
+  ),
+
+  /**
+   * Cleanup temporary files
+   */
+  cleanup: fromPromise(async ({ input }: { input: { tmpTemplatesPath?: string } }) => {
+    if (input.tmpTemplatesPath) {
+      const templateSelectionService = new TemplateSelectionService();
+      await templateSelectionService.cleanup();
+    }
   }),
 };
 
 /**
- * Init command - initialize templates folder structure at workspace root or create new project
- * Uses XState machine with actor implementations for better separation of concerns
- * Each user interaction is a separate state for proper flow control
+ * Init command - improved V2 implementation
  */
 export const initCommand = new Command('init')
-  .description('Initialize templates folder structure at workspace root or create new project')
-  .option('--no-download', 'Skip downloading templates from repository')
-  .option('--path <path>', 'Custom path for templates folder (relative to workspace root)')
+  .description('Initialize project with templates and MCP configuration')
   .option('--name <name>', 'Project name (for new projects)')
-  .option('--project-type <type>', 'Project type: monolith or monorepo (for new projects)')
+  .option(
+    '--project-type <type>',
+    'Project type: monolith or monorepo (for new projects)',
+  )
+  .option('--skip-templates', 'Skip template download and selection')
+  .option('--skip-mcp', 'Skip MCP configuration')
   .action(async (options) => {
     try {
-      // Display banner at start
-      displayBanner();
-
-      // Create and start the actor with input options and actor implementations
+      // Create and start the actor
       const actor = createActor(
-        initMachine.provide({
+        initV2Machine.provide({
           actors: initActors,
         }),
         {
           input: {
             options: {
-              download: options.download,
-              path: options.path,
               name: options.name,
               projectType: options.projectType,
+              skipTemplates: options.skipTemplates || false,
+              skipMcp: options.skipMcp || false,
             },
-          } as InitMachineInput,
+          } as InitV2MachineInput,
         },
       );
 
-      // Start the actor - it will run through all states automatically
+      // Start the actor
       actor.start();
 
-      // Wait for the machine to reach a final state (completed or failed)
+      // Wait for completion
       await new Promise<void>((resolve, reject) => {
         const subscription = actor.subscribe((state) => {
-          // Uncomment for debugging state transitions:
+          // Uncomment for debugging:
           // console.log('Current state:', state.value);
 
           if (state.matches('completed')) {
@@ -316,24 +462,24 @@ export const initCommand = new Command('init')
 
       // Get final context for display
       const finalState = actor.getSnapshot();
-      const { templatesPath, options: contextOptions } = finalState.context;
+      const { templatesPath, projectType } = finalState.context;
 
       // Display final information
-      print.header(`\n${icons.folder} Templates location:`);
-      print.indent(templatesPath || 'Unknown');
-
-      const nextSteps = [];
-      if (contextOptions.download === false) {
-        nextSteps.push('Download templates: aicode init --download');
-        nextSteps.push('Add templates manually: aicode add --name <name> --url <url>');
-      } else {
-        nextSteps.push('List available boilerplates: aicode boilerplate list');
-        nextSteps.push('Add more templates: aicode add --name <name> --url <url>');
+      print.header('\nSetup Complete!');
+      if (templatesPath) {
+        print.info(`Templates location: ${templatesPath}`);
+      }
+      if (projectType) {
+        print.info(`Project type: ${projectType}`);
       }
 
-      sections.nextSteps(nextSteps);
+      // Display congratulations message with gradient
+      const gradient = await import('gradient-string');
+      print.newline();
+      console.log(gradient.default.pastel.multiline('🎉 Congratulations! Your project is ready to go!'));
+      print.newline();
     } catch (error) {
-      messages.error(`Error initializing templates folder: ${(error as Error).message}`);
+      print.error(`\nError: ${(error as Error).message}`);
       process.exit(1);
     }
   });

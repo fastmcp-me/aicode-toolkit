@@ -119,7 +119,7 @@ export class NewProjectService {
   async createProjectDirectory(projectPath: string, projectName: string): Promise<void> {
     try {
       await fs.mkdir(projectPath, { recursive: false });
-      print.success(`${icons.check} Created project directory: ${projectPath}`);
+      print.success(`Created project directory: ${projectPath}`);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
         throw new Error(`Directory '${projectName}' already exists. Please choose a different name.`);
@@ -134,7 +134,7 @@ export class NewProjectService {
    * @param projectPath - Destination path for the cloned repository
    */
   async cloneExistingRepository(repoUrl: string, projectPath: string): Promise<void> {
-    print.info(`${icons.download} Cloning repository...`);
+    print.info('Cloning repository...');
 
     try {
       // Parse URL to check if it's a subdirectory
@@ -148,7 +148,7 @@ export class NewProjectService {
         await cloneRepository(parsed.repoUrl, projectPath);
       }
 
-      print.success(`${icons.check} Repository cloned successfully`);
+      print.success('Repository cloned successfully');
     } catch (error) {
       // Clean up on error
       await fs.remove(projectPath);
@@ -161,10 +161,10 @@ export class NewProjectService {
    * @param projectPath - Path where git repository should be initialized
    */
   async initializeGitRepository(projectPath: string): Promise<void> {
-    print.info(`${icons.rocket} Initializing Git repository...`);
+    print.info('Initializing Git repository...');
     try {
       await gitInit(projectPath);
-      print.success(`${icons.check} Git repository initialized`);
+      print.success('Git repository initialized');
     } catch (error) {
       messages.warning(`Failed to initialize Git: ${(error as Error).message}`);
     }

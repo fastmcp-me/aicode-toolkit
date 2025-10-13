@@ -39,7 +39,7 @@ export class TemplatesService {
     repoConfig: TemplateRepoConfig,
   ): Promise<void> {
     print.info(
-      `${icons.download} Fetching templates from ${repoConfig.owner}/${repoConfig.repo}...`,
+      `Fetching templates from ${repoConfig.owner}/${repoConfig.repo}...`,
     );
 
     try {
@@ -59,7 +59,7 @@ export class TemplatesService {
         return;
       }
 
-      print.info(`${icons.folder} Found ${templateDirs.length} template(s)`);
+      print.info(`Found ${templateDirs.length} template(s)`);
 
       let downloaded = 0;
       let skipped = 0;
@@ -70,21 +70,21 @@ export class TemplatesService {
 
         // Skip if already exists
         if (await fs.pathExists(targetFolder)) {
-          print.info(`${icons.skip} Skipping ${template.name} (already exists)`);
+          print.info(`Skipping ${template.name} (already exists)`);
           skipped++;
           continue;
         }
 
-        print.info(`${icons.download} Downloading ${template.name}...`);
+        print.info(`Downloading ${template.name}...`);
 
         const repoUrl = `https://github.com/${repoConfig.owner}/${repoConfig.repo}.git`;
         await cloneSubdirectory(repoUrl, repoConfig.branch, template.path, targetFolder);
 
-        print.success(`${icons.check} Downloaded ${template.name}`);
+        print.success(`Downloaded ${template.name}`);
         downloaded++;
       }
 
-      print.success(`\n${icons.check} All templates downloaded successfully!`);
+      print.success('\nAll templates downloaded successfully!');
     } catch (error) {
       throw new Error(`Failed to download templates: ${(error as Error).message}`);
     }
