@@ -116,7 +116,9 @@ Experiment with these layers to find the right balance for your project. There's
 
 Get started with AI Code Toolkit in 3 simple steps:
 
-#### Step 1: Initialize Templates
+#### Step 1: Initialize Templates (or Create New Project)
+
+**For Existing Projects:**
 
 Run the init command to download official templates:
 
@@ -125,6 +127,20 @@ npx @agiflowai/scaffold-mcp init
 ```
 
 This automatically downloads official templates (Next.js 15, TypeScript libraries, MCP packages) to your workspace.
+
+**For New Projects:**
+
+Run init without a git repository and it will guide you through creating a new project:
+
+```bash
+# Interactive mode (recommended)
+npx @agiflowai/scaffold-mcp init
+
+# Non-interactive mode
+npx @agiflowai/scaffold-mcp init --name my-project --project-type monolith
+```
+
+The command will prompt you for project details, initialize git, and download templates.
 
 #### Step 2: Configure MCP Servers
 
@@ -240,21 +256,38 @@ sourceTemplate: react-vite  # Your template identifier
 
 ### Creating Projects
 
-**Monorepo** (default behavior):
+**New Project with Interactive Setup** (recommended):
 ```bash
-scaffold-mcp boilerplate create scaffold-nextjs-app \
-  --vars '{"appName": "web-app", "description": "Web App"}'
+# Run init without a git repository - it will prompt for project details
+npx @agiflowai/scaffold-mcp init
 
-# Creates: apps/web-app/project.json + project files
+# Interactive prompts will ask for:
+# - Project name
+# - Project type (monolith or monorepo)
+# - Git repository setup
+# - Template download
 ```
 
-**Monolith** (use `--monolith` flag):
+**New Project with CLI Options** (non-interactive):
 ```bash
-scaffold-mcp boilerplate create scaffold-react-vite-app \
-  --vars '{"appName": "my-app", "description": "My App"}' \
-  --monolith
+# Create a monolith project
+npx @agiflowai/scaffold-mcp init \
+  --name my-app \
+  --project-type monolith
 
-# Creates: toolkit.yaml + project files at workspace root
+# Create a monorepo project
+npx @agiflowai/scaffold-mcp init \
+  --name my-workspace \
+  --project-type monorepo
+```
+
+**Existing Workspace** (just initialize templates):
+```bash
+# In an existing git repository
+npx @agiflowai/scaffold-mcp init
+
+# With custom templates path
+npx @agiflowai/scaffold-mcp init --path custom-templates
 ```
 
 ### Adding Features
@@ -276,7 +309,7 @@ scaffold-mcp scaffold add scaffold-react-component \
 **Key Points**:
 - Templates are **architecture-agnostic** (same templates work for both)
 - Tools **auto-detect** project type from configuration files
-- Use `--monolith` flag only when **creating new projects**
+- Use `--project-type monolith` option when creating new projects with `init` command
 - Configuration priority: `project.json` → `toolkit.yaml` → `package.json`
 
 ---
