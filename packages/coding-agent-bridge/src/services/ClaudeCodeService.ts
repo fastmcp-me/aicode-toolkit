@@ -34,6 +34,7 @@ import type {
   McpSettings,
   PromptConfig,
 } from '../types';
+import { appendUniqueToFile, appendUniqueWithMarkers, writeFileEnsureDir } from '../utils/file';
 
 /**
  * Internal message types for parsing stream-json output from Claude Code CLI
@@ -181,10 +182,84 @@ export class ClaudeCodeService implements CodingAgentService {
   }
 
   /**
-   * Update prompt configuration for Claude Code
+   * Update prompt configuration
+   *
+   * If customInstructionFile is provided, writes the prompt to that file and references it
+   * using @file syntax in CLAUDE.md and AGENTS.md.
+   *
+   * If marker is true, wraps the content with AICODE tracking markers
+   * (<!-- AICODE:START --> and <!-- AICODE:END -->).
+   *
+   * Otherwise, appends the prompt directly to CLAUDE.md and AGENTS.md.
    */
   async updatePrompt(config: PromptConfig): Promise<void> {
     this.promptConfig = { ...this.promptConfig, ...config };
+
+    if (!config.systemPrompt) {
+      return;
+    }
+
+    const claudeMdPath = path.join(this.workspaceRoot, 'CLAUDE.md');
+    const agentsMdPath = path.join(this.workspaceRoot, 'AGENTS.md');
+
+    if (config.customInstructionFile) {
+      // Write prompt to custom instruction file
+      const customFilePath = path.join(this.workspaceRoot, config.customInstructionFile);
+      await writeFileEnsureDir(customFilePath, config.systemPrompt);
+
+      // Reference the file in CLAUDE.md and AGENTS.md using @ syntax (without curly braces)
+      const reference = `@${config.customInstructionFile}`;
+
+      if (config.marker) {
+        // Use AICODE markers to track the reference
+        await appendUniqueWithMarkers(
+          claudeMdPath,
+          reference,
+          reference,
+          `# Claude Code Instructions\n\n<!-- AICODE:START -->\n${reference}\n<!-- AICODE:END -->\n`,
+        );
+
+        // Append reference to AGENTS.md if it exists
+        await appendUniqueWithMarkers(agentsMdPath, reference, reference);
+      } else {
+        // Append reference without markers
+        const referenceContent = `\n\n${reference}\n`;
+        await appendUniqueToFile(
+          claudeMdPath,
+          referenceContent,
+          reference,
+          `# Claude Code Instructions\n${referenceContent}`,
+        );
+
+        await appendUniqueToFile(agentsMdPath, referenceContent, reference);
+      }
+    } else {
+      // Append prompt directly to CLAUDE.md and AGENTS.md
+      if (config.marker) {
+        // Use AICODE markers to track the prompt content
+        await appendUniqueWithMarkers(
+          claudeMdPath,
+          config.systemPrompt,
+          config.systemPrompt,
+          `# Claude Code Instructions\n\n<!-- AICODE:START -->\n${config.systemPrompt}\n<!-- AICODE:END -->\n`,
+        );
+
+        // Append to AGENTS.md if it exists
+        await appendUniqueWithMarkers(agentsMdPath, config.systemPrompt, config.systemPrompt);
+      } else {
+        // Append prompt without markers
+        const promptContent = `\n\n${config.systemPrompt}\n`;
+
+        await appendUniqueToFile(
+          claudeMdPath,
+          promptContent,
+          config.systemPrompt,
+          `# Claude Code Instructions\n${promptContent}`,
+        );
+
+        await appendUniqueToFile(agentsMdPath, promptContent, config.systemPrompt);
+      }
+    }
   }
 
   /**

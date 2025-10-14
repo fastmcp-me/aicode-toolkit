@@ -15,7 +15,14 @@
 
 import os from 'node:os';
 import path from 'node:path';
-import { CLAUDE_CODE, CODEX, CURSOR, GEMINI_CLI, NONE } from '@agiflowai/coding-agent-bridge';
+import {
+  CLAUDE_CODE,
+  CODEX,
+  CURSOR,
+  GEMINI_CLI,
+  GITHUB_COPILOT,
+  NONE,
+} from '@agiflowai/coding-agent-bridge';
 import * as fs from 'fs-extra';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { type CodingAgent, CodingAgentService } from '../../src/services/CodingAgentService';
@@ -29,8 +36,9 @@ vi.mock('fs-extra', async () => {
 vi.mock('@agiflowai/coding-agent-bridge', () => ({
   CLAUDE_CODE: 'claude-code',
   CODEX: 'codex',
-  GEMINI_CLI: 'gemini-cli',
   CURSOR: 'cursor',
+  GEMINI_CLI: 'gemini-cli',
+  GITHUB_COPILOT: 'github-copilot',
   NONE: 'none',
   ClaudeCodeService: vi.fn().mockImplementation(() => ({
     isEnabled: vi.fn().mockResolvedValue(true),
@@ -40,7 +48,15 @@ vi.mock('@agiflowai/coding-agent-bridge', () => ({
     isEnabled: vi.fn().mockResolvedValue(false),
     updateMcpSettings: vi.fn().mockResolvedValue(undefined),
   })),
+  CursorService: vi.fn().mockImplementation(() => ({
+    isEnabled: vi.fn().mockResolvedValue(false),
+    updateMcpSettings: vi.fn().mockResolvedValue(undefined),
+  })),
   GeminiCliService: vi.fn().mockImplementation(() => ({
+    isEnabled: vi.fn().mockResolvedValue(false),
+    updateMcpSettings: vi.fn().mockResolvedValue(undefined),
+  })),
+  GitHubCopilotService: vi.fn().mockImplementation(() => ({
     isEnabled: vi.fn().mockResolvedValue(false),
     updateMcpSettings: vi.fn().mockResolvedValue(undefined),
   })),
@@ -59,8 +75,10 @@ describe('CodingAgentService', () => {
     it('should return list of available agents', () => {
       const agents = CodingAgentService.getAvailableAgents();
 
-      expect(agents).toHaveLength(4);
+      expect(agents).toHaveLength(6);
       expect(agents.map((a) => a.value)).toContain(CLAUDE_CODE);
+      expect(agents.map((a) => a.value)).toContain(CURSOR);
+      expect(agents.map((a) => a.value)).toContain(GITHUB_COPILOT);
       expect(agents.map((a) => a.value)).toContain(CODEX);
       expect(agents.map((a) => a.value)).toContain(GEMINI_CLI);
       expect(agents.map((a) => a.value)).toContain(NONE);

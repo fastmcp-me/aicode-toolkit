@@ -28,14 +28,15 @@
  * Supported coding agent identifiers
  * @example
  * ```ts
- * import { CLAUDE_CODE, CODEX, GEMINI_CLI, CURSOR, CLINE, NONE } from '@agiflowai/coding-agent-bridge/constants';
+ * import { CLAUDE_CODE, CODEX, GEMINI_CLI, CURSOR, GITHUB_COPILOT, CLINE, NONE } from '@agiflowai/coding-agent-bridge/constants';
  * console.log(CLAUDE_CODE); // 'claude-code'
  * ```
  */
 export const CLAUDE_CODE = 'claude-code';
 export const CODEX = 'codex';
-export const GEMINI_CLI = 'gemini-cli';
 export const CURSOR = 'cursor';
+export const GEMINI_CLI = 'gemini-cli';
+export const GITHUB_COPILOT = 'github-copilot';
 export const CLINE = 'cline';
 export const NONE = 'none';
 
@@ -60,15 +61,20 @@ export const SupportedCodingAgents = {
     displayName: 'Codex',
     description: 'OpenAI Codex - AI system for translating natural language to code',
   },
+  [CURSOR]: {
+    id: CURSOR,
+    displayName: 'Cursor',
+    description: 'Cursor - AI-first code editor with intelligent code completion',
+  },
   [GEMINI_CLI]: {
     id: GEMINI_CLI,
     displayName: 'Gemini CLI',
     description: 'Google Gemini CLI - Command-line interface for Gemini coding capabilities',
   },
-  [CURSOR]: {
-    id: CURSOR,
-    displayName: 'Cursor',
-    description: 'Cursor - AI-first code editor with intelligent code completion',
+  [GITHUB_COPILOT]: {
+    id: GITHUB_COPILOT,
+    displayName: 'GitHub Copilot',
+    description: 'GitHub Copilot - AI pair programmer with repository context understanding',
   },
   [CLINE]: {
     id: CLINE,
@@ -88,8 +94,9 @@ export const SupportedCodingAgents = {
 export type CodingAgentId =
   | typeof CLAUDE_CODE
   | typeof CODEX
-  | typeof GEMINI_CLI
   | typeof CURSOR
+  | typeof GEMINI_CLI
+  | typeof GITHUB_COPILOT
   | typeof CLINE
   | typeof NONE;
 

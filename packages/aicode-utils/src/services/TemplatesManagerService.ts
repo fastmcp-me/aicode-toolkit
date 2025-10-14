@@ -24,13 +24,7 @@
 
 import path from 'node:path';
 import * as fs from 'fs-extra';
-
-export interface ToolkitConfig {
-  version?: string;
-  templatesPath?: string;
-  projectType?: 'monolith' | 'monorepo';
-  sourceTemplate?: string;
-}
+import type { ToolkitConfig } from '../types';
 
 export class TemplatesManagerService {
   private static SCAFFOLD_CONFIG_FILE = 'scaffold.yaml';

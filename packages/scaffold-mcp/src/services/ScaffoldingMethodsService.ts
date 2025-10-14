@@ -72,20 +72,21 @@ export class ScaffoldingMethodsService {
 
     if (architectConfig.features && Array.isArray(architectConfig.features)) {
       architectConfig.features.forEach((feature: any) => {
-        if (feature.name) {
-          methods.push({
-            name: feature.name,
-            description: feature.description || '',
-            instruction: feature.instruction || '',
-            variables_schema: feature.variables_schema || {
-              type: 'object',
-              properties: {},
-              required: [],
-              additionalProperties: false,
-            },
-            generator: feature.generator,
-          });
-        }
+        // Use feature.name if available, otherwise fallback to sourceTemplate
+        const featureName = feature.name || `scaffold-${sourceTemplate}`;
+
+        methods.push({
+          name: featureName,
+          description: feature.description || '',
+          instruction: feature.instruction || '',
+          variables_schema: feature.variables_schema || {
+            type: 'object',
+            properties: {},
+            required: [],
+            additionalProperties: false,
+          },
+          generator: feature.generator,
+        });
       });
     }
 

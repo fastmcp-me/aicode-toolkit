@@ -92,7 +92,8 @@ export interface McpSettings {
  * const config: PromptConfig = {
  *   systemPrompt: 'You are a helpful coding assistant',
  *   userPrompt: 'Generate a TypeScript function',
- *   context: 'Working on a Node.js project'
+ *   context: 'Working on a Node.js project',
+ *   marker: true
  * };
  * ```
  */
@@ -103,6 +104,10 @@ export interface PromptConfig {
   userPrompt?: string;
   /** Additional context for the prompt */
   context?: string;
+  /** Custom instruction file path (relative to workspace root) to write prompt to and reference with @{file} */
+  customInstructionFile?: string;
+  /** Enable AICODE tracking markers (<!-- AICODE:START --> and <!-- AICODE:END -->) */
+  marker?: boolean;
   /** Additional prompt properties for future extensibility */
   [key: string]: unknown;
 }

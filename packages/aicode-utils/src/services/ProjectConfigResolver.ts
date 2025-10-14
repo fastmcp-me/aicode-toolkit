@@ -24,9 +24,9 @@
 import path from 'node:path';
 import * as fs from 'fs-extra';
 import { ConfigSource, ProjectType } from '../constants/projectType';
-import type { NxProjectJson, ProjectConfigResult } from '../types/projectConfig';
+import type { NxProjectJson, ProjectConfigResult, ToolkitConfig } from '../types';
 import { log } from '../utils/logger';
-import { TemplatesManagerService, type ToolkitConfig } from './TemplatesManagerService';
+import { TemplatesManagerService } from './TemplatesManagerService';
 
 /**
  * ProjectConfigResolver
