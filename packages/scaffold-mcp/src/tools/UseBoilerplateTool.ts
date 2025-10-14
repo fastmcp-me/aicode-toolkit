@@ -1,5 +1,7 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import useBoilerplateDescription from '../instructions/use-boilerplate.md?raw';
 import { BoilerplateService } from '../services/BoilerplateService';
+import { TemplateService } from '../services/TemplateService';
 import type { UseBoilerplateRequest } from '../types/boilerplateTypes';
 import type { ToolDefinition } from './types';
 
@@ -7,56 +9,51 @@ export class UseBoilerplateTool {
   static readonly TOOL_NAME = 'use-boilerplate';
 
   private boilerplateService: BoilerplateService;
+  private templateService: TemplateService;
+  private isMonolith: boolean;
 
-  constructor(templatesPath: string) {
+  constructor(templatesPath: string, isMonolith: boolean = false) {
     this.boilerplateService = new BoilerplateService(templatesPath);
+    this.templateService = new TemplateService();
+    this.isMonolith = isMonolith;
   }
 
   /**
    * Get the tool definition for MCP
    */
   getDefinition(): ToolDefinition {
+    const description = this.templateService.renderString(useBoilerplateDescription, {
+      isMonolith: this.isMonolith,
+    });
+
+    // Build properties based on mode
+    const properties: Record<string, any> = {
+      variables: {
+        type: 'object',
+        description: "Variables object matching the boilerplate's variables_schema exactly",
+      },
+    };
+
+    // Only add boilerplateName and targetFolderOverride in monorepo mode
+    if (!this.isMonolith) {
+      properties.boilerplateName = {
+        type: 'string',
+        description: 'Exact name of the boilerplate to use (from list-boilerplates response)',
+      };
+      properties.targetFolderOverride = {
+        type: 'string',
+        description:
+          'Optional override for target folder. If not provided, uses boilerplate targetFolder (monorepo) or workspace root (monolith)',
+      };
+    }
+
     return {
       name: UseBoilerplateTool.TOOL_NAME,
-      description: `Creates a new project from a boilerplate template with the specified variables.
-
-This tool will:
-- Generate all necessary files from the template
-- Replace template variables with provided values
-- Create the project in the appropriate directory (monorepo or monolith)
-- Set up initial configuration files (package.json, tsconfig.json, etc.)
-- Create toolkit.yaml (monolith) or project.json (monorepo) with sourceTemplate
-
-IMPORTANT:
-- Always call \`list-boilerplates\` first to get the exact variable schema
-- Follow the schema exactly - required fields must be provided
-- Use kebab-case for project names (e.g., "my-new-app", not "MyNewApp")
-- The tool will validate all variables against the schema before proceeding
-- For monolith projects, use monolith: true to create at workspace root
-- For monorepo projects, files are created in targetFolder/projectName`,
+      description: description.trim(),
       inputSchema: {
         type: 'object',
-        properties: {
-          boilerplateName: {
-            type: 'string',
-            description: 'Exact name of the boilerplate to use (from list-boilerplates response)',
-          },
-          variables: {
-            type: 'object',
-            description: "Variables object matching the boilerplate's variables_schema exactly",
-          },
-          monolith: {
-            type: 'boolean',
-            description:
-              'If true, creates project at workspace root with toolkit.yaml. If false or omitted, creates in targetFolder/projectName with project.json (monorepo mode)',
-          },
-          targetFolderOverride: {
-            type: 'string',
-            description:
-              'Optional override for target folder. If not provided, uses boilerplate targetFolder (monorepo) or workspace root (monolith)',
-          },
-        },
-        required: ['boilerplateName', 'variables'],
+        properties,
+        required: this.isMonolith ? ['variables'] : ['boilerplateName', 'variables'],
         additionalProperties: false,
       },
     };
@@ -67,28 +64,20 @@ IMPORTANT:
    */
   async execute(args: Record<string, any>): Promise<CallToolResult> {
     try {
-      const { boilerplateName, variables, monolith, targetFolderOverride } = args as {
-        boilerplateName: string;
+      const { boilerplateName, variables, targetFolderOverride } = args as {
+        boilerplateName?: string;
         variables: Record<string, any>;
-        monolith?: boolean;
         targetFolderOverride?: string;
       };
 
-      // Validate required parameters
-      if (!boilerplateName) {
-        throw new Error('Missing required parameter: boilerplateName');
-      }
-
-      if (!variables) {
-        throw new Error('Missing required parameter: variables');
-      }
-
       // Create the request object
+      // In monolith mode, boilerplateName is read from toolkit.yaml by BoilerplateService
+      // monolith parameter is auto-detected by BoilerplateService
       const request: UseBoilerplateRequest = {
         boilerplateName,
         variables,
-        monolith,
         targetFolderOverride,
+        monolith: this.isMonolith,
       };
 
       // Execute the boilerplate service

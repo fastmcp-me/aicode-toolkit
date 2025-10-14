@@ -1,3 +1,4 @@
+import { ProjectConfigResolver } from '@agiflowai/aicode-utils';
 import { Command } from 'commander';
 import { createServer } from '../server/index';
 import { HttpTransportHandler } from '../transports/http';
@@ -44,7 +45,21 @@ export const mcpServeCommand = new Command('mcp-serve')
   .action(async (options) => {
     try {
       const transportType = options.type.toLowerCase();
-      const serverOptions = { adminEnabled: options.adminEnable };
+
+      // Detect if current workspace is monolith
+      let isMonolith = false;
+      try {
+        const projectConfig = await ProjectConfigResolver.resolveProjectConfig(process.cwd());
+        isMonolith = projectConfig.type === 'monolith';
+      } catch {
+        // No project configuration found, default to monorepo mode
+        isMonolith = false;
+      }
+
+      const serverOptions = {
+        adminEnabled: options.adminEnable,
+        isMonolith,
+      };
 
       if (transportType === 'stdio') {
         const server = createServer(serverOptions);

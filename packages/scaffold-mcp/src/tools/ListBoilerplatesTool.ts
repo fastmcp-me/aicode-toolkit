@@ -1,5 +1,7 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import listBoilerplatesDescription from '../instructions/list-boilerplates.md?raw';
 import { BoilerplateService } from '../services/BoilerplateService';
+import { TemplateService } from '../services/TemplateService';
 import type { ListBoilerplateResponse } from '../types/boilerplateTypes';
 import type { ToolDefinition } from './types';
 
@@ -7,26 +9,26 @@ export class ListBoilerplatesTool {
   static readonly TOOL_NAME = 'list-boilerplates';
 
   private boilerplateService: BoilerplateService;
+  private templateService: TemplateService;
+  private isMonolith: boolean;
 
-  constructor(templatesPath: string) {
+  constructor(templatesPath: string, isMonolith: boolean = false) {
     this.boilerplateService = new BoilerplateService(templatesPath);
+    this.templateService = new TemplateService();
+    this.isMonolith = isMonolith;
   }
 
   /**
    * Get the tool definition for MCP
    */
   getDefinition(): ToolDefinition {
+    const description = this.templateService.renderString(listBoilerplatesDescription, {
+      isMonolith: this.isMonolith,
+    });
+
     return {
       name: ListBoilerplatesTool.TOOL_NAME,
-      description: `Lists all available project boilerplates for creating new applications, APIs, or packages in the monorepo.
-
-Each boilerplate includes:
-- Complete project template with starter files
-- Variable schema for customization
-- Target directory information
-- Required and optional configuration options
-
-Use this FIRST when creating new projects to understand available templates and their requirements.`,
+      description: description.trim(),
       inputSchema: {
         type: 'object',
         properties: {},

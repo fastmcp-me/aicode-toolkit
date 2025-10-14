@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import packageJson from '../../package.json';
 import { createServer } from '../../src/server';
 
 vi.mock('@agiflowai/aicode-utils', async () => {
@@ -19,7 +20,7 @@ describe('Server', () => {
 
       expect(server).toBeDefined();
       expect(server.name).toBe('scaffold-mcp');
-      expect(server.version).toBe('0.4.0');
+      expect(server.version).toBe(packageJson.version);
     });
 
     it('should create server with admin enabled', () => {

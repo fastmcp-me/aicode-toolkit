@@ -16,7 +16,7 @@ import path from 'node:path';
 import { execa } from 'execa';
 import { Liquid } from 'liquidjs';
 import type { EnabledMcps, ISpecBridge } from './types';
-import openspecTemplate from '../prompts/specs/openspec.md?raw';
+import openspecTemplate from '../instructions/specs/openspec.md?raw';
 
 /**
  * OpenSpec configuration

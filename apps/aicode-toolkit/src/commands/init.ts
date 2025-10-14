@@ -149,10 +149,23 @@ const initActors = {
 
       print.divider();
       const result = await input({
-        message: 'Enter your project name:',
-        validate: (value: string) => newProjectService.validateProjectName(value),
+        message: 'Enter your project name (press Enter to use current directory):',
+        validate: (value: string) => {
+          // Allow empty value to skip
+          if (!value || value.trim() === '') {
+            return true;
+          }
+          // Otherwise validate as project name
+          return newProjectService.validateProjectName(value);
+        },
       });
       print.info(''); // Add spacing after prompt
+
+      // If empty, return special marker to use current directory
+      if (!result || result.trim() === '') {
+        return '.';
+      }
+
       return result;
     },
   ),
@@ -162,6 +175,13 @@ const initActors = {
    */
   createProjectDirectory: fromPromise(
     async ({ input: actorInput }: { input: { projectName: string } }) => {
+      // Special case: '.' means use current directory
+      if (actorInput.projectName === '.') {
+        const projectPath = process.cwd();
+        print.success(`Using current directory: ${projectPath}`);
+        return { projectPath };
+      }
+
       const spinner = ora('Creating project directory...').start();
 
       try {
@@ -195,18 +215,30 @@ const initActors = {
     if (hasExistingRepo) {
       print.divider();
       const repoUrl = await input({
-        message: 'Enter Git repository URL:',
-        validate: (value: string) => newProjectService.validateRepositoryUrl(value),
+        message: 'Enter Git repository URL (press Enter to skip):',
+        validate: (value: string) => {
+          // Allow empty value to skip
+          if (!value || value.trim() === '') {
+            return true;
+          }
+          // Otherwise validate as repository URL
+          return newProjectService.validateRepositoryUrl(value);
+        },
       });
       print.info(''); // Add spacing after prompt
 
-      const spinner = ora('Cloning repository...').start();
-      try {
-        await newProjectService.cloneExistingRepository(repoUrl.trim(), actorInput.projectPath);
-        spinner.succeed('Repository cloned successfully');
-      } catch (error) {
-        spinner.fail('Failed to clone repository');
-        throw error;
+      // Only clone if URL was provided
+      if (repoUrl && repoUrl.trim() !== '') {
+        const spinner = ora('Cloning repository...').start();
+        try {
+          await newProjectService.cloneExistingRepository(repoUrl.trim(), actorInput.projectPath);
+          spinner.succeed('Repository cloned successfully');
+        } catch (error) {
+          spinner.fail('Failed to clone repository');
+          throw error;
+        }
+      } else {
+        print.info('Skipped cloning repository');
       }
     } else {
       print.divider();
@@ -258,6 +290,91 @@ const initActors = {
 
     return selected as MCPServer[];
   }),
+
+  /**
+   * Check if templates folder exists and prompt for custom directory
+   */
+  checkTemplatesFolder: fromPromise(
+    async ({ input: actorInput }: { input: { workspaceRoot: string } }) => {
+      try {
+        const fs = await import('node:fs/promises');
+        const defaultTemplatesPath = path.join(actorInput.workspaceRoot, 'templates');
+
+        // Check if templates folder exists
+        let templatesExists = false;
+        try {
+          await fs.access(defaultTemplatesPath);
+          templatesExists = true;
+        } catch {
+          // Folder doesn't exist
+          templatesExists = false;
+        }
+
+        let finalTemplatesPath = defaultTemplatesPath;
+        let skipDownload = false;
+
+        if (templatesExists) {
+          print.divider();
+          print.info(`Templates folder already exists at: ${defaultTemplatesPath}`);
+
+          const useDifferentDir = await confirm({
+            message: 'Would you like to use a different directory for templates?',
+            default: false,
+          });
+          print.info(''); // Add spacing after prompt
+
+          if (useDifferentDir) {
+            print.divider();
+            const customDir = await input({
+              message: 'Enter custom templates directory path (relative to workspace root):',
+              default: 'templates',
+              validate: (value: string) => {
+                if (!value || value.trim() === '') {
+                  return 'Please enter a valid directory path';
+                }
+                return true;
+              },
+            });
+            print.info(''); // Add spacing after prompt
+
+            finalTemplatesPath = path.join(actorInput.workspaceRoot, customDir.trim());
+
+            // Create the directory if it doesn't exist
+            try {
+              await fs.mkdir(finalTemplatesPath, { recursive: true });
+              print.success(`Created templates directory at: ${finalTemplatesPath}`);
+            } catch (error) {
+              throw new Error(
+                `Failed to create templates directory at ${finalTemplatesPath}: ${(error as Error).message}`,
+              );
+            }
+          } else {
+            // User wants to keep existing templates folder - skip download
+            skipDownload = true;
+            print.info('Using existing templates folder');
+          }
+        }
+
+        // If skipping download, read existing templates from the folder
+        let existingTemplates: string[] | undefined = undefined;
+        if (skipDownload) {
+          try {
+            const templateSelectionService = new TemplateSelectionService(finalTemplatesPath);
+            const templates = await templateSelectionService.listTemplates();
+            existingTemplates = templates.map((t) => t.name);
+          } catch (error) {
+            print.warn('Could not read existing templates, will proceed anyway');
+          }
+        }
+
+        return { templatesPath: finalTemplatesPath, skipDownload, existingTemplates };
+      } catch (error) {
+        throw new Error(
+          `Failed to check templates folder: ${(error as Error).message}`,
+        );
+      }
+    },
+  ),
 
   /**
    * Download templates to tmp folder
@@ -359,6 +476,7 @@ const initActors = {
       input: {
         tmpTemplatesPath: string;
         workspaceRoot: string;
+        templatesPath: string;
         selectedTemplates: string[];
         projectType: ProjectType;
         selectedMcpServers?: MCPServer[];
@@ -368,17 +486,16 @@ const initActors = {
 
       try {
         const templateSelectionService = new TemplateSelectionService(actorInput.tmpTemplatesPath);
-        const templatesPath = path.join(actorInput.workspaceRoot, 'templates');
 
         await templateSelectionService.copyTemplates(
           actorInput.selectedTemplates,
-          templatesPath,
+          actorInput.templatesPath,
           actorInput.projectType,
           actorInput.selectedMcpServers,
         );
 
-        spinner.succeed(`Templates copied to ${templatesPath}`);
-        return templatesPath;
+        spinner.succeed(`Templates copied to ${actorInput.templatesPath}`);
+        return actorInput.templatesPath;
       } catch (error) {
         spinner.fail('Failed to copy templates');
         throw error;
@@ -393,13 +510,24 @@ const initActors = {
     async ({
       input: actorInput,
     }: {
-      input: { workspaceRoot: string; projectType: ProjectType; selectedTemplates: string[] };
+      input: {
+        workspaceRoot: string;
+        projectType: ProjectType;
+        templatesPath: string;
+        selectedTemplates: string[];
+      };
     }) => {
       // Only create toolkit.yaml for monolith
       if (actorInput.projectType === ProjectType.MONOLITH) {
+        // Calculate relative path from workspace root
+        const relativeTemplatesPath = path.relative(
+          actorInput.workspaceRoot,
+          actorInput.templatesPath,
+        );
+
         const toolkitConfig: ToolkitConfig = {
           version: '1.0',
-          templatesPath: 'templates',
+          templatesPath: relativeTemplatesPath || 'templates',
           projectType: 'monolith',
           sourceTemplate: actorInput.selectedTemplates[0], // Monolith has only one template
         };

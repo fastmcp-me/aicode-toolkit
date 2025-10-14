@@ -26,6 +26,7 @@ export interface InitMachineContext {
   templatesPath?: string;
   tmpTemplatesPath?: string;
   selectedTemplates?: string[];
+  skipDownload?: boolean;
 
   // MCP server selection
   selectedMcpServers?: string[];
@@ -316,11 +317,47 @@ export const initMachine = createMachine(
         invoke: {
           src: 'promptMcpSelection',
           onDone: {
-            target: 'downloadingTemplates',
+            target: 'checkingTemplatesFolder',
             actions: assign({
               selectedMcpServers: ({ event }) => event.output,
             }),
           },
+          onError: {
+            target: 'failed',
+            actions: assign({
+              error: ({ event }) => event.error as Error,
+            }),
+          },
+        },
+      },
+
+      /**
+       * Check if templates folder exists and prompt for custom directory
+       */
+      checkingTemplatesFolder: {
+        invoke: {
+          src: 'checkTemplatesFolder',
+          input: ({ context }) => ({
+            workspaceRoot: context.workspaceRoot!,
+          }),
+          onDone: [
+            {
+              target: 'creatingConfig',
+              guard: ({ event }) => event.output.skipDownload === true,
+              actions: assign({
+                templatesPath: ({ event }) => event.output.templatesPath,
+                skipDownload: ({ event }) => event.output.skipDownload,
+                selectedTemplates: ({ event }) => event.output.existingTemplates,
+              }),
+            },
+            {
+              target: 'downloadingTemplates',
+              actions: assign({
+                templatesPath: ({ event }) => event.output.templatesPath,
+                skipDownload: ({ event }) => event.output.skipDownload,
+              }),
+            },
+          ],
           onError: {
             target: 'failed',
             actions: assign({
@@ -406,15 +443,13 @@ export const initMachine = createMachine(
           input: ({ context }) => ({
             tmpTemplatesPath: context.tmpTemplatesPath!,
             workspaceRoot: context.workspaceRoot!,
+            templatesPath: context.templatesPath!,
             selectedTemplates: context.selectedTemplates!,
             projectType: context.projectType!,
             selectedMcpServers: context.selectedMcpServers,
           }),
           onDone: {
             target: 'creatingConfig',
-            actions: assign({
-              templatesPath: ({ event }) => event.output,
-            }),
           },
           onError: {
             target: 'failed',
@@ -434,6 +469,7 @@ export const initMachine = createMachine(
           input: ({ context }) => ({
             workspaceRoot: context.workspaceRoot!,
             projectType: context.projectType!,
+            templatesPath: context.templatesPath!,
             selectedTemplates: context.selectedTemplates!,
           }),
           onDone: {

@@ -1,4 +1,5 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { ProjectConfigResolver } from '@agiflowai/aicode-utils';
 import { ScaffoldGeneratorService } from '../services/ScaffoldGeneratorService';
 import type { ToolDefinition } from './types';
 
@@ -9,33 +10,31 @@ export class GenerateFeatureScaffoldTool {
   static readonly TOOL_NAME = 'generate-feature-scaffold';
 
   private scaffoldGeneratorService: ScaffoldGeneratorService;
+  private isMonolith: boolean;
 
-  constructor(templatesPath: string) {
+  constructor(templatesPath: string, isMonolith: boolean = false) {
     this.scaffoldGeneratorService = new ScaffoldGeneratorService(templatesPath);
+    this.isMonolith = isMonolith;
   }
 
   /**
    * Get the tool definition for MCP
    */
   getDefinition(): ToolDefinition {
-    return {
-      name: GenerateFeatureScaffoldTool.TOOL_NAME,
-      description: `Add a new feature scaffold configuration to a template's scaffold.yaml file.
+    // Build properties object
+    const properties: Record<string, any> = {};
 
-This tool:
-- Creates or updates scaffold.yaml in the specified template directory
-- Adds a feature entry with proper schema following the nextjs-15 pattern
-- Validates the feature name doesn't already exist
-- Creates the template directory if it doesn't exist
+    // In monolith mode, templateName is optional (read from toolkit.yaml)
+    // In monorepo mode, templateName is required
+    if (!this.isMonolith) {
+      properties.templateName = {
+        type: 'string',
+        description: 'Name of the template folder (kebab-case, e.g., "nextjs-15")',
+      };
+    }
 
-Use this to add custom feature scaffolds (pages, components, services, etc.) for frameworks not yet supported or for your specific project needs.`,
-      inputSchema: {
-        type: 'object',
-        properties: {
-          templateName: {
-            type: 'string',
-            description: 'Name of the template folder (kebab-case, e.g., "nextjs-15")',
-          },
+    // Add common properties
+    Object.assign(properties, {
           featureName: {
             type: 'string',
             description: 'Name of the feature (kebab-case, e.g., "scaffold-nextjs-page")',
@@ -141,8 +140,29 @@ Best practices:
               type: 'string',
             },
           },
-        },
-        required: ['templateName', 'featureName', 'description', 'variables'],
+    });
+
+    // Build required array based on mode
+    const required = ['featureName', 'description', 'variables'];
+    if (!this.isMonolith) {
+      required.unshift('templateName');
+    }
+
+    return {
+      name: GenerateFeatureScaffoldTool.TOOL_NAME,
+      description: `Add a new feature scaffold configuration to a template's scaffold.yaml file.
+
+This tool:
+- Creates or updates scaffold.yaml in the specified template directory
+- Adds a feature entry with proper schema following the nextjs-15 pattern
+- Validates the feature name doesn't already exist
+- Creates the template directory if it doesn't exist
+
+Use this to add custom feature scaffolds (pages, components, services, etc.) for frameworks not yet supported or for your specific project needs.`,
+      inputSchema: {
+        type: 'object',
+        properties,
+        required,
         additionalProperties: false,
       },
     };
@@ -152,7 +172,7 @@ Best practices:
    * Execute the tool
    */
   async execute(args: {
-    templateName: string;
+    templateName?: string;
     featureName: string;
     description: string;
     instruction?: string;
@@ -167,7 +187,43 @@ Best practices:
     patterns?: string[];
   }): Promise<CallToolResult> {
     try {
-      const result = await this.scaffoldGeneratorService.generateFeatureScaffold(args);
+      let { templateName } = args;
+
+      // In monolith mode, read templateName from toolkit.yaml if not provided
+      if (this.isMonolith && !templateName) {
+        try {
+          const config = await ProjectConfigResolver.resolveProjectConfig(process.cwd());
+          templateName = config.sourceTemplate;
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Failed to read template name from configuration: ${error instanceof Error ? error.message : String(error)}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      }
+
+      // Validate required parameter
+      if (!templateName) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Missing required parameter: templateName',
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const result = await this.scaffoldGeneratorService.generateFeatureScaffold({
+        ...args,
+        templateName,
+      });
 
       if (!result.success) {
         return {

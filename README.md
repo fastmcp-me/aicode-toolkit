@@ -27,12 +27,6 @@ A collection of [Model Context Protocol (MCP)](https://modelcontextprotocol.io) 
   - [Adding Features](#adding-features)
 - [Development Workflow](#development-workflow)
 - [Packages](#packages)
-- [Development](#development)
-- [Documentation](#documentation)
-- [Tool-Specific Support](#tool-specific-support)
-  - [Claude Code](#claude-code)
-  - [Other Tools](#other-tools)
-- [Version Support](#version-support)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -472,145 +466,19 @@ MCP server for architecture design, code quality enforcement, and design pattern
 
 ---
 
-## Development
-
-This is an [Nx](https://nx.dev) monorepo using [pnpm](https://pnpm.io) for package management.
-
-### Common Commands
-
-```bash
-# Install dependencies
-pnpm install
-
-# Build all packages
-pnpm build
-
-# Build a specific package
-pnpm exec nx build scaffold-mcp
-
-# Run tests
-pnpm test
-pnpm exec nx test scaffold-mcp
-
-# Lint and format
-pnpm lint              # Check for issues
-pnpm lint:fix          # Auto-fix issues
-pnpm format            # Format code
-pnpm format:check      # Check formatting
-
-# Type checking
-pnpm typecheck
-pnpm exec nx typecheck scaffold-mcp
-
-# Visualize project graph
-pnpm exec nx graph
-```
-
-### Code Quality
-
-We use [Biome](https://biomejs.dev/) for lightning-fast linting and formatting:
-- ⚡ **10-100x faster** than ESLint (written in Rust)
-- 🎯 **All-in-one**: Replaces ESLint + Prettier
-- 🔧 **Zero config**: Sensible defaults out of the box
-
-Configuration: [`biome.json`](./biome.json)
-
-### Publishing
-
-See [PUBLISHING.md](./PUBLISHING.md) for the complete release workflow:
-
-```bash
-# Preview release (dry run)
-pnpm release:dry-run
-
-# Publish to npm
-pnpm release
-```
-
----
-
-## Documentation
-
-### Scaffold MCP
-- **[Scaffold MCP Guide](./packages/scaffold-mcp/README.md)** - Complete guide to the scaffolding MCP server
-- **[How to Use Prompts](./packages/scaffold-mcp/docs/how-to.md)** - Step-by-step guide for using slash command prompts
-
-### Architect MCP
-- **[Architect MCP Guide](./packages/architect-mcp/README.md)** - Complete guide to the architecture and rules MCP server
-- **[Design Pattern Overview](./packages/architect-mcp/docs/design-pattern-overview.md)** - High-level explanation of the design pattern system
-- **[Rules Overview](./packages/architect-mcp/docs/rules-overview.md)** - Detailed guide to the coding rules system
-
-### General
-- **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute to this project
-- **[Publishing Guide](./PUBLISHING.md)** - Release and versioning workflow
-
----
-
-## Tool-Specific Support
-
-### Claude Code
-
-The AICode Toolkit provides first-class support for Claude Code through a dedicated plugin marketplace. This integration offers:
-
-**🎁 Plugin Marketplace:**
-- **4 focused plugins** organized by project maturity (Bootstrap, Develop, Review, Admin)
-- **Automatic configuration** - No manual MCP server setup required
-- **Specialized agents** - Pre-built agents for architecture review, testing, and migrations
-- **Slash commands** - Quick workflow commands like `/edit-with-pattern`
-- **Team distribution** - Share plugin configurations via `.claude/settings.json`
-
-**Quick Install:**
-```bash
-/plugin marketplace add https://github.com/AgiFlow/aicode-toolkit
-/plugin install aicode-develop@aicode-toolkit
-```
-
-**Features:**
-- ✅ AI-powered pattern filtering (analyzes file content, not just paths)
-- ✅ Intelligent code review (understands code intent)
-- ✅ Architecture review agent with trade-off analysis
-- ✅ Test coverage agent for comprehensive testing
-- ✅ Migration assistant for framework upgrades
-
-📖 **[Complete Claude Code Marketplace Guide →](./docs/claude-code/MARKETPLACE.md)**
-
-### Other Tools
-
-While AICode Toolkit works with any MCP-compatible tool (Claude Code, Cursor, etc.), Claude Code integration provides the most seamless experience with:
-- Pre-configured plugin marketplace
-- Specialized agents for complex workflows
-- Built-in slash commands
-- Team collaboration features
-
-For other tools, see the [Quick Start](#quick-start) guide for manual MCP server configuration.
-
----
-
-## Version Support
-
-| Component | Requirement |
-|-----------|-------------|
-| **Node.js** | `>= 18` (LTS recommended) |
-| **Git** | `>= 2.13.2` |
-| **pnpm** | `>= 9` (or use npm/yarn) |
-
-Security patches are applied to non-EOL versions. Features are added to the latest version only.
-
----
-
 ## Contributing
 
 We welcome contributions! Whether it's bug reports, feature requests, or pull requests—all contributions are appreciated.
 
 **How to contribute:**
 
-1. 🍴 Fork the repository
-2. 🌿 Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. 💻 Make your changes
-4. ✅ Run tests and linting (`pnpm test && pnpm lint`)
-5. 📝 Commit your changes (follow [conventional commits](https://www.conventionalcommits.org))
-6. 🚀 Push to your branch (`git push origin feature/amazing-feature`)
-7. 🎉 Open a Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests and linting (`pnpm test && pnpm lint`)
+5. Commit your changes (follow [conventional commits](https://www.conventionalcommits.org))
+6. Push to your branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
@@ -624,7 +492,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 **Built with ❤️ by the AgiflowIO team**
 
-- 🐛 [Report Issues](https://github.com/AgiFlow/aicode-toolkit/issues)
-- 💬 [Discussions](https://github.com/AgiFlow/aicode-toolkit/discussions)
-- 💬 [Discord Community](https://discord.gg/NsB6q9Vas9)
-- 🌐 [Website](https://agiflow.io)
+- [Report Issues](https://github.com/AgiFlow/aicode-toolkit/issues)
+- [Discussions](https://github.com/AgiFlow/aicode-toolkit/discussions)
+- [Discord Community](https://discord.gg/NsB6q9Vas9)
+- [Website](https://agiflow.io)

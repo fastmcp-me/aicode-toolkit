@@ -1,4 +1,5 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { ProjectConfigResolver } from '@agiflowai/aicode-utils';
 import { BoilerplateGeneratorService } from '../services/BoilerplateGeneratorService';
 import type { ToolDefinition } from './types';
 
@@ -9,33 +10,31 @@ export class GenerateBoilerplateTool {
   static readonly TOOL_NAME = 'generate-boilerplate';
 
   private boilerplateGeneratorService: BoilerplateGeneratorService;
+  private isMonolith: boolean;
 
-  constructor(templatesPath: string) {
+  constructor(templatesPath: string, isMonolith: boolean = false) {
     this.boilerplateGeneratorService = new BoilerplateGeneratorService(templatesPath);
+    this.isMonolith = isMonolith;
   }
 
   /**
    * Get the tool definition for MCP
    */
   getDefinition(): ToolDefinition {
-    return {
-      name: GenerateBoilerplateTool.TOOL_NAME,
-      description: `Add a new boilerplate configuration to a template's scaffold.yaml file.
+    // Build properties object
+    const properties: Record<string, any> = {};
 
-This tool:
-- Creates or updates scaffold.yaml in the specified template directory
-- Adds a boilerplate entry with proper schema following the nextjs-15 pattern
-- Validates the boilerplate name doesn't already exist
-- Creates the template directory if it doesn't exist
+    // In monolith mode, templateName is optional (read from toolkit.yaml)
+    // In monorepo mode, templateName is required
+    if (!this.isMonolith) {
+      properties.templateName = {
+        type: 'string',
+        description: 'Name of the template folder (kebab-case, e.g., "my-framework")',
+      };
+    }
 
-Use this to add custom boilerplate configurations for frameworks not yet supported or for your specific project needs.`,
-      inputSchema: {
-        type: 'object',
-        properties: {
-          templateName: {
-            type: 'string',
-            description: 'Name of the template folder (kebab-case, e.g., "my-framework")',
-          },
+    // Add common properties
+    Object.assign(properties, {
           boilerplateName: {
             type: 'string',
             description: 'Name of the boilerplate (kebab-case, e.g., "scaffold-my-app")',
@@ -155,8 +154,30 @@ See templates/nextjs-15/scaffold.yaml for a good example of explicit file listin
               type: 'string',
             },
           },
-        },
-        required: ['templateName', 'boilerplateName', 'description', 'targetFolder', 'variables'],
+    });
+
+    // Build required array based on mode
+    const required = ['boilerplateName', 'description', 'variables'];
+    if (!this.isMonolith) {
+      required.unshift('templateName');
+      required.push('targetFolder');
+    }
+
+    return {
+      name: GenerateBoilerplateTool.TOOL_NAME,
+      description: `Add a new boilerplate configuration to a template's scaffold.yaml file.
+
+This tool:
+- Creates or updates scaffold.yaml in the specified template directory
+- Adds a boilerplate entry with proper schema following the nextjs-15 pattern
+- Validates the boilerplate name doesn't already exist
+- Creates the template directory if it doesn't exist
+
+Use this to add custom boilerplate configurations for frameworks not yet supported or for your specific project needs.`,
+      inputSchema: {
+        type: 'object',
+        properties,
+        required,
         additionalProperties: false,
       },
     };
@@ -166,11 +187,11 @@ See templates/nextjs-15/scaffold.yaml for a good example of explicit file listin
    * Execute the tool
    */
   async execute(args: {
-    templateName: string;
+    templateName?: string;
     boilerplateName: string;
     description: string;
     instruction?: string;
-    targetFolder: string;
+    targetFolder?: string;
     variables: Array<{
       name: string;
       description: string;
@@ -181,7 +202,61 @@ See templates/nextjs-15/scaffold.yaml for a good example of explicit file listin
     includes?: string[];
   }): Promise<CallToolResult> {
     try {
-      const result = await this.boilerplateGeneratorService.generateBoilerplate(args);
+      let { templateName, targetFolder } = args;
+
+      // In monolith mode, read templateName from toolkit.yaml if not provided
+      if (this.isMonolith && !templateName) {
+        try {
+          const config = await ProjectConfigResolver.resolveProjectConfig(process.cwd());
+          templateName = config.sourceTemplate;
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Failed to read template name from configuration: ${error instanceof Error ? error.message : String(error)}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      }
+
+      // In monolith mode, default targetFolder to "." if not provided
+      if (this.isMonolith && !targetFolder) {
+        targetFolder = '.';
+      }
+
+      // Validate required parameters
+      if (!templateName) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Missing required parameter: templateName',
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      if (!targetFolder) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Missing required parameter: targetFolder',
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const result = await this.boilerplateGeneratorService.generateBoilerplate({
+        ...args,
+        templateName,
+        targetFolder,
+      });
 
       if (!result.success) {
         return {

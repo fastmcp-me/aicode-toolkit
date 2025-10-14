@@ -1,6 +1,9 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { ProjectConfigResolver } from '@agiflowai/aicode-utils';
+import listScaffoldingMethodsDescription from '../instructions/list-scaffolding-methods.md?raw';
 import { FileSystemService } from '../services/FileSystemService';
 import { ScaffoldingMethodsService } from '../services/ScaffoldingMethodsService';
+import { TemplateService } from '../services/TemplateService';
 import type { ToolDefinition } from './types';
 
 export class ListScaffoldingMethodsTool {
@@ -8,54 +11,51 @@ export class ListScaffoldingMethodsTool {
 
   private fileSystemService: FileSystemService;
   private scaffoldingMethodsService: ScaffoldingMethodsService;
+  private templateService: TemplateService;
+  private isMonolith: boolean;
 
-  constructor(templatesPath: string) {
+  constructor(templatesPath: string, isMonolith: boolean = false) {
     this.fileSystemService = new FileSystemService();
     this.scaffoldingMethodsService = new ScaffoldingMethodsService(
       this.fileSystemService,
       templatesPath,
     );
+    this.templateService = new TemplateService();
+    this.isMonolith = isMonolith;
   }
 
   /**
    * Get the tool definition for MCP
    */
   getDefinition(): ToolDefinition {
+    const description = this.templateService.renderString(listScaffoldingMethodsDescription, {
+      isMonolith: this.isMonolith,
+    });
+
+    // Build properties based on mode
+    const properties: Record<string, any> = {};
+
+    // Only add parameters in monorepo mode
+    // In monolith mode, automatically use current directory and read template from toolkit.yaml
+    if (!this.isMonolith) {
+      properties.projectPath = {
+        type: 'string',
+        description:
+          'Absolute path to the project directory (for monorepo: containing project.json; for monolith: workspace root with toolkit.yaml). Either projectPath or templateName is required.',
+      };
+      properties.templateName = {
+        type: 'string',
+        description:
+          'Name of the template to list scaffolding methods for (e.g., "nextjs-15", "typescript-mcp-package"). Either projectPath or templateName is required.',
+      };
+    }
+
     return {
       name: ListScaffoldingMethodsTool.TOOL_NAME,
-      description: `Lists all available scaffolding methods (features) that can be added to an existing project or for a specific template.
-
-This tool:
-- Reads the project's sourceTemplate from project.json (monorepo) or toolkit.yaml (monolith), OR
-- Directly uses the provided templateName to list available features
-- Returns available features for that template type
-- Provides variable schemas for each scaffolding method
-- Shows descriptions of what each method creates
-
-Use this FIRST when adding features to existing projects to understand:
-- What scaffolding methods are available
-- What variables each method requires
-- What files/features will be generated
-
-Example methods might include:
-- Adding new React routes (for React apps)
-- Creating API endpoints (for backend projects)
-- Adding new components (for frontend projects)
-- Setting up database models (for API projects)`,
+      description: description.trim(),
       inputSchema: {
         type: 'object',
-        properties: {
-          projectPath: {
-            type: 'string',
-            description:
-              'Absolute path to the project directory (for monorepo: containing project.json; for monolith: workspace root with toolkit.yaml). Either projectPath or templateName is required.',
-          },
-          templateName: {
-            type: 'string',
-            description:
-              'Name of the template to list scaffolding methods for (e.g., "nextjs-15", "typescript-mcp-package"). Either projectPath or templateName is required.',
-          },
-        },
+        properties,
         additionalProperties: false,
       },
     };
@@ -71,19 +71,35 @@ Example methods might include:
         templateName?: string;
       };
 
-      // Validate that at least one parameter is provided
-      if (!projectPath && !templateName) {
-        throw new Error('Either projectPath or templateName must be provided');
-      }
-
-      // If both are provided, prioritize projectPath
       let result;
-      if (projectPath) {
-        result = await this.scaffoldingMethodsService.listScaffoldingMethods(projectPath);
+
+      // In monolith mode, read template name from toolkit.yaml or project.json
+      if (this.isMonolith) {
+        try {
+          const config = await ProjectConfigResolver.resolveProjectConfig(process.cwd());
+          const resolvedTemplateName = config.sourceTemplate;
+          result = await this.scaffoldingMethodsService.listScaffoldingMethodsByTemplate(
+            resolvedTemplateName,
+          );
+        } catch (error) {
+          throw new Error(
+            `Failed to read template name from configuration: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
       } else {
-        result = await this.scaffoldingMethodsService.listScaffoldingMethodsByTemplate(
-          templateName!,
-        );
+        // Monorepo mode: validate that at least one parameter is provided
+        if (!projectPath && !templateName) {
+          throw new Error('Either projectPath or templateName must be provided');
+        }
+
+        // If both are provided, prioritize projectPath
+        if (projectPath) {
+          result = await this.scaffoldingMethodsService.listScaffoldingMethods(projectPath);
+        } else {
+          result = await this.scaffoldingMethodsService.listScaffoldingMethodsByTemplate(
+            templateName!,
+          );
+        }
       }
 
       return {

@@ -172,6 +172,26 @@ export class ScaffoldingMethodsService {
   }
 
   /**
+   * Resolves the project path, handling both monorepo and monolith cases
+   * Uses ProjectConfigResolver to find the correct workspace/project root
+   */
+  private async resolveProjectPath(projectPath: string): Promise<string> {
+    const absolutePath = path.resolve(projectPath);
+
+    try {
+      // Use ProjectConfigResolver to handle both monorepo and monolith cases
+      const projectConfig = await ProjectConfigResolver.resolveProjectConfig(absolutePath);
+
+      // For monolith projects with workspaceRoot, use that
+      // For monorepo projects, use the provided path
+      return projectConfig.workspaceRoot || absolutePath;
+    } catch (error) {
+      // If config resolution fails, the error message from ProjectConfigResolver is already helpful
+      throw error;
+    }
+  }
+
+  /**
    * Dynamically discovers all template directories
    * Supports both flat structure (templates/nextjs-15) and nested structure (templates/apps/nextjs-15)
    **/
@@ -227,7 +247,10 @@ export class ScaffoldingMethodsService {
   async useScaffoldMethod(request: UseScaffoldMethodRequest): Promise<ScaffoldResult> {
     const { projectPath, scaffold_feature_name, variables } = request;
 
-    const scaffoldingMethods = await this.listScaffoldingMethods(projectPath);
+    // Resolve the actual project path (handle monolith vs monorepo)
+    const absoluteProjectPath = await this.resolveProjectPath(projectPath);
+
+    const scaffoldingMethods = await this.listScaffoldingMethods(absoluteProjectPath);
 
     const method = scaffoldingMethods.methods.find((m) => m.name === scaffold_feature_name);
 
@@ -254,7 +277,6 @@ export class ScaffoldingMethodsService {
       this.templatesRootPath,
     );
 
-    const absoluteProjectPath = path.resolve(projectPath);
     const projectName = path.basename(absoluteProjectPath);
 
     const result = await scaffoldService.useFeature({
