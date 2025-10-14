@@ -27,6 +27,9 @@ A collection of [Model Context Protocol (MCP)](https://modelcontextprotocol.io) 
   - [Adding Features](#adding-features)
 - [Development Workflow](#development-workflow)
 - [Packages](#packages)
+- [Supported Integrations](#supported-integrations)
+  - [Coding Agents](#coding-agents)
+  - [Spec-Driven Development Tools](#spec-driven-development-tools)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -425,7 +428,7 @@ Result: Validates against RULES.yaml (named exports, error handling, etc.)
 
 ### [@agiflowai/aicode-toolkit](./apps/aicode-toolkit)
 
-Unified CLI for initializing projects, managing templates, and configuring MCP servers. Provides interactive workflows for project setup with automatic detection of coding agents (Claude Code, Codex, Gemini CLI).
+Unified CLI for initializing projects, managing templates, and configuring MCP servers. Provides interactive workflows for project setup with automatic detection of coding agents (Claude Code, Cursor, Gemini CLI, Codex CLI, GitHub Copilot).
 
 **Key Features:**
 - Interactive project initialization (monorepo or monolith)
@@ -463,6 +466,77 @@ MCP server for architecture design, code quality enforcement, and design pattern
 - Multiple transport modes: stdio, HTTP, SSE
 
 [View full documentation →](./packages/architect-mcp/README.md)
+
+### [@agiflowai/coding-agent-bridge](./packages/coding-agent-bridge)
+
+Service layer for integrating with AI coding agents. Provides a unified interface for detecting, configuring, and invoking different coding assistants programmatically.
+
+**Key Features:**
+- Automatic coding agent detection (Claude Code, Cursor, Gemini CLI, etc.)
+- Unified interface for MCP configuration and custom instructions
+- LLM invocation API for using coding agents as pure LLMs
+- Agent-specific adapters with consistent API
+- Support for stdio, HTTP, and SSE transports
+
+**Currently Supported Coding Agents:**
+- **Claude Code** - Full support with `.mcp.json` configuration and CLAUDE.md/AGENTS.md instructions
+- **Cursor** - MCP configuration and .cursorrules instructions
+- **Gemini CLI** - .gemini workspace detection and configuration
+- **Codex CLI** - .codex workspace detection and configuration
+- **GitHub Copilot** - MCP support and .github/copilot-instructions.md
+
+**Coming Soon:**
+- Windsurf
+- Zed
+- VS Code with Continue/Cody extensions
+
+[View full documentation →](./packages/coding-agent-bridge/README.md)
+
+---
+
+## Supported Integrations
+
+### Coding Agents
+
+AI Code Toolkit integrates with popular AI coding assistants through the `coding-agent-bridge` package:
+
+| Agent | Status | MCP Support | Custom Instructions | LLM API |
+|-------|--------|-------------|---------------------|---------|
+| **Claude Code** | ✅ Supported | `.mcp.json` | `CLAUDE.md`, `AGENTS.md` | ✅ |
+| **Cursor** | ✅ Supported | `.cursorrules` | `.cursorrules` | ⏳ |
+| **Gemini CLI** | ✅ Supported | `.gemini` | `.gemini` | ⏳ |
+| **Codex CLI** | ✅ Supported | `.codex` | `.codex` | ⏳ |
+| **GitHub Copilot** | ✅ Supported | MCP | `.github/copilot-instructions.md` | ⏳ |
+| **Windsurf** | 🔄 Coming Soon | MCP | Custom | ⏳ |
+| **Zed** | 🔄 Planned | MCP | Custom | ⏳ |
+| **VS Code + Continue** | 🔄 Planned | MCP | `.continuerc.json` | ⏳ |
+
+**Features:**
+- **Auto-detection**: Automatically detects installed coding agents in your workspace
+- **Unified API**: Same interface for all agents (configuration, instructions, invocation)
+- **MCP Configuration**: Programmatic setup of MCP servers
+- **LLM Invocation**: Use coding agents as pure LLMs (no tool use)
+
+### Spec-Driven Development Tools
+
+AI Code Toolkit supports spec-driven development through the `aicode-toolkit` CLI:
+
+| Tool | Status | Description | Documentation |
+|------|--------|-------------|---------------|
+| **OpenSpec** | ✅ Supported | Spec-driven development for AI coding assistants | [OpenSpec GitHub](https://github.com/Fission-AI/OpenSpec) |
+| **SpecKit** | 🔄 Planned | Lightweight spec framework for AI agents | Coming Soon |
+
+**How It Works:**
+```bash
+# Initialize OpenSpec in your project
+npx @agiflowai/aicode-toolkit init
+
+# The toolkit automatically:
+# 1. Detects your coding agent (Claude Code, Cursor, etc.)
+# 2. Configures OpenSpec integration
+# 3. Updates agent instructions with OpenSpec workflows
+# 4. Coordinates MCP servers (scaffold-mcp, architect-mcp)
+```
 
 ---
 
