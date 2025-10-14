@@ -15,7 +15,7 @@
     "sharedGlobals": []
   },
   "release": {
-    "projects": ["packages/*"],
+    "projects": ["packages/*", "apps/*"],
     "version": {
       "conventionalCommits": true,
       "generatorOptions": {
