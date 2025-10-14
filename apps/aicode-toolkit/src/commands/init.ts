@@ -363,7 +363,7 @@ const initActors = {
             const templates = await templateSelectionService.listTemplates();
             existingTemplates = templates.map((t) => t.name);
           } catch (error) {
-            print.warn('Could not read existing templates, will proceed anyway');
+            print.warning('Could not read existing templates, will proceed anyway');
           }
         }
 
