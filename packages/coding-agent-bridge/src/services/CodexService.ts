@@ -34,6 +34,7 @@ import type {
   McpSettings,
   PromptConfig,
 } from '../types';
+import { appendUniqueToFile, appendUniqueWithMarkers, writeFileEnsureDir } from '../utils/file';
 
 /**
  * Internal message types for parsing JSONL output from Codex CLI
@@ -162,9 +163,87 @@ export class CodexService implements CodingAgentService {
 
   /**
    * Update prompt configuration for Codex
+   *
+   * If customInstructionFile is provided, writes the prompt to that file and references it
+   * using @file syntax in AGENTS.md (workspace) and instructions.md (global ~/.codex).
+   *
+   * If marker is true, wraps the content with AICODE tracking markers
+   * (<!-- AICODE:START --> and <!-- AICODE:END -->).
+   *
+   * Otherwise, appends the prompt directly to AGENTS.md and instructions.md.
    */
   async updatePrompt(config: PromptConfig): Promise<void> {
     this.promptConfig = { ...this.promptConfig, ...config };
+
+    if (!config.systemPrompt) {
+      return;
+    }
+
+    // Codex uses AGENTS.md in workspace root (similar to Claude)
+    const agentsMdPath = path.join(this.workspaceRoot, 'AGENTS.md');
+
+    // Codex uses instructions.md in ~/.codex directory for global context
+    const codexDir = path.join(os.homedir(), '.codex');
+    const instructionsMdPath = path.join(codexDir, 'instructions.md');
+
+    if (config.customInstructionFile) {
+      // Write prompt to custom instruction file
+      const customFilePath = path.join(this.workspaceRoot, config.customInstructionFile);
+      await writeFileEnsureDir(customFilePath, config.systemPrompt);
+
+      // Reference the file in AGENTS.md and instructions.md using @ syntax (without curly braces)
+      const reference = `@${config.customInstructionFile}`;
+
+      if (config.marker) {
+        // Use AICODE markers to track the reference in AGENTS.md
+        await appendUniqueWithMarkers(
+          agentsMdPath,
+          reference,
+          reference,
+          `# Codex Instructions\n\n<!-- AICODE:START -->\n${reference}\n<!-- AICODE:END -->\n`,
+        );
+
+        // Append reference to instructions.md (global)
+        await appendUniqueWithMarkers(instructionsMdPath, reference, reference);
+      } else {
+        // Append reference without markers
+        const referenceContent = `\n\n${reference}\n`;
+        await appendUniqueToFile(
+          agentsMdPath,
+          referenceContent,
+          reference,
+          `# Codex Instructions\n${referenceContent}`,
+        );
+
+        await appendUniqueToFile(instructionsMdPath, referenceContent, reference);
+      }
+    } else {
+      // Append prompt directly to AGENTS.md and instructions.md
+      if (config.marker) {
+        // Use AICODE markers to track the prompt content
+        await appendUniqueWithMarkers(
+          agentsMdPath,
+          config.systemPrompt,
+          config.systemPrompt,
+          `# Codex Instructions\n\n<!-- AICODE:START -->\n${config.systemPrompt}\n<!-- AICODE:END -->\n`,
+        );
+
+        // Append to instructions.md (global)
+        await appendUniqueWithMarkers(instructionsMdPath, config.systemPrompt, config.systemPrompt);
+      } else {
+        // Append prompt without markers
+        const promptContent = `\n\n${config.systemPrompt}\n`;
+
+        await appendUniqueToFile(
+          agentsMdPath,
+          promptContent,
+          config.systemPrompt,
+          `# Codex Instructions\n${promptContent}`,
+        );
+
+        await appendUniqueToFile(instructionsMdPath, promptContent, config.systemPrompt);
+      }
+    }
   }
 
   /**

@@ -59,3 +59,8 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Security Audit
+        run: |
+          echo "Running security audit..."
+          pnpm audit --audit-level high || echo "::warning::Security vulnerabilities found. Check the security workflow for details."

@@ -35,22 +35,99 @@ import type {
 } from '../types';
 
 /**
- * Gemini CLI JSON response format
+ * Gemini CLI JSON response format (headless mode)
+ * @see https://geminicli.com/docs/cli/headless/#json-output
  */
 interface GeminiJsonResponse {
   response?: string;
   stats?: {
-    models?: string[];
-    tools?: string[];
-    files?: string[];
-    inputTokens?: number;
-    outputTokens?: number;
+    models?: Record<
+      string,
+      {
+        api?: {
+          totalRequests?: number;
+          totalErrors?: number;
+          totalLatencyMs?: number;
+        };
+        tokens?: {
+          prompt?: number;
+          candidates?: number;
+          total?: number;
+          cached?: number;
+          thoughts?: number;
+          tool?: number;
+        };
+      }
+    >;
+    tools?: {
+      totalCalls?: number;
+      totalSuccess?: number;
+      totalFail?: number;
+      totalDurationMs?: number;
+      totalDecisions?: {
+        accept?: number;
+        reject?: number;
+        modify?: number;
+        auto_accept?: number;
+      };
+      byName?: Record<
+        string,
+        {
+          count?: number;
+          success?: number;
+          fail?: number;
+          durationMs?: number;
+          decisions?: {
+            accept?: number;
+            reject?: number;
+            modify?: number;
+            auto_accept?: number;
+          };
+        }
+      >;
+    };
+    files?: {
+      totalLinesAdded?: number;
+      totalLinesRemoved?: number;
+    };
   };
   error?: {
     type?: string;
     message?: string;
-    code?: string;
+    code?: number;
   };
+}
+
+/**
+ * Gemini CLI extension configuration format
+ */
+interface GeminiExtensionConfig {
+  name: string;
+  version: string;
+  mcpServers: Record<string, GeminiMcpServerConfig>;
+  contextFileName?: string;
+  excludeTools?: string[];
+}
+
+/**
+ * Gemini CLI MCP server configuration
+ */
+interface GeminiMcpServerConfig {
+  disabled?: boolean;
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  cwd?: string;
+  httpUrl?: string;
+  sseUrl?: string;
+}
+
+/**
+ * Gemini CLI settings.json format
+ */
+interface GeminiSettingsConfig {
+  mcpServers?: Record<string, GeminiMcpServerConfig>;
+  [key: string]: unknown;
 }
 
 /**
@@ -62,25 +139,10 @@ export class GeminiCliService implements CodingAgentService {
   private promptConfig: PromptConfig = {};
   private readonly workspaceRoot: string;
   private readonly geminiPath: string;
-  private readonly defaultTimeout: number;
-  private readonly defaultModel: string;
-  private readonly defaultEnv: Record<string, string>;
 
-  constructor(options?: {
-    workspaceRoot?: string;
-    geminiPath?: string;
-    defaultTimeout?: number;
-    defaultModel?: string;
-    defaultEnv?: Record<string, string>;
-  }) {
+  constructor(options?: { workspaceRoot?: string; geminiPath?: string }) {
     this.workspaceRoot = options?.workspaceRoot || process.cwd();
     this.geminiPath = options?.geminiPath || 'gemini';
-    this.defaultTimeout = options?.defaultTimeout || 60000; // 1 minute default
-    this.defaultModel = options?.defaultModel || 'gemini-2.0-flash-exp';
-    this.defaultEnv = options?.defaultEnv || {
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-      GOOGLE_API_KEY: process.env.GOOGLE_API_KEY || '',
-    };
   }
 
   /**
@@ -88,72 +150,259 @@ export class GeminiCliService implements CodingAgentService {
    * Detects Gemini by checking for .gemini file in workspace root (project-level only)
    */
   async isEnabled(): Promise<boolean> {
-    const geminiWorkspaceFile = path.join(this.workspaceRoot, '.gemini');
-    return fs.pathExists(geminiWorkspaceFile);
+    try {
+      const geminiWorkspaceFile = path.join(this.workspaceRoot, '.gemini');
+      return await fs.pathExists(geminiWorkspaceFile);
+    } catch (_error) {
+      // Return false if unable to check file existence
+      return false;
+    }
   }
 
   /**
    * Update MCP (Model Context Protocol) settings for Gemini CLI
-   * Writes MCP server configuration to ~/.gemini/settings.json
-   * Converts standardized McpServerConfig to Gemini JSON format
+   * Supports two modes:
+   * 1. Settings mode: Writes to ~/.gemini/settings.json (default)
+   * 2. Extension mode: Creates extension in {workspaceRoot}/.gemini/extensions/{extensionName}/
+   *
+   * Extension mode is recommended for:
+   * - Packaging MCP servers with metadata (project-level configuration)
+   * - Including context files and custom commands
+   * - Better distribution and sharing
+   * - Variable substitution support (${extensionPath}, ${workspacePath}, ${/})
+   *
+   * Settings mode (user-level) takes precedence over extensions (project-level), allowing user overrides
    */
-  async updateMcpSettings(settings: McpSettings): Promise<void> {
+  async updateMcpSettings(
+    settings: McpSettings,
+    options?: {
+      useExtension?: boolean;
+      extensionName?: string;
+      extensionVersion?: string;
+      contextContent?: string;
+      excludeTools?: string[];
+    },
+  ): Promise<void> {
     this.mcpSettings = { ...this.mcpSettings, ...settings };
 
-    // Gemini CLI uses settings.json in ~/.gemini directory
-    const configDir = path.join(os.homedir(), '.gemini');
-    const configPath = path.join(configDir, 'settings.json');
-
-    // Ensure config directory exists
-    await fs.ensureDir(configDir);
-
-    // Read existing config or create new
-    let config: any = {};
-    if (await fs.pathExists(configPath)) {
-      const content = await fs.readFile(configPath, 'utf-8');
-      config = JSON.parse(content);
+    if (options?.useExtension) {
+      // Extension mode: Create/update Gemini CLI extension
+      await this.createOrUpdateExtension(settings, {
+        extensionName: options.extensionName || 'aicode-toolkit-mcp',
+        extensionVersion: options.extensionVersion || '1.0.0',
+        contextContent: options.contextContent,
+        excludeTools: options.excludeTools,
+      });
+    } else {
+      // Settings mode: Write to ~/.gemini/settings.json
+      await this.updateSettingsJson(settings);
     }
+  }
 
-    // Ensure mcpServers key exists
-    if (!config.mcpServers) {
-      config.mcpServers = {};
-    }
+  /**
+   * Create or update a Gemini CLI extension with MCP server configuration
+   * Extensions are created in workspace root: {workspaceRoot}/.gemini/extensions/{extensionName}/
+   *
+   * @private
+   */
+  private async createOrUpdateExtension(
+    settings: McpSettings,
+    options: {
+      extensionName: string;
+      extensionVersion: string;
+      contextContent?: string;
+      excludeTools?: string[];
+    },
+  ): Promise<void> {
+    try {
+      const extensionsDir = path.join(this.workspaceRoot, '.gemini', 'extensions');
+      const extensionDir = path.join(extensionsDir, options.extensionName);
+      const extensionConfigPath = path.join(extensionDir, 'gemini-extension.json');
 
-    // Convert standardized MCP server configs to Gemini CLI format
-    if (settings.servers) {
-      for (const [serverName, serverConfig] of Object.entries(settings.servers)) {
-        const geminiConfig: any = {
-          disabled: serverConfig.disabled ?? false,
-        };
+      // Ensure extension directory exists
+      await fs.ensureDir(extensionDir);
 
-        // Add type-specific fields
-        if (serverConfig.type === 'stdio') {
-          geminiConfig.command = serverConfig.command;
-          if (serverConfig.args && serverConfig.args.length > 0) {
-            geminiConfig.args = serverConfig.args;
+      // Build extension configuration
+      const extensionConfig: GeminiExtensionConfig = {
+        name: options.extensionName,
+        version: options.extensionVersion,
+        mcpServers: {},
+      };
+
+      // Convert standardized MCP server configs to Gemini extension format
+      if (settings.servers) {
+        for (const [serverName, serverConfig] of Object.entries(settings.servers)) {
+          const geminiConfig: GeminiMcpServerConfig = {
+            disabled: serverConfig.disabled ?? false,
+          };
+
+          // Add type-specific fields
+          if (serverConfig.type === 'stdio') {
+            geminiConfig.command = serverConfig.command;
+            if (serverConfig.args && serverConfig.args.length > 0) {
+              geminiConfig.args = serverConfig.args;
+            }
+            if (serverConfig.env) {
+              geminiConfig.env = serverConfig.env;
+            }
+            // Support for cwd if needed (extended property not in base type)
+            if ('cwd' in serverConfig) {
+              const cwd = (serverConfig as { cwd?: string }).cwd;
+              if (cwd) {
+                geminiConfig.cwd = cwd;
+              }
+            }
+          } else if (serverConfig.type === 'http') {
+            geminiConfig.httpUrl = serverConfig.url;
+          } else if (serverConfig.type === 'sse') {
+            geminiConfig.sseUrl = serverConfig.url;
           }
-          if (serverConfig.env) {
-            geminiConfig.env = serverConfig.env;
-          }
-        } else if (serverConfig.type === 'http') {
-          geminiConfig.httpUrl = serverConfig.url;
-        } else if (serverConfig.type === 'sse') {
-          geminiConfig.sseUrl = serverConfig.url;
+
+          extensionConfig.mcpServers[serverName] = geminiConfig;
         }
-
-        config.mcpServers[serverName] = geminiConfig;
       }
-    }
 
-    // Write config back with pretty formatting
-    await fs.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+      // Add optional context file
+      if (options.contextContent) {
+        extensionConfig.contextFileName = 'GEMINI.md';
+        const contextPath = path.join(extensionDir, 'GEMINI.md');
+        await fs.writeFile(contextPath, options.contextContent);
+      }
+
+      // Add optional tool exclusions
+      if (options.excludeTools && options.excludeTools.length > 0) {
+        extensionConfig.excludeTools = options.excludeTools;
+      }
+
+      // Write extension config with pretty formatting
+      await fs.writeFile(extensionConfigPath, `${JSON.stringify(extensionConfig, null, 2)}\n`);
+    } catch (error) {
+      throw new Error(
+        `Failed to create or update Gemini CLI extension: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * Update MCP settings in ~/.gemini/settings.json
+   * Settings take precedence over extensions
+   *
+   * @private
+   */
+  private async updateSettingsJson(settings: McpSettings): Promise<void> {
+    try {
+      const configDir = path.join(os.homedir(), '.gemini');
+      const configPath = path.join(configDir, 'settings.json');
+
+      // Ensure config directory exists
+      await fs.ensureDir(configDir);
+
+      // Read existing config or create new
+      let config: GeminiSettingsConfig = {};
+      if (await fs.pathExists(configPath)) {
+        const content = await fs.readFile(configPath, 'utf-8');
+        config = JSON.parse(content);
+      }
+
+      // Ensure mcpServers key exists
+      if (!config.mcpServers) {
+        config.mcpServers = {};
+      }
+
+      // Convert standardized MCP server configs to Gemini CLI format
+      if (settings.servers) {
+        for (const [serverName, serverConfig] of Object.entries(settings.servers)) {
+          const geminiConfig: GeminiMcpServerConfig = {
+            disabled: serverConfig.disabled ?? false,
+          };
+
+          // Add type-specific fields
+          if (serverConfig.type === 'stdio') {
+            geminiConfig.command = serverConfig.command;
+            if (serverConfig.args && serverConfig.args.length > 0) {
+              geminiConfig.args = serverConfig.args;
+            }
+            if (serverConfig.env) {
+              geminiConfig.env = serverConfig.env;
+            }
+          } else if (serverConfig.type === 'http') {
+            geminiConfig.httpUrl = serverConfig.url;
+          } else if (serverConfig.type === 'sse') {
+            geminiConfig.sseUrl = serverConfig.url;
+          }
+
+          config.mcpServers[serverName] = geminiConfig;
+        }
+      }
+
+      // Write config back with pretty formatting
+      await fs.writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+    } catch (error) {
+      throw new Error(
+        `Failed to update Gemini CLI settings.json: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   /**
    * Update prompt configuration for Gemini CLI
+   * Supports two modes:
+   * 1. Extension mode: Creates/updates extension with contextFileName (recommended)
+   * 2. In-memory mode: Stores system prompt for runtime use
+   *
+   * Extension mode writes context to {workspaceRoot}/.gemini/extensions/{extensionName}/GEMINI.md
    */
-  async updatePrompt(config: PromptConfig): Promise<void> {
+  async updatePrompt(
+    config: PromptConfig,
+    options?: {
+      useExtension?: boolean;
+      extensionName?: string;
+      extensionVersion?: string;
+    },
+  ): Promise<void> {
     this.promptConfig = { ...this.promptConfig, ...config };
+
+    if (options?.useExtension && config.systemPrompt) {
+      try {
+        // Extension mode: Create/update extension with context file
+        const extensionsDir = path.join(this.workspaceRoot, '.gemini', 'extensions');
+        const extensionDir = path.join(
+          extensionsDir,
+          options.extensionName || 'aicode-toolkit-mcp',
+        );
+        const extensionConfigPath = path.join(extensionDir, 'gemini-extension.json');
+        const contextPath = path.join(extensionDir, 'GEMINI.md');
+
+        // Ensure extension directory exists
+        await fs.ensureDir(extensionDir);
+
+        // Read or create extension config
+        let extensionConfig: GeminiExtensionConfig = {
+          name: options.extensionName || 'aicode-toolkit-mcp',
+          version: options.extensionVersion || '1.0.0',
+          mcpServers: {},
+        };
+
+        if (await fs.pathExists(extensionConfigPath)) {
+          const content = await fs.readFile(extensionConfigPath, 'utf-8');
+          extensionConfig = JSON.parse(content);
+        }
+
+        // Set context file reference
+        extensionConfig.contextFileName = 'GEMINI.md';
+
+        // Write context content
+        await fs.writeFile(contextPath, config.systemPrompt);
+
+        // Write extension config
+        await fs.writeFile(extensionConfigPath, `${JSON.stringify(extensionConfig, null, 2)}\n`);
+      } catch (error) {
+        throw new Error(
+          `Failed to update Gemini CLI prompt configuration: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+    // Otherwise, systemPrompt is stored in memory and used in invokeAsLlm
   }
 
   /**
@@ -181,21 +430,16 @@ export class GeminiCliService implements CodingAgentService {
       args.push('--model', params.model);
     }
 
-    // Build environment with API key and custom env vars
-    const env = {
-      ...process.env,
-      ...this.defaultEnv,
-    };
-
     // Execute Gemini CLI
     try {
+      const timeout = (params.timeout as number | undefined) || 120000; // 2 minutes default
       const { stdout, exitCode } = await execa(this.geminiPath, args, {
         stdin: 'ignore',
         stdout: 'pipe',
         stderr: 'pipe',
-        timeout: params.maxTokens ? params.maxTokens * 100 : this.defaultTimeout,
+        timeout,
         maxBuffer: 1024 * 1024 * 100, // 100MB buffer
-        env,
+        env: process.env,
         cwd: this.workspaceRoot,
       });
 
@@ -215,19 +459,31 @@ export class GeminiCliService implements CodingAgentService {
 
       // Extract response content
       const responseContent = jsonResponse.response || '';
-      const model = params.model || this.defaultModel;
-      const usage = {
-        inputTokens: jsonResponse.stats?.inputTokens || 0,
-        outputTokens: jsonResponse.stats?.outputTokens || 0,
-      };
+
+      // Determine which model was used from stats (first model in the list)
+      const usedModel = jsonResponse.stats?.models
+        ? Object.keys(jsonResponse.stats.models)[0]
+        : params.model || 'gemini-2.0-flash-exp';
+
+      // Extract token usage from stats.models
+      // Sum up tokens from all models used in the request
+      let totalPromptTokens = 0;
+      let totalCandidateTokens = 0;
+
+      if (jsonResponse.stats?.models) {
+        for (const modelStats of Object.values(jsonResponse.stats.models)) {
+          totalPromptTokens += modelStats.tokens?.prompt || 0;
+          totalCandidateTokens += modelStats.tokens?.candidates || 0;
+        }
+      }
 
       // Return standard LLM response
       return {
         content: responseContent.trim(),
-        model,
+        model: usedModel,
         usage: {
-          inputTokens: usage.inputTokens,
-          outputTokens: usage.outputTokens,
+          inputTokens: totalPromptTokens,
+          outputTokens: totalCandidateTokens,
         },
       };
     } catch (error) {
@@ -235,7 +491,7 @@ export class GeminiCliService implements CodingAgentService {
       if (error instanceof Error) {
         if (error.message.includes('ETIMEDOUT') || error.message.includes('timed out')) {
           throw new Error(
-            `Gemini CLI invocation timed out after ${params.maxTokens ? params.maxTokens * 100 : this.defaultTimeout}ms. Consider increasing the timeout or reducing maxTokens.`,
+            `Gemini CLI invocation timed out${params.timeout ? ` after ${params.timeout}ms` : ''}. Consider increasing the timeout parameter.`,
           );
         }
         if (error.message.includes('ENOENT')) {

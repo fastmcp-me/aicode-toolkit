@@ -20,13 +20,13 @@ export interface InitMachineContext {
   repositoryExists: boolean;
 
   // Project type detection
-  detectionConfidence?: 'high' | 'medium' | 'low';
   detectionIndicators?: string[];
 
   // Templates configuration
   templatesPath?: string;
   tmpTemplatesPath?: string;
   selectedTemplates?: string[];
+  skipDownload?: boolean;
 
   // MCP server selection
   selectedMcpServers?: string[];
@@ -34,6 +34,10 @@ export interface InitMachineContext {
   // Coding agent setup
   detectedCodingAgent?: CodingAgent | null;
   codingAgent?: CodingAgent;
+
+  // Spec tool setup
+  detectedSpecTool?: string | null;
+  useSpecDrivenApproach?: boolean;
 
   // CLI options
   options: {
@@ -78,7 +82,6 @@ export const initMachine = createMachine(
       projectType: undefined,
       projectPath: undefined,
       repositoryExists: false,
-      detectionConfidence: undefined,
       detectionIndicators: undefined,
       templatesPath: undefined,
       tmpTemplatesPath: undefined,
@@ -86,6 +89,8 @@ export const initMachine = createMachine(
       selectedMcpServers: undefined,
       detectedCodingAgent: undefined,
       codingAgent: undefined,
+      detectedSpecTool: undefined,
+      useSpecDrivenApproach: undefined,
       options: input.options,
       error: undefined,
     }),
@@ -140,17 +145,15 @@ export const initMachine = createMachine(
           onDone: [
             {
               target: 'checkingSkipTemplates',
-              guard: ({ event }) => event.output.confidence === 'high',
+              guard: ({ event }) => event.output.projectType !== undefined,
               actions: assign({
                 projectType: ({ event }) => event.output.projectType,
-                detectionConfidence: ({ event }) => event.output.confidence,
                 detectionIndicators: ({ event }) => event.output.indicators,
               }),
             },
             {
               target: 'promptingProjectType',
               actions: assign({
-                detectionConfidence: ({ event }) => event.output.confidence,
                 detectionIndicators: ({ event }) => event.output.indicators,
               }),
             },
@@ -165,13 +168,14 @@ export const initMachine = createMachine(
       },
 
       /**
-       * Prompt user to select project type if detection confidence is low
+       * Prompt user to select project type if not detected
        */
       promptingProjectType: {
         invoke: {
           src: 'promptProjectType',
           input: ({ context }) => ({
             providedProjectType: context.options.projectType,
+            detectedProjectType: context.projectType,
             detectionIndicators: context.detectionIndicators,
           }),
           onDone: {
@@ -313,11 +317,47 @@ export const initMachine = createMachine(
         invoke: {
           src: 'promptMcpSelection',
           onDone: {
-            target: 'downloadingTemplates',
+            target: 'checkingTemplatesFolder',
             actions: assign({
               selectedMcpServers: ({ event }) => event.output,
             }),
           },
+          onError: {
+            target: 'failed',
+            actions: assign({
+              error: ({ event }) => event.error as Error,
+            }),
+          },
+        },
+      },
+
+      /**
+       * Check if templates folder exists and prompt for custom directory
+       */
+      checkingTemplatesFolder: {
+        invoke: {
+          src: 'checkTemplatesFolder',
+          input: ({ context }) => ({
+            workspaceRoot: context.workspaceRoot!,
+          }),
+          onDone: [
+            {
+              target: 'creatingConfig',
+              guard: ({ event }) => event.output.skipDownload === true,
+              actions: assign({
+                templatesPath: ({ event }) => event.output.templatesPath,
+                skipDownload: ({ event }) => event.output.skipDownload,
+                selectedTemplates: ({ event }) => event.output.existingTemplates,
+              }),
+            },
+            {
+              target: 'downloadingTemplates',
+              actions: assign({
+                templatesPath: ({ event }) => event.output.templatesPath,
+                skipDownload: ({ event }) => event.output.skipDownload,
+              }),
+            },
+          ],
           onError: {
             target: 'failed',
             actions: assign({
@@ -403,15 +443,13 @@ export const initMachine = createMachine(
           input: ({ context }) => ({
             tmpTemplatesPath: context.tmpTemplatesPath!,
             workspaceRoot: context.workspaceRoot!,
+            templatesPath: context.templatesPath!,
             selectedTemplates: context.selectedTemplates!,
             projectType: context.projectType!,
             selectedMcpServers: context.selectedMcpServers,
           }),
           onDone: {
             target: 'creatingConfig',
-            actions: assign({
-              templatesPath: ({ event }) => event.output,
-            }),
           },
           onError: {
             target: 'failed',
@@ -431,6 +469,7 @@ export const initMachine = createMachine(
           input: ({ context }) => ({
             workspaceRoot: context.workspaceRoot!,
             projectType: context.projectType!,
+            templatesPath: context.templatesPath!,
             selectedTemplates: context.selectedTemplates!,
           }),
           onDone: {
@@ -455,7 +494,7 @@ export const initMachine = createMachine(
             guard: ({ context }) => !context.options.skipMcp,
           },
           {
-            target: 'cleaningUp',
+            target: 'detectingSpecTool',
           },
         ],
       },
@@ -517,6 +556,131 @@ export const initMachine = createMachine(
           input: ({ context }) => ({
             workspaceRoot: context.workspaceRoot!,
             codingAgent: context.codingAgent!,
+          }),
+          onDone: {
+            target: 'detectingSpecTool',
+          },
+          onError: {
+            target: 'failed',
+            actions: assign({
+              error: ({ event }) => event.error as Error,
+            }),
+          },
+        },
+      },
+
+      /**
+       * Detect spec tool (e.g., OpenSpec)
+       */
+      detectingSpecTool: {
+        invoke: {
+          src: 'detectSpecTool',
+          input: ({ context }) => ({
+            workspaceRoot: context.workspaceRoot!,
+          }),
+          onDone: {
+            target: 'promptingSpecDrivenApproach',
+            actions: assign({
+              detectedSpecTool: ({ event }) => event.output,
+            }),
+          },
+          onError: {
+            target: 'cleaningUp',
+          },
+        },
+      },
+
+      /**
+       * Prompt user about spec-driven approach
+       */
+      promptingSpecDrivenApproach: {
+        invoke: {
+          src: 'promptSpecDrivenApproach',
+          input: ({ context }) => ({
+            detectedSpecTool: context.detectedSpecTool,
+          }),
+          onDone: [
+            {
+              target: 'settingUpSpec',
+              guard: ({ event }) => event.output === true,
+              actions: assign({
+                useSpecDrivenApproach: () => true,
+              }),
+            },
+            {
+              target: 'cleaningUp',
+              actions: assign({
+                useSpecDrivenApproach: () => false,
+              }),
+            },
+          ],
+          onError: {
+            target: 'cleaningUp',
+          },
+        },
+      },
+
+      /**
+       * Setup spec tool (init or update)
+       */
+      settingUpSpec: {
+        invoke: {
+          src: 'setupSpec',
+          input: ({ context }) => ({
+            workspaceRoot: context.workspaceRoot!,
+            isAlreadyInstalled: context.detectedSpecTool !== null,
+            selectedMcpServers: context.selectedMcpServers,
+            codingAgent: context.codingAgent,
+          }),
+          onDone: [
+            {
+              target: 'promptingSpecInstructions',
+              guard: ({ context }) => context.detectedSpecTool === null, // Only if newly installed
+            },
+            {
+              target: 'cleaningUp',
+            },
+          ],
+          onError: {
+            target: 'failed',
+            actions: assign({
+              error: ({ event }) => event.error as Error,
+            }),
+          },
+        },
+      },
+
+      /**
+       * Prompt user to update spec instructions after new installation
+       */
+      promptingSpecInstructions: {
+        invoke: {
+          src: 'promptSpecInstructions',
+          onDone: [
+            {
+              target: 'updatingSpecInstructions',
+              guard: ({ event }) => event.output === true,
+            },
+            {
+              target: 'cleaningUp',
+            },
+          ],
+          onError: {
+            target: 'cleaningUp',
+          },
+        },
+      },
+
+      /**
+       * Update spec instructions
+       */
+      updatingSpecInstructions: {
+        invoke: {
+          src: 'updateSpecInstructions',
+          input: ({ context }) => ({
+            workspaceRoot: context.workspaceRoot!,
+            selectedMcpServers: context.selectedMcpServers,
+            codingAgent: context.codingAgent,
           }),
           onDone: {
             target: 'cleaningUp',

@@ -1,4 +1,5 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { ProjectConfigResolver } from '@agiflowai/aicode-utils';
 import { ScaffoldGeneratorService } from '../services/ScaffoldGeneratorService';
 import type { ToolDefinition } from './types';
 
@@ -9,40 +10,38 @@ export class GenerateFeatureScaffoldTool {
   static readonly TOOL_NAME = 'generate-feature-scaffold';
 
   private scaffoldGeneratorService: ScaffoldGeneratorService;
+  private isMonolith: boolean;
 
-  constructor(templatesPath: string) {
+  constructor(templatesPath: string, isMonolith: boolean = false) {
     this.scaffoldGeneratorService = new ScaffoldGeneratorService(templatesPath);
+    this.isMonolith = isMonolith;
   }
 
   /**
    * Get the tool definition for MCP
    */
   getDefinition(): ToolDefinition {
-    return {
-      name: GenerateFeatureScaffoldTool.TOOL_NAME,
-      description: `Add a new feature scaffold configuration to a template's scaffold.yaml file.
+    // Build properties object
+    const properties: Record<string, any> = {};
 
-This tool:
-- Creates or updates scaffold.yaml in the specified template directory
-- Adds a feature entry with proper schema following the nextjs-15 pattern
-- Validates the feature name doesn't already exist
-- Creates the template directory if it doesn't exist
+    // In monolith mode, templateName is optional (read from toolkit.yaml)
+    // In monorepo mode, templateName is required
+    if (!this.isMonolith) {
+      properties.templateName = {
+        type: 'string',
+        description: 'Name of the template folder (kebab-case, e.g., "nextjs-15")',
+      };
+    }
 
-Use this to add custom feature scaffolds (pages, components, services, etc.) for frameworks not yet supported or for your specific project needs.`,
-      inputSchema: {
-        type: 'object',
-        properties: {
-          templateName: {
-            type: 'string',
-            description: 'Name of the template folder (kebab-case, e.g., "nextjs-15")',
-          },
-          featureName: {
-            type: 'string',
-            description: 'Name of the feature (kebab-case, e.g., "scaffold-nextjs-page")',
-          },
-          description: {
-            type: 'string',
-            description: `Detailed description of what this feature creates and its key capabilities.
+    // Add common properties
+    Object.assign(properties, {
+      featureName: {
+        type: 'string',
+        description: 'Name of the feature (kebab-case, e.g., "scaffold-nextjs-page")',
+      },
+      description: {
+        type: 'string',
+        description: `Detailed description of what this feature creates and its key capabilities.
 
 STRUCTURE (2-3 sentences):
 - Sentence 1: What type of code it generates (component, page, service, etc.)
@@ -50,10 +49,10 @@ STRUCTURE (2-3 sentences):
 - Sentence 3: Primary use cases or when to use it
 
 Example: "Generate a new service class for TypeScript libraries following best practices. Creates a service class with interface, implementation, and unit tests. Perfect for creating reusable service modules with dependency injection patterns."`,
-          },
-          instruction: {
-            type: 'string',
-            description: `Optional detailed instructions about the generated files, their purposes, and how to work with them.
+      },
+      instruction: {
+        type: 'string',
+        description: `Optional detailed instructions about the generated files, their purposes, and how to work with them.
 
 STRUCTURE (Concise multi-aspect guide):
 
@@ -64,40 +63,40 @@ STRUCTURE (Concise multi-aspect guide):
 5. **Testing approach**: How to test the feature
 
 Example: "Services follow a class-based pattern with optional interface separation. The service class implements business logic and can be dependency injected. Place services in src/services/ directory. For services with interfaces, define the interface in src/types/interfaces/ for better separation of concerns. Service names should be PascalCase and end with 'Service' suffix. Write comprehensive unit tests for all public methods."`,
-          },
-          variables: {
-            type: 'array',
-            description: 'Array of variable definitions for the feature',
-            items: {
-              type: 'object',
-              properties: {
-                name: {
-                  type: 'string',
-                  description: 'Variable name (camelCase)',
-                },
-                description: {
-                  type: 'string',
-                  description: 'Variable description',
-                },
-                type: {
-                  type: 'string',
-                  enum: ['string', 'number', 'boolean'],
-                  description: 'Variable type',
-                },
-                required: {
-                  type: 'boolean',
-                  description: 'Whether this variable is required',
-                },
-                default: {
-                  description: 'Optional default value for the variable',
-                },
-              },
-              required: ['name', 'description', 'type', 'required'],
+      },
+      variables: {
+        type: 'array',
+        description: 'Array of variable definitions for the feature',
+        items: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description: 'Variable name (camelCase)',
+            },
+            description: {
+              type: 'string',
+              description: 'Variable description',
+            },
+            type: {
+              type: 'string',
+              enum: ['string', 'number', 'boolean'],
+              description: 'Variable type',
+            },
+            required: {
+              type: 'boolean',
+              description: 'Whether this variable is required',
+            },
+            default: {
+              description: 'Optional default value for the variable',
             },
           },
-          includes: {
-            type: 'array',
-            description: `Array of specific file paths to include in the feature (highly recommended to list explicitly).
+          required: ['name', 'description', 'type', 'required'],
+        },
+      },
+      includes: {
+        type: 'array',
+        description: `Array of specific file paths to include in the feature (highly recommended to list explicitly).
 
 Supports advanced syntax:
 - Basic: "src/app/page/page.tsx" - Always included
@@ -118,13 +117,13 @@ Best practices:
 - Use path mapping with -> when source and target paths differ
 - Use {{ variableName }} in target paths for dynamic file placement
 - Avoid wildcards unless you have a good reason`,
-            items: {
-              type: 'string',
-            },
-          },
-          patterns: {
-            type: 'array',
-            description: `Optional array of glob patterns to match existing files that this feature works with.
+        items: {
+          type: 'string',
+        },
+      },
+      patterns: {
+        type: 'array',
+        description: `Optional array of glob patterns to match existing files that this feature works with.
 
 Used to help identify where this feature can be applied in a project.
 
@@ -137,12 +136,33 @@ Best practices:
 - Use glob patterns that match the file types this feature works with
 - Keep patterns specific enough to be meaningful but broad enough to be useful
 - Consider both the feature's output and input files`,
-            items: {
-              type: 'string',
-            },
-          },
+        items: {
+          type: 'string',
         },
-        required: ['templateName', 'featureName', 'description', 'variables'],
+      },
+    });
+
+    // Build required array based on mode
+    const required = ['featureName', 'description', 'variables'];
+    if (!this.isMonolith) {
+      required.unshift('templateName');
+    }
+
+    return {
+      name: GenerateFeatureScaffoldTool.TOOL_NAME,
+      description: `Add a new feature scaffold configuration to a template's scaffold.yaml file.
+
+This tool:
+- Creates or updates scaffold.yaml in the specified template directory
+- Adds a feature entry with proper schema following the nextjs-15 pattern
+- Validates the feature name doesn't already exist
+- Creates the template directory if it doesn't exist
+
+Use this to add custom feature scaffolds (pages, components, services, etc.) for frameworks not yet supported or for your specific project needs.`,
+      inputSchema: {
+        type: 'object',
+        properties,
+        required,
         additionalProperties: false,
       },
     };
@@ -152,7 +172,7 @@ Best practices:
    * Execute the tool
    */
   async execute(args: {
-    templateName: string;
+    templateName?: string;
     featureName: string;
     description: string;
     instruction?: string;
@@ -167,7 +187,43 @@ Best practices:
     patterns?: string[];
   }): Promise<CallToolResult> {
     try {
-      const result = await this.scaffoldGeneratorService.generateFeatureScaffold(args);
+      let { templateName } = args;
+
+      // In monolith mode, read templateName from toolkit.yaml if not provided
+      if (this.isMonolith && !templateName) {
+        try {
+          const config = await ProjectConfigResolver.resolveProjectConfig(process.cwd());
+          templateName = config.sourceTemplate;
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Failed to read template name from configuration: ${error instanceof Error ? error.message : String(error)}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      }
+
+      // Validate required parameter
+      if (!templateName) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Missing required parameter: templateName',
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const result = await this.scaffoldGeneratorService.generateFeatureScaffold({
+        ...args,
+        templateName,
+      });
 
       if (!result.success) {
         return {

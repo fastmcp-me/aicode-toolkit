@@ -1,4 +1,5 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { ProjectConfigResolver } from '@agiflowai/aicode-utils';
 import { BoilerplateGeneratorService } from '../services/BoilerplateGeneratorService';
 import type { ToolDefinition } from './types';
 
@@ -9,47 +10,39 @@ export class GenerateBoilerplateFileTool {
   static readonly TOOL_NAME = 'generate-boilerplate-file';
 
   private boilerplateGeneratorService: BoilerplateGeneratorService;
+  private isMonolith: boolean;
 
-  constructor(templatesPath: string) {
+  constructor(templatesPath: string, isMonolith: boolean = false) {
     this.boilerplateGeneratorService = new BoilerplateGeneratorService(templatesPath);
+    this.isMonolith = isMonolith;
   }
 
   /**
    * Get the tool definition for MCP
    */
   getDefinition(): ToolDefinition {
-    return {
-      name: GenerateBoilerplateFileTool.TOOL_NAME,
-      description: `Create or update template files for boilerplates or features in the specified template directory.
+    // Build properties object
+    const properties: Record<string, any> = {};
 
-This tool:
-- Creates template files with .liquid extension for variable substitution
-- Supports creating nested directory structures
-- Can create files from source files (copying and converting to templates)
-- Validates that the template directory exists
-- Works for both boilerplate includes and feature scaffold includes
+    // In monolith mode, templateName is optional (read from toolkit.yaml)
+    // In monorepo mode, templateName is required
+    if (!this.isMonolith) {
+      properties.templateName = {
+        type: 'string',
+        description: 'Name of the template folder (must already exist)',
+      };
+    }
 
-IMPORTANT - Always add header comments:
-- For code files (*.ts, *.tsx, *.js, *.jsx), ALWAYS include a header parameter with design patterns, coding standards, and things to avoid
-- Headers help AI understand and follow established patterns when working with generated code
-- Use the header parameter to document the architectural decisions and best practices
-
-Use this after generate-boilerplate or generate-feature-scaffold to create the actual template files referenced in the includes array.`,
-      inputSchema: {
-        type: 'object',
-        properties: {
-          templateName: {
-            type: 'string',
-            description: 'Name of the template folder (must already exist)',
-          },
-          filePath: {
-            type: 'string',
-            description:
-              'Path of the file to create within the template (e.g., "package.json", "src/app/page.tsx")',
-          },
-          content: {
-            type: 'string',
-            description: `Content of the template file using Liquid template syntax.
+    // Add common properties
+    Object.assign(properties, {
+      filePath: {
+        type: 'string',
+        description:
+          'Path of the file to create within the template (e.g., "package.json", "src/app/page.tsx")',
+      },
+      content: {
+        type: 'string',
+        description: `Content of the template file using Liquid template syntax.
 
 LIQUID SYNTAX:
 - Variables: {{ variableName }} - Replaced with actual values
@@ -118,14 +111,14 @@ export function calculateTax(income: number) {
   const stateRate = 0.05;
   return income * (federalRate + stateRate);
 }`,
-          },
-          sourceFile: {
-            type: 'string',
-            description: 'Optional: Path to a source file to copy and convert to a template',
-          },
-          header: {
-            type: 'string',
-            description: `Optional: Header comment to add at the top of the file to provide AI hints about design patterns, coding standards, and best practices.
+      },
+      sourceFile: {
+        type: 'string',
+        description: 'Optional: Path to a source file to copy and convert to a template',
+      },
+      header: {
+        type: 'string',
+        description: `Optional: Header comment to add at the top of the file to provide AI hints about design patterns, coding standards, and best practices.
 
 Example format for TypeScript/JavaScript files:
 /**
@@ -145,9 +138,36 @@ Example format for TypeScript/JavaScript files:
  */
 
 The header helps AI understand and follow established patterns when working with generated code.`,
-          },
-        },
-        required: ['templateName', 'filePath'],
+      },
+    });
+
+    // Build required array based on mode
+    const required = ['filePath'];
+    if (!this.isMonolith) {
+      required.unshift('templateName');
+    }
+
+    return {
+      name: GenerateBoilerplateFileTool.TOOL_NAME,
+      description: `Create or update template files for boilerplates or features in the specified template directory.
+
+This tool:
+- Creates template files with .liquid extension for variable substitution
+- Supports creating nested directory structures
+- Can create files from source files (copying and converting to templates)
+- Validates that the template directory exists
+- Works for both boilerplate includes and feature scaffold includes
+
+IMPORTANT - Always add header comments:
+- For code files (*.ts, *.tsx, *.js, *.jsx), ALWAYS include a header parameter with design patterns, coding standards, and things to avoid
+- Headers help AI understand and follow established patterns when working with generated code
+- Use the header parameter to document the architectural decisions and best practices
+
+Use this after generate-boilerplate or generate-feature-scaffold to create the actual template files referenced in the includes array.`,
+      inputSchema: {
+        type: 'object',
+        properties,
+        required,
         additionalProperties: false,
       },
     };
@@ -157,14 +177,50 @@ The header helps AI understand and follow established patterns when working with
    * Execute the tool
    */
   async execute(args: {
-    templateName: string;
+    templateName?: string;
     filePath: string;
     content?: string;
     sourceFile?: string;
     header?: string;
   }): Promise<CallToolResult> {
     try {
-      const result = await this.boilerplateGeneratorService.createTemplateFile(args);
+      let { templateName } = args;
+
+      // In monolith mode, read templateName from toolkit.yaml if not provided
+      if (this.isMonolith && !templateName) {
+        try {
+          const config = await ProjectConfigResolver.resolveProjectConfig(process.cwd());
+          templateName = config.sourceTemplate;
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Failed to read template name from configuration: ${error instanceof Error ? error.message : String(error)}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      }
+
+      // Validate required parameter
+      if (!templateName) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Missing required parameter: templateName',
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const result = await this.boilerplateGeneratorService.createTemplateFile({
+        ...args,
+        templateName,
+      });
 
       if (!result.success) {
         return {

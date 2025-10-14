@@ -31,8 +31,8 @@ import { TemplateFinder } from '../services/TemplateFinder.js';
 import { ArchitectParser } from '../services/ArchitectParser.js';
 import { PatternMatcher } from '../services/PatternMatcher.js';
 import { ClaudeCodeService } from '@agiflowai/coding-agent-bridge';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 
 interface GetFileDesignPatternToolInput {
   file_path: string;
@@ -181,11 +181,10 @@ Example response: "1,3" or "2" or "none"
 
 Your response (numbers only):`;
 
-      // Update system prompt configuration
-      await this.llmService.updatePrompt({ systemPrompt });
-
+      // Pass system prompt directly to invokeAsLlm (don't write to CLAUDE.md)
       const response = await this.llmService.invokeAsLlm({
         prompt: userPrompt,
+        systemPrompt,
       });
 
       // Parse LLM response
@@ -217,7 +216,7 @@ Your response (numbers only):`;
 
     for (const part of parts) {
       const num = parseInt(part, 10);
-      if (!isNaN(num) && num > 0) {
+      if (!Number.isNaN(num) && num > 0) {
         indices.push(num);
       }
     }

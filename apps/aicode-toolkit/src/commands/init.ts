@@ -1,5 +1,6 @@
 import path from 'node:path';
 import {
+  detectProjectType as detectProjectTypeUtil,
   ProjectType,
   print,
   TemplatesManagerService,
@@ -7,13 +8,16 @@ import {
 } from '@agiflowai/aicode-utils';
 import { confirm, input, select } from '@inquirer/prompts';
 import { Command } from 'commander';
-import * as fs from 'fs-extra';
+import ora from 'ora';
 import { createActor, fromPromise } from 'xstate';
 import { MCP_SERVER_INFO, MCPServer } from '../constants';
 import {
   type CodingAgent,
   CodingAgentService,
   NewProjectService,
+  SpecTool,
+  SpecToolService,
+  SPEC_TOOL_INFO,
   TemplateSelectionService,
 } from '../services';
 import { type InitMachineInput, initMachine } from '../states/init-machine';
@@ -43,6 +47,7 @@ const initActors = {
   checkWorkspaceExists: fromPromise(async () => {
     const workspaceRoot = await findWorkspaceRoot();
     if (workspaceRoot) {
+      print.divider();
       print.info(`Found workspace at: ${workspaceRoot}`);
       return { exists: true, workspaceRoot };
     }
@@ -51,95 +56,46 @@ const initActors = {
 
   /**
    * Detect project type (monorepo vs monolith)
+   * Uses shared utility function for deterministic detection
    */
   detectProjectType: fromPromise(async ({ input }: { input: { workspaceRoot: string } }) => {
-    print.info('\nDetecting project type...');
+    print.divider();
+    print.info('Detecting project type...');
 
-    // Check for monorepo indicators
-    const nxJsonPath = path.join(input.workspaceRoot, 'nx.json');
-    const lernaJsonPath = path.join(input.workspaceRoot, 'lerna.json');
-    const pnpmWorkspacePath = path.join(input.workspaceRoot, 'pnpm-workspace.yaml');
-    const turboJsonPath = path.join(input.workspaceRoot, 'turbo.json');
+    const result = await detectProjectTypeUtil(input.workspaceRoot);
 
-    const indicators: string[] = [];
-    let projectType: ProjectType | undefined;
-    let confidence: 'high' | 'medium' | 'low' = 'low';
-
-    // High confidence indicators
-    if (await fs.pathExists(nxJsonPath)) {
-      indicators.push('nx.json found');
-      projectType = ProjectType.MONOREPO;
-      confidence = 'high';
+    if (result.projectType) {
+      print.success(`Detected ${result.projectType} project`);
     }
 
-    if (await fs.pathExists(lernaJsonPath)) {
-      indicators.push('lerna.json found');
-      projectType = ProjectType.MONOREPO;
-      confidence = 'high';
-    }
-
-    if (await fs.pathExists(pnpmWorkspacePath)) {
-      indicators.push('pnpm-workspace.yaml found');
-      projectType = ProjectType.MONOREPO;
-      confidence = 'high';
-    }
-
-    if (await fs.pathExists(turboJsonPath)) {
-      indicators.push('turbo.json found');
-      projectType = ProjectType.MONOREPO;
-      confidence = 'high';
-    }
-
-    // Check package.json for workspaces
-    const packageJsonPath = path.join(input.workspaceRoot, 'package.json');
-    if (await fs.pathExists(packageJsonPath)) {
-      const packageJson = await fs.readJson(packageJsonPath);
-      if (packageJson.workspaces) {
-        indicators.push('package.json with workspaces found');
-        projectType = ProjectType.MONOREPO;
-        if (confidence !== 'high') confidence = 'medium';
-      }
-    }
-
-    // Check toolkit.yaml
-    const toolkitYamlPath = path.join(input.workspaceRoot, 'toolkit.yaml');
-    if (await fs.pathExists(toolkitYamlPath)) {
-      const toolkitConfig = await TemplatesManagerService.readToolkitConfig(input.workspaceRoot);
-      if (toolkitConfig?.projectType) {
-        indicators.push(`toolkit.yaml specifies ${toolkitConfig.projectType}`);
-        projectType = toolkitConfig.projectType as ProjectType;
-        confidence = 'high';
-      }
-    }
-
-    // Default to monolith if nothing found
-    if (!projectType) {
-      projectType = ProjectType.MONOLITH;
-      indicators.push('No monorepo indicators found, assuming monolith');
-      confidence = 'low';
-    }
-
-    if (confidence === 'high') {
-      print.success(`Detected ${projectType} project (high confidence)`);
-    }
-
-    return { projectType, confidence, indicators };
+    return result;
   }),
 
   /**
    * Prompt user to select project type
+   * Only prompts if project type was not detected
    */
   promptProjectType: fromPromise(
     async ({
       input: actorInput,
     }: {
-      input: { providedProjectType?: string; detectionIndicators?: string[] };
+      input: {
+        providedProjectType?: string;
+        detectedProjectType?: ProjectType;
+        detectionIndicators?: string[];
+      };
     }) => {
       // If provided via CLI, use it
       if (actorInput.providedProjectType) {
         const projectType = actorInput.providedProjectType as ProjectType;
         print.info(`Project type: ${projectType}`);
         return projectType;
+      }
+
+      // If detected, use it without prompting
+      if (actorInput.detectedProjectType) {
+        print.info(`Using detected project type: ${actorInput.detectedProjectType}`);
+        return actorInput.detectedProjectType;
       }
 
       // Show detection hints if available
@@ -151,21 +107,25 @@ const initActors = {
         print.newline();
       }
 
-      return await select({
+      // Prompt user to choose
+      print.divider();
+      const result = await select({
         message: 'Select project type:',
         choices: [
           {
-            name: 'Monolith - Single application structure',
+            name: 'Monolith – Single application structure',
             value: ProjectType.MONOLITH,
-            description: 'Traditional single-application project structure',
+            description: '\n  Traditional single-application project structure',
           },
           {
-            name: 'Monorepo - Multiple packages/apps in one repository',
+            name: 'Monorepo – Multiple packages/apps in one repository',
             value: ProjectType.MONOREPO,
-            description: 'Multiple packages managed together (uses workspaces)',
+            description: '\n  Multiple packages managed together (uses workspaces)',
           },
         ],
       });
+      print.info(''); // Add spacing after prompt
+      return result;
     },
   ),
 
@@ -187,10 +147,26 @@ const initActors = {
         return trimmedName;
       }
 
-      return await input({
-        message: 'Enter your project name:',
-        validate: (value: string) => newProjectService.validateProjectName(value),
+      print.divider();
+      const result = await input({
+        message: 'Enter your project name (press Enter to use current directory):',
+        validate: (value: string) => {
+          // Allow empty value to skip
+          if (!value || value.trim() === '') {
+            return true;
+          }
+          // Otherwise validate as project name
+          return newProjectService.validateProjectName(value);
+        },
       });
+      print.info(''); // Add spacing after prompt
+
+      // If empty, return special marker to use current directory
+      if (!result || result.trim() === '') {
+        return '.';
+      }
+
+      return result;
     },
   ),
 
@@ -199,12 +175,27 @@ const initActors = {
    */
   createProjectDirectory: fromPromise(
     async ({ input: actorInput }: { input: { projectName: string } }) => {
-      const projectPath = path.join(process.cwd(), actorInput.projectName.trim());
-      const newProjectService = new NewProjectService(undefined, undefined);
+      // Special case: '.' means use current directory
+      if (actorInput.projectName === '.') {
+        const projectPath = process.cwd();
+        print.success(`Using current directory: ${projectPath}`);
+        return { projectPath };
+      }
 
-      await newProjectService.createProjectDirectory(projectPath, actorInput.projectName);
+      const spinner = ora('Creating project directory...').start();
 
-      return { projectPath };
+      try {
+        const projectPath = path.join(process.cwd(), actorInput.projectName.trim());
+        const newProjectService = new NewProjectService(undefined, undefined);
+
+        await newProjectService.createProjectDirectory(projectPath, actorInput.projectName);
+
+        spinner.succeed(`Created project directory: ${projectPath}`);
+        return { projectPath };
+      } catch (error) {
+        spinner.fail('Failed to create project directory');
+        throw error;
+      }
     },
   ),
 
@@ -214,26 +205,58 @@ const initActors = {
   promptGitSetup: fromPromise(async ({ input: actorInput }: { input: { projectPath: string } }) => {
     const newProjectService = new NewProjectService(undefined, undefined);
 
+    print.divider();
     const hasExistingRepo = await confirm({
       message: 'Do you have an existing Git repository you want to use?',
       default: false,
     });
+    print.info(''); // Add spacing after prompt
 
     if (hasExistingRepo) {
+      print.divider();
       const repoUrl = await input({
-        message: 'Enter Git repository URL:',
-        validate: (value: string) => newProjectService.validateRepositoryUrl(value),
+        message: 'Enter Git repository URL (press Enter to skip):',
+        validate: (value: string) => {
+          // Allow empty value to skip
+          if (!value || value.trim() === '') {
+            return true;
+          }
+          // Otherwise validate as repository URL
+          return newProjectService.validateRepositoryUrl(value);
+        },
       });
+      print.info(''); // Add spacing after prompt
 
-      await newProjectService.cloneExistingRepository(repoUrl.trim(), actorInput.projectPath);
+      // Only clone if URL was provided
+      if (repoUrl && repoUrl.trim() !== '') {
+        const spinner = ora('Cloning repository...').start();
+        try {
+          await newProjectService.cloneExistingRepository(repoUrl.trim(), actorInput.projectPath);
+          spinner.succeed('Repository cloned successfully');
+        } catch (error) {
+          spinner.fail('Failed to clone repository');
+          throw error;
+        }
+      } else {
+        print.info('Skipped cloning repository');
+      }
     } else {
+      print.divider();
       const initGit = await confirm({
         message: 'Initialize a new Git repository?',
         default: true,
       });
+      print.info(''); // Add spacing after prompt
 
       if (initGit) {
-        await newProjectService.initializeGitRepository(actorInput.projectPath);
+        const spinner = ora('Initializing Git repository...').start();
+        try {
+          await newProjectService.initializeGitRepository(actorInput.projectPath);
+          spinner.succeed('Git repository initialized');
+        } catch (error) {
+          spinner.fail('Failed to initialize Git repository');
+          throw error;
+        }
       }
     }
   }),
@@ -247,9 +270,11 @@ const initActors = {
     const choices = Object.values(MCPServer).map((server) => ({
       name: MCP_SERVER_INFO[server].name,
       value: server,
-      description: MCP_SERVER_INFO[server].description,
+      description: `\n  ${MCP_SERVER_INFO[server].description}`,
       checked: true, // Both selected by default
     }));
+
+    print.divider();
 
     const selected = await checkbox({
       message: 'Select MCP servers to configure:',
@@ -261,17 +286,109 @@ const initActors = {
         return true;
       },
     });
+    print.info(''); // Add spacing after prompt
 
     return selected as MCPServer[];
   }),
 
   /**
+   * Check if templates folder exists and prompt for custom directory
+   */
+  checkTemplatesFolder: fromPromise(
+    async ({ input: actorInput }: { input: { workspaceRoot: string } }) => {
+      try {
+        const fs = await import('node:fs/promises');
+        const defaultTemplatesPath = path.join(actorInput.workspaceRoot, 'templates');
+
+        // Check if templates folder exists
+        let templatesExists = false;
+        try {
+          await fs.access(defaultTemplatesPath);
+          templatesExists = true;
+        } catch {
+          // Folder doesn't exist
+          templatesExists = false;
+        }
+
+        let finalTemplatesPath = defaultTemplatesPath;
+        let skipDownload = false;
+
+        if (templatesExists) {
+          print.divider();
+          print.info(`Templates folder already exists at: ${defaultTemplatesPath}`);
+
+          const useDifferentDir = await confirm({
+            message: 'Would you like to use a different directory for templates?',
+            default: false,
+          });
+          print.info(''); // Add spacing after prompt
+
+          if (useDifferentDir) {
+            print.divider();
+            const customDir = await input({
+              message: 'Enter custom templates directory path (relative to workspace root):',
+              default: 'templates',
+              validate: (value: string) => {
+                if (!value || value.trim() === '') {
+                  return 'Please enter a valid directory path';
+                }
+                return true;
+              },
+            });
+            print.info(''); // Add spacing after prompt
+
+            finalTemplatesPath = path.join(actorInput.workspaceRoot, customDir.trim());
+
+            // Create the directory if it doesn't exist
+            try {
+              await fs.mkdir(finalTemplatesPath, { recursive: true });
+              print.success(`Created templates directory at: ${finalTemplatesPath}`);
+            } catch (error) {
+              throw new Error(
+                `Failed to create templates directory at ${finalTemplatesPath}: ${(error as Error).message}`,
+              );
+            }
+          } else {
+            // User wants to keep existing templates folder - skip download
+            skipDownload = true;
+            print.info('Using existing templates folder');
+          }
+        }
+
+        // If skipping download, read existing templates from the folder
+        let existingTemplates: string[] | undefined;
+        if (skipDownload) {
+          try {
+            const templateSelectionService = new TemplateSelectionService(finalTemplatesPath);
+            const templates = await templateSelectionService.listTemplates();
+            existingTemplates = templates.map((t) => t.name);
+          } catch (_error) {
+            print.warning('Could not read existing templates, will proceed anyway');
+          }
+        }
+
+        return { templatesPath: finalTemplatesPath, skipDownload, existingTemplates };
+      } catch (error) {
+        throw new Error(`Failed to check templates folder: ${(error as Error).message}`);
+      }
+    },
+  ),
+
+  /**
    * Download templates to tmp folder
    */
   downloadTemplates: fromPromise(async () => {
-    const templateSelectionService = new TemplateSelectionService();
-    const tmpPath = await templateSelectionService.downloadTemplatesToTmp(DEFAULT_TEMPLATE_REPO);
-    return tmpPath;
+    const spinner = ora('Downloading templates from AgiFlow/aicode-toolkit...').start();
+
+    try {
+      const templateSelectionService = new TemplateSelectionService();
+      const tmpPath = await templateSelectionService.downloadTemplatesToTmp(DEFAULT_TEMPLATE_REPO);
+      spinner.succeed('Templates downloaded successfully');
+      return tmpPath;
+    } catch (error) {
+      spinner.fail('Failed to download templates');
+      throw error;
+    }
   }),
 
   /**
@@ -310,13 +427,15 @@ const initActors = {
         const choices = templates.map((t) => ({
           name: t.name,
           value: t.name,
-          description: t.description,
+          description: t.description ? `\n  ${t.description}` : undefined,
         }));
 
+        print.divider();
         const selected = await select({
           message: 'Select template (monolith allows only one):',
           choices,
         });
+        print.info(''); // Add spacing after prompt
 
         return [selected];
       }
@@ -326,14 +445,16 @@ const initActors = {
       const choices = templates.map((t) => ({
         name: t.name,
         value: t.name,
-        description: t.description,
+        description: t.description ? `\n  ${t.description}` : undefined,
         checked: true, // All templates selected by default for monorepo
       }));
 
+      print.divider();
       const selected = await checkbox({
         message: 'Select templates (use space to select, enter to confirm):',
         choices,
       });
+      print.info(''); // Add spacing after prompt
 
       if (selected.length === 0) {
         throw new Error('Please select at least one template');
@@ -353,22 +474,30 @@ const initActors = {
       input: {
         tmpTemplatesPath: string;
         workspaceRoot: string;
+        templatesPath: string;
         selectedTemplates: string[];
         projectType: ProjectType;
         selectedMcpServers?: MCPServer[];
       };
     }) => {
-      const templateSelectionService = new TemplateSelectionService(actorInput.tmpTemplatesPath);
-      const templatesPath = path.join(actorInput.workspaceRoot, 'templates');
+      const spinner = ora('Copying templates to workspace...').start();
 
-      await templateSelectionService.copyTemplates(
-        actorInput.selectedTemplates,
-        templatesPath,
-        actorInput.projectType,
-        actorInput.selectedMcpServers,
-      );
+      try {
+        const templateSelectionService = new TemplateSelectionService(actorInput.tmpTemplatesPath);
 
-      return templatesPath;
+        await templateSelectionService.copyTemplates(
+          actorInput.selectedTemplates,
+          actorInput.templatesPath,
+          actorInput.projectType,
+          actorInput.selectedMcpServers,
+        );
+
+        spinner.succeed(`Templates copied to ${actorInput.templatesPath}`);
+        return actorInput.templatesPath;
+      } catch (error) {
+        spinner.fail('Failed to copy templates');
+        throw error;
+      }
     },
   ),
 
@@ -379,13 +508,24 @@ const initActors = {
     async ({
       input: actorInput,
     }: {
-      input: { workspaceRoot: string; projectType: ProjectType; selectedTemplates: string[] };
+      input: {
+        workspaceRoot: string;
+        projectType: ProjectType;
+        templatesPath: string;
+        selectedTemplates: string[];
+      };
     }) => {
       // Only create toolkit.yaml for monolith
       if (actorInput.projectType === ProjectType.MONOLITH) {
+        // Calculate relative path from workspace root
+        const relativeTemplatesPath = path.relative(
+          actorInput.workspaceRoot,
+          actorInput.templatesPath,
+        );
+
         const toolkitConfig: ToolkitConfig = {
           version: '1.0',
-          templatesPath: 'templates',
+          templatesPath: relativeTemplatesPath || 'templates',
           projectType: 'monolith',
           sourceTemplate: actorInput.selectedTemplates[0], // Monolith has only one template
         };
@@ -428,14 +568,16 @@ const initActors = {
 
       const agents = CodingAgentService.getAvailableAgents();
 
+      print.divider();
       const selected = await select({
         message: 'Select coding agent for MCP configuration:',
         choices: agents.map((agent) => ({
           name: agent.name,
           value: agent.value,
-          description: agent.description,
+          description: `\n  ${agent.description}`,
         })),
       });
+      print.info(''); // Add spacing after prompt
 
       return selected;
     },
@@ -450,8 +592,16 @@ const initActors = {
     }: {
       input: { workspaceRoot: string; codingAgent: CodingAgent };
     }) => {
-      const codingAgentService = new CodingAgentService(actorInput.workspaceRoot);
-      await codingAgentService.setupMCP(actorInput.codingAgent);
+      const spinner = ora(`Setting up MCP for ${actorInput.codingAgent}...`).start();
+
+      try {
+        const codingAgentService = new CodingAgentService(actorInput.workspaceRoot);
+        await codingAgentService.setupMCP(actorInput.codingAgent);
+        spinner.succeed('MCP configuration completed');
+      } catch (error) {
+        spinner.fail('Failed to configure MCP');
+        throw error;
+      }
     },
   ),
 
@@ -460,10 +610,176 @@ const initActors = {
    */
   cleanup: fromPromise(async ({ input }: { input: { tmpTemplatesPath?: string } }) => {
     if (input.tmpTemplatesPath) {
-      const templateSelectionService = new TemplateSelectionService(input.tmpTemplatesPath);
-      await templateSelectionService.cleanup();
+      const spinner = ora('Cleaning up temporary files...').start();
+      try {
+        const templateSelectionService = new TemplateSelectionService(input.tmpTemplatesPath);
+        await templateSelectionService.cleanup();
+        spinner.succeed('Cleaned up temporary files');
+      } catch (_error) {
+        spinner.warn('Could not clean up all temporary files');
+      }
     }
   }),
+
+  /**
+   * Detect if spec tool is installed
+   */
+  detectSpecTool: fromPromise(async ({ input }: { input: { workspaceRoot: string } }) => {
+    print.info('\nDetecting spec tools...');
+    const specToolService = new SpecToolService(input.workspaceRoot);
+    const detectedTool = await specToolService.detectSpecTool();
+
+    if (detectedTool) {
+      print.success(`Detected ${SPEC_TOOL_INFO[detectedTool].name} in workspace`);
+    } else {
+      print.info('No spec tool detected');
+    }
+
+    return detectedTool;
+  }),
+
+  /**
+   * Prompt user about spec-driven approach
+   */
+  promptSpecDrivenApproach: fromPromise(
+    async ({ input: actorInput }: { input: { detectedSpecTool: SpecTool | null } }) => {
+      if (actorInput.detectedSpecTool) {
+        // Already installed, ask if they want to update instructions
+        print.divider();
+        const result = await confirm({
+          message: `${SPEC_TOOL_INFO[actorInput.detectedSpecTool].name} is installed. Would you like to update the agent instructions for spec-driven development?`,
+          default: true,
+        });
+        print.info(''); // Add spacing after prompt
+        return result;
+      }
+
+      // Not installed, ask if they want to install
+      print.divider();
+      const result = await confirm({
+        message:
+          'Would you like to install OpenSpec for spec-driven development? This helps AI assistants agree on what to build before writing code.',
+        default: false,
+      });
+      print.info(''); // Add spacing after prompt
+      return result;
+    },
+  ),
+
+  /**
+   * Setup spec tool (init or update)
+   */
+  setupSpec: fromPromise(
+    async ({
+      input,
+    }: {
+      input: {
+        workspaceRoot: string;
+        isAlreadyInstalled: boolean;
+        selectedMcpServers?: string[];
+        codingAgent?: CodingAgent;
+        projectType?: ProjectType;
+      };
+    }) => {
+      // Create CodingAgentService for updating custom instructions
+      const codingAgentService = new CodingAgentService(input.workspaceRoot);
+
+      // Create SpecToolService with CodingAgentService dependency
+      const specToolService = new SpecToolService(
+        input.workspaceRoot,
+        SpecTool.OPENSPEC,
+        codingAgentService,
+      );
+
+      if (input.isAlreadyInstalled) {
+        const spinner = ora('Updating OpenSpec agent instructions...').start();
+        try {
+          // Update existing installation - generate prompt based on enabled MCPs
+          const enabledMcps = {
+            scaffoldMcp: input.selectedMcpServers?.includes(MCPServer.SCAFFOLD) ?? false,
+            architectMcp: input.selectedMcpServers?.includes(MCPServer.ARCHITECT) ?? false,
+            projectType: input.projectType,
+          };
+
+          // Update instructions and automatically append to coding agent config
+          await specToolService.updateInstructions(enabledMcps, input.codingAgent);
+          spinner.succeed('OpenSpec agent instructions updated');
+        } catch (error) {
+          spinner.fail('Failed to update OpenSpec instructions');
+          throw error;
+        }
+      } else {
+        // Show spinner briefly, then stop for interactive initialization
+        const spinner = ora('Initializing OpenSpec...').start();
+
+        // Stop spinner after 1 second to allow interactive CLI
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        spinner.stop();
+
+        try {
+          // Initialize new installation (interactive)
+          await specToolService.initializeSpec();
+          print.success('OpenSpec initialized successfully');
+        } catch (error) {
+          print.error('Failed to initialize OpenSpec');
+          throw error;
+        }
+      }
+    },
+  ),
+
+  /**
+   * Prompt user to update spec instructions after new installation
+   */
+  promptSpecInstructions: fromPromise(async () => {
+    print.divider();
+    const result = await confirm({
+      message: 'Would you like to update the agent instructions with OpenSpec workflow guidance?',
+      default: true,
+    });
+    print.info(''); // Add spacing after prompt
+    return result;
+  }),
+
+  /**
+   * Update spec instructions
+   */
+  updateSpecInstructions: fromPromise(
+    async ({
+      input,
+    }: {
+      input: {
+        workspaceRoot: string;
+        selectedMcpServers?: string[];
+        codingAgent?: CodingAgent;
+        projectType?: ProjectType;
+      };
+    }) => {
+      const spinner = ora('Updating OpenSpec agent instructions...').start();
+
+      try {
+        const codingAgentService = new CodingAgentService(input.workspaceRoot);
+        const specToolService = new SpecToolService(
+          input.workspaceRoot,
+          SpecTool.OPENSPEC,
+          codingAgentService,
+        );
+
+        // Update instructions with enabled MCPs
+        const enabledMcps = {
+          scaffoldMcp: input.selectedMcpServers?.includes(MCPServer.SCAFFOLD) ?? false,
+          architectMcp: input.selectedMcpServers?.includes(MCPServer.ARCHITECT) ?? false,
+          projectType: input.projectType,
+        };
+
+        await specToolService.updateInstructions(enabledMcps, input.codingAgent);
+        spinner.succeed('OpenSpec agent instructions updated');
+      } catch (error) {
+        spinner.fail('Failed to update OpenSpec instructions');
+        throw error;
+      }
+    },
+  ),
 };
 
 /**

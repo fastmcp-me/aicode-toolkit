@@ -27,12 +27,9 @@ A collection of [Model Context Protocol (MCP)](https://modelcontextprotocol.io) 
   - [Adding Features](#adding-features)
 - [Development Workflow](#development-workflow)
 - [Packages](#packages)
-- [Development](#development)
-- [Documentation](#documentation)
-- [Tool-Specific Support](#tool-specific-support)
-  - [Claude Code](#claude-code)
-  - [Other Tools](#other-tools)
-- [Version Support](#version-support)
+- [Supported Integrations](#supported-integrations)
+  - [Coding Agents](#coding-agents)
+  - [Spec-Driven Development Tools](#spec-driven-development-tools)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -431,7 +428,7 @@ Result: Validates against RULES.yaml (named exports, error handling, etc.)
 
 ### [@agiflowai/aicode-toolkit](./apps/aicode-toolkit)
 
-Unified CLI for initializing projects, managing templates, and configuring MCP servers. Provides interactive workflows for project setup with automatic detection of coding agents (Claude Code, Codex, Gemini CLI).
+Unified CLI for initializing projects, managing templates, and configuring MCP servers. Provides interactive workflows for project setup with automatic detection of coding agents (Claude Code, Cursor, Gemini CLI, Codex CLI, GitHub Copilot).
 
 **Key Features:**
 - Interactive project initialization (monorepo or monolith)
@@ -470,131 +467,76 @@ MCP server for architecture design, code quality enforcement, and design pattern
 
 [View full documentation →](./packages/architect-mcp/README.md)
 
----
+### [@agiflowai/coding-agent-bridge](./packages/coding-agent-bridge)
 
-## Development
+Service layer for integrating with AI coding agents. Provides a unified interface for detecting, configuring, and invoking different coding assistants programmatically.
 
-This is an [Nx](https://nx.dev) monorepo using [pnpm](https://pnpm.io) for package management.
+**Key Features:**
+- Automatic coding agent detection (Claude Code, Cursor, Gemini CLI, etc.)
+- Unified interface for MCP configuration and custom instructions
+- LLM invocation API for using coding agents as pure LLMs
+- Agent-specific adapters with consistent API
+- Support for stdio, HTTP, and SSE transports
 
-### Common Commands
+**Currently Supported Coding Agents:**
+- **Claude Code** - Full support with `.mcp.json` configuration and CLAUDE.md/AGENTS.md instructions
+- **Cursor** - MCP configuration and .cursorrules instructions
+- **Gemini CLI** - .gemini workspace detection and configuration
+- **Codex CLI** - .codex workspace detection and configuration
+- **GitHub Copilot** - MCP support and .github/copilot-instructions.md
 
-```bash
-# Install dependencies
-pnpm install
+**Coming Soon:**
+- Windsurf
+- Zed
+- VS Code with Continue/Cody extensions
 
-# Build all packages
-pnpm build
-
-# Build a specific package
-pnpm exec nx build scaffold-mcp
-
-# Run tests
-pnpm test
-pnpm exec nx test scaffold-mcp
-
-# Lint and format
-pnpm lint              # Check for issues
-pnpm lint:fix          # Auto-fix issues
-pnpm format            # Format code
-pnpm format:check      # Check formatting
-
-# Type checking
-pnpm typecheck
-pnpm exec nx typecheck scaffold-mcp
-
-# Visualize project graph
-pnpm exec nx graph
-```
-
-### Code Quality
-
-We use [Biome](https://biomejs.dev/) for lightning-fast linting and formatting:
-- ⚡ **10-100x faster** than ESLint (written in Rust)
-- 🎯 **All-in-one**: Replaces ESLint + Prettier
-- 🔧 **Zero config**: Sensible defaults out of the box
-
-Configuration: [`biome.json`](./biome.json)
-
-### Publishing
-
-See [PUBLISHING.md](./PUBLISHING.md) for the complete release workflow:
-
-```bash
-# Preview release (dry run)
-pnpm release:dry-run
-
-# Publish to npm
-pnpm release
-```
+[View full documentation →](./packages/coding-agent-bridge/README.md)
 
 ---
 
-## Documentation
+## Supported Integrations
 
-### Scaffold MCP
-- **[Scaffold MCP Guide](./packages/scaffold-mcp/README.md)** - Complete guide to the scaffolding MCP server
-- **[How to Use Prompts](./packages/scaffold-mcp/docs/how-to.md)** - Step-by-step guide for using slash command prompts
+### Coding Agents
 
-### Architect MCP
-- **[Architect MCP Guide](./packages/architect-mcp/README.md)** - Complete guide to the architecture and rules MCP server
-- **[Design Pattern Overview](./packages/architect-mcp/docs/design-pattern-overview.md)** - High-level explanation of the design pattern system
-- **[Rules Overview](./packages/architect-mcp/docs/rules-overview.md)** - Detailed guide to the coding rules system
+AI Code Toolkit integrates with popular AI coding assistants through the `coding-agent-bridge` package:
 
-### General
-- **[Contributing Guide](./CONTRIBUTING.md)** - How to contribute to this project
-- **[Publishing Guide](./PUBLISHING.md)** - Release and versioning workflow
-
----
-
-## Tool-Specific Support
-
-### Claude Code
-
-The AICode Toolkit provides first-class support for Claude Code through a dedicated plugin marketplace. This integration offers:
-
-**🎁 Plugin Marketplace:**
-- **4 focused plugins** organized by project maturity (Bootstrap, Develop, Review, Admin)
-- **Automatic configuration** - No manual MCP server setup required
-- **Specialized agents** - Pre-built agents for architecture review, testing, and migrations
-- **Slash commands** - Quick workflow commands like `/edit-with-pattern`
-- **Team distribution** - Share plugin configurations via `.claude/settings.json`
-
-**Quick Install:**
-```bash
-/plugin marketplace add https://github.com/AgiFlow/aicode-toolkit
-/plugin install aicode-develop@aicode-toolkit
-```
+| Agent | Status | MCP Support | Custom Instructions | LLM API |
+|-------|--------|-------------|---------------------|---------|
+| **Claude Code** | ✅ Supported | `.mcp.json` | `CLAUDE.md`, `AGENTS.md` | ✅ |
+| **Cursor** | ✅ Supported | `.cursorrules` | `.cursorrules` | ⏳ |
+| **Gemini CLI** | ✅ Supported | `.gemini` | `.gemini` | ⏳ |
+| **Codex CLI** | ✅ Supported | `.codex` | `.codex` | ⏳ |
+| **GitHub Copilot** | ✅ Supported | MCP | `.github/copilot-instructions.md` | ⏳ |
+| **Windsurf** | 🔄 Coming Soon | MCP | Custom | ⏳ |
+| **Zed** | 🔄 Planned | MCP | Custom | ⏳ |
+| **VS Code + Continue** | 🔄 Planned | MCP | `.continuerc.json` | ⏳ |
 
 **Features:**
-- ✅ AI-powered pattern filtering (analyzes file content, not just paths)
-- ✅ Intelligent code review (understands code intent)
-- ✅ Architecture review agent with trade-off analysis
-- ✅ Test coverage agent for comprehensive testing
-- ✅ Migration assistant for framework upgrades
+- **Auto-detection**: Automatically detects installed coding agents in your workspace
+- **Unified API**: Same interface for all agents (configuration, instructions, invocation)
+- **MCP Configuration**: Programmatic setup of MCP servers
+- **LLM Invocation**: Use coding agents as pure LLMs (no tool use)
 
-📖 **[Complete Claude Code Marketplace Guide →](./docs/claude-code/MARKETPLACE.md)**
+### Spec-Driven Development Tools
 
-### Other Tools
+AI Code Toolkit supports spec-driven development through the `aicode-toolkit` CLI:
 
-While AICode Toolkit works with any MCP-compatible tool (Claude Code, Cursor, etc.), Claude Code integration provides the most seamless experience with:
-- Pre-configured plugin marketplace
-- Specialized agents for complex workflows
-- Built-in slash commands
-- Team collaboration features
+| Tool | Status | Description | Documentation |
+|------|--------|-------------|---------------|
+| **OpenSpec** | ✅ Supported | Spec-driven development for AI coding assistants | [OpenSpec GitHub](https://github.com/Fission-AI/OpenSpec) |
+| **SpecKit** | 🔄 Planned | Lightweight spec framework for AI agents | Coming Soon |
 
-For other tools, see the [Quick Start](#quick-start) guide for manual MCP server configuration.
+**How It Works:**
+```bash
+# Initialize OpenSpec in your project
+npx @agiflowai/aicode-toolkit init
 
----
-
-## Version Support
-
-| Component | Requirement |
-|-----------|-------------|
-| **Node.js** | `>= 18` (LTS recommended) |
-| **Git** | `>= 2.13.2` |
-| **pnpm** | `>= 9` (or use npm/yarn) |
-
-Security patches are applied to non-EOL versions. Features are added to the latest version only.
+# The toolkit automatically:
+# 1. Detects your coding agent (Claude Code, Cursor, etc.)
+# 2. Configures OpenSpec integration
+# 3. Updates agent instructions with OpenSpec workflows
+# 4. Coordinates MCP servers (scaffold-mcp, architect-mcp)
+```
 
 ---
 
@@ -604,13 +546,13 @@ We welcome contributions! Whether it's bug reports, feature requests, or pull re
 
 **How to contribute:**
 
-1. 🍴 Fork the repository
-2. 🌿 Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. 💻 Make your changes
-4. ✅ Run tests and linting (`pnpm test && pnpm lint`)
-5. 📝 Commit your changes (follow [conventional commits](https://www.conventionalcommits.org))
-6. 🚀 Push to your branch (`git push origin feature/amazing-feature`)
-7. 🎉 Open a Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run tests and linting (`pnpm test && pnpm lint`)
+5. Commit your changes (follow [conventional commits](https://www.conventionalcommits.org))
+6. Push to your branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
@@ -624,7 +566,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
 **Built with ❤️ by the AgiflowIO team**
 
-- 🐛 [Report Issues](https://github.com/AgiFlow/aicode-toolkit/issues)
-- 💬 [Discussions](https://github.com/AgiFlow/aicode-toolkit/discussions)
-- 💬 [Discord Community](https://discord.gg/NsB6q9Vas9)
-- 🌐 [Website](https://agiflow.io)
+- [Report Issues](https://github.com/AgiFlow/aicode-toolkit/issues)
+- [Discussions](https://github.com/AgiFlow/aicode-toolkit/discussions)
+- [Discord Community](https://discord.gg/NsB6q9Vas9)
+- [Website](https://agiflow.io)

@@ -79,6 +79,13 @@ export const print = {
   newline: () => {
     console.log();
   },
+
+  /**
+   * Print a visual divider (dots)
+   */
+  divider: () => {
+    console.log(chalk.gray('·'.repeat(60)));
+  },
 };
 
 /**

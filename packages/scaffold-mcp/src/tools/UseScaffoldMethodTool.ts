@@ -8,19 +8,44 @@ export class UseScaffoldMethodTool {
 
   private fileSystemService: FileSystemService;
   private scaffoldingMethodsService: ScaffoldingMethodsService;
+  private isMonolith: boolean;
 
-  constructor(templatesPath: string) {
+  constructor(templatesPath: string, isMonolith: boolean = false) {
     this.fileSystemService = new FileSystemService();
     this.scaffoldingMethodsService = new ScaffoldingMethodsService(
       this.fileSystemService,
       templatesPath,
     );
+    this.isMonolith = isMonolith;
   }
 
   /**
    * Get the tool definition for MCP
    */
   getDefinition(): ToolDefinition {
+    // Build properties based on mode
+    const properties: Record<string, any> = {
+      scaffold_feature_name: {
+        type: 'string',
+        description:
+          'Exact name of the scaffold method to use (from list-scaffolding-methods response)',
+      },
+      variables: {
+        type: 'object',
+        description: "Variables object matching the scaffold method's variables_schema exactly",
+      },
+    };
+
+    // Only add projectPath in monorepo mode
+    // In monolith mode, automatically use current working directory
+    if (!this.isMonolith) {
+      properties.projectPath = {
+        type: 'string',
+        description:
+          'Absolute path to the project directory (for monorepo: containing project.json; for monolith: workspace root with toolkit.yaml)',
+      };
+    }
+
     return {
       name: UseScaffoldMethodTool.TOOL_NAME,
       description: `Generates and adds a specific feature to an existing project using a scaffolding method.
@@ -40,23 +65,10 @@ IMPORTANT:
 `,
       inputSchema: {
         type: 'object',
-        properties: {
-          projectPath: {
-            type: 'string',
-            description:
-              'Absolute path to the project directory (for monorepo: containing project.json; for monolith: workspace root with toolkit.yaml)',
-          },
-          scaffold_feature_name: {
-            type: 'string',
-            description:
-              'Exact name of the scaffold method to use (from list-scaffolding-methods response)',
-          },
-          variables: {
-            type: 'object',
-            description: "Variables object matching the scaffold method's variables_schema exactly",
-          },
-        },
-        required: ['projectPath', 'scaffold_feature_name', 'variables'],
+        properties,
+        required: this.isMonolith
+          ? ['scaffold_feature_name', 'variables']
+          : ['projectPath', 'scaffold_feature_name', 'variables'],
         additionalProperties: false,
       },
     };
@@ -68,25 +80,17 @@ IMPORTANT:
   async execute(args: Record<string, any>): Promise<CallToolResult> {
     try {
       const { projectPath, scaffold_feature_name, variables } = args as {
-        projectPath: string;
+        projectPath?: string;
         scaffold_feature_name: string;
         variables: Record<string, any>;
       };
 
-      if (!projectPath) {
-        throw new Error('Missing required parameter: projectPath');
-      }
-
-      if (!scaffold_feature_name) {
-        throw new Error('Missing required parameter: scaffold_feature_name');
-      }
-
-      if (!variables) {
-        throw new Error('Missing required parameter: variables');
-      }
+      // In monolith mode, automatically use current working directory
+      // In monorepo mode, projectPath is required by schema
+      const resolvedProjectPath = this.isMonolith ? process.cwd() : projectPath!;
 
       const result = await this.scaffoldingMethodsService.useScaffoldMethod({
-        projectPath,
+        projectPath: resolvedProjectPath,
         scaffold_feature_name,
         variables,
       });

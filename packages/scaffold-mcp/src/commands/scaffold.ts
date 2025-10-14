@@ -19,20 +19,17 @@ export const scaffoldCommand = new Command('scaffold').description(
 
 // List command
 scaffoldCommand
-  .command('list <projectPath>')
-  .description('List available scaffolding methods for a project')
-  .action(async (projectPath) => {
+  .command('list [projectPath]')
+  .description('List available scaffolding methods for a project or template')
+  .option('-t, --template <name>', 'Template name (e.g., nextjs-15, typescript-mcp-package)')
+  .action(async (projectPath, options) => {
     try {
-      const absolutePath = path.resolve(projectPath);
-
-      // Verify project configuration exists (supports both monolith and monorepo)
-      const hasConfig = await ProjectConfigResolver.hasConfiguration(absolutePath);
-      if (!hasConfig) {
-        messages.error(`No project configuration found in ${absolutePath}`);
-        messages.hint(
-          'For monorepo: ensure project.json exists with sourceTemplate field\n' +
-            'For monolith: ensure toolkit.yaml exists at workspace root',
-        );
+      // Require either projectPath or template option
+      if (!projectPath && !options.template) {
+        messages.error('Either projectPath or --template option must be provided');
+        messages.hint('Examples:');
+        print.debug('  scaffold-mcp scaffold list ./my-project');
+        print.debug('  scaffold-mcp scaffold list --template nextjs-15');
         process.exit(1);
       }
 
@@ -42,15 +39,42 @@ scaffoldCommand
         fileSystemService,
         templatesDir,
       );
-      const result = await scaffoldingMethodsService.listScaffoldingMethods(absolutePath);
+
+      let result;
+      let displayName: string;
+
+      if (projectPath) {
+        // Use project path
+        const absolutePath = path.resolve(projectPath);
+
+        // Verify project configuration exists (supports both monolith and monorepo)
+        const hasConfig = await ProjectConfigResolver.hasConfiguration(absolutePath);
+        if (!hasConfig) {
+          messages.error(`No project configuration found in ${absolutePath}`);
+          messages.hint(
+            'For monorepo: ensure project.json exists with sourceTemplate field\n' +
+              'For monolith: ensure toolkit.yaml exists at workspace root\n' +
+              'Or use --template option to list methods for a specific template',
+          );
+          process.exit(1);
+        }
+
+        result = await scaffoldingMethodsService.listScaffoldingMethods(absolutePath);
+        displayName = projectPath;
+      } else {
+        // Use template name
+        result = await scaffoldingMethodsService.listScaffoldingMethodsByTemplate(options.template);
+        displayName = `template: ${options.template}`;
+      }
+
       const methods = result.methods;
 
       if (methods.length === 0) {
-        messages.warning('No scaffolding methods available for this project.');
+        messages.warning(`No scaffolding methods available for ${displayName}.`);
         return;
       }
 
-      print.header(`\n${icons.wrench} Available Scaffolding Methods for ${projectPath}:\n`);
+      print.header(`\n${icons.wrench} Available Scaffolding Methods for ${displayName}:\n`);
 
       for (const method of methods) {
         print.highlight(`  ${method.name}`);
@@ -173,7 +197,6 @@ scaffoldCommand
 
       if (result.success) {
         messages.success('✅ Feature added successfully!');
-        console.log(result.message);
 
         if (result.createdFiles && result.createdFiles.length > 0) {
           print.header('\n📁 Created files:');
@@ -195,9 +218,6 @@ scaffoldCommand
       }
     } catch (error) {
       messages.error(`❌ Error adding feature: ${(error as Error).message}`);
-      if (options.verbose) {
-        console.error('Stack trace:', (error as Error).stack);
-      }
       process.exit(1);
     }
   });
@@ -206,19 +226,16 @@ scaffoldCommand
 scaffoldCommand
   .command('info <featureName>')
   .description('Show detailed information about a scaffold method')
-  .option('-p, --project <path>', 'Project path', process.cwd())
+  .option('-p, --project <path>', 'Project path')
+  .option('-t, --template <name>', 'Template name (e.g., nextjs-15, typescript-mcp-package)')
   .action(async (featureName, options) => {
     try {
-      const projectPath = path.resolve(options.project);
-
-      // Verify project configuration exists (supports both monolith and monorepo)
-      const hasConfig = await ProjectConfigResolver.hasConfiguration(projectPath);
-      if (!hasConfig) {
-        messages.error(`No project configuration found in ${projectPath}`);
-        messages.hint(
-          'For monorepo: ensure project.json exists with sourceTemplate field\n' +
-            'For monolith: ensure toolkit.yaml exists at workspace root',
-        );
+      // Require either project or template option
+      if (!options.project && !options.template) {
+        messages.error('Either --project or --template option must be provided');
+        messages.hint('Examples:');
+        print.debug('  scaffold-mcp scaffold info scaffold-route --project ./my-app');
+        print.debug('  scaffold-mcp scaffold info scaffold-route --template nextjs-15');
         process.exit(1);
       }
 
@@ -228,7 +245,31 @@ scaffoldCommand
         fileSystemService,
         templatesDir,
       );
-      const result = await scaffoldingMethodsService.listScaffoldingMethods(projectPath);
+
+      let result;
+
+      if (options.project) {
+        // Use project path
+        const projectPath = path.resolve(options.project);
+
+        // Verify project configuration exists (supports both monolith and monorepo)
+        const hasConfig = await ProjectConfigResolver.hasConfiguration(projectPath);
+        if (!hasConfig) {
+          messages.error(`No project configuration found in ${projectPath}`);
+          messages.hint(
+            'For monorepo: ensure project.json exists with sourceTemplate field\n' +
+              'For monolith: ensure toolkit.yaml exists at workspace root\n' +
+              'Or use --template option to view info for a specific template',
+          );
+          process.exit(1);
+        }
+
+        result = await scaffoldingMethodsService.listScaffoldingMethods(projectPath);
+      } else {
+        // Use template name
+        result = await scaffoldingMethodsService.listScaffoldingMethodsByTemplate(options.template);
+      }
+
       const methods = result.methods;
       const method = methods.find((m) => m.name === featureName);
 
@@ -241,7 +282,7 @@ scaffoldCommand
       print.debug(`Description: ${method.description}`);
 
       print.header('\n📝 Variables Schema:');
-      console.log(JSON.stringify(method.variables_schema, null, 2));
+      print.debug(JSON.stringify(method.variables_schema, null, 2));
 
       const includes = 'includes' in method ? (method.includes as string[]) : [];
       if (includes && includes.length > 0) {

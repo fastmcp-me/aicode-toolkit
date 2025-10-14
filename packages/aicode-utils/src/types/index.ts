@@ -21,6 +21,16 @@
 export * from './projectConfig';
 
 /**
+ * Toolkit configuration from toolkit.yaml
+ */
+export interface ToolkitConfig {
+  version?: string;
+  templatesPath?: string;
+  projectType?: 'monolith' | 'monorepo';
+  sourceTemplate?: string;
+}
+
+/**
  * Project configuration from project.json
  */
 export interface ProjectConfig {

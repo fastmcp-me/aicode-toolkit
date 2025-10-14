@@ -17,4 +17,6 @@
 
 export * from './ClaudeCodeService';
 export * from './CodexService';
+export * from './CursorService';
 export * from './GeminiCliService';
+export * from './GitHubCopilotService';

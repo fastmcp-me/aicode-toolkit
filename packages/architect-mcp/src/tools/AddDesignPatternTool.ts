@@ -23,9 +23,9 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { Tool, ToolDefinition, Feature } from '../types/index.js';
 import { TemplatesManagerService } from '@agiflowai/aicode-utils';
-import * as fs from 'fs/promises';
+import * as fs from 'node:fs/promises';
 import * as yaml from 'js-yaml';
-import * as path from 'path';
+import * as path from 'node:path';
 
 interface AddDesignPatternToolInput {
   template_name: string;
@@ -124,7 +124,7 @@ export class AddDesignPatternTool implements Tool<AddDesignPatternToolInput> {
       }
 
       // Check if pattern already exists
-      const existingPattern = architectConfig.features!.find(
+      const existingPattern = architectConfig.features?.find(
         (f) => f.name === input.pattern_name || f.architecture === input.pattern_name,
       );
 
@@ -155,7 +155,7 @@ export class AddDesignPatternTool implements Tool<AddDesignPatternToolInput> {
         description: input.description,
       };
 
-      architectConfig.features!.push(newFeature);
+      architectConfig.features?.push(newFeature);
 
       // Write back to file
       const yamlContent = yaml.dump(architectConfig, {

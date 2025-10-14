@@ -14,7 +14,7 @@
  */
 
 import { ProjectType } from '@agiflowai/aicode-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { NewProjectService, RESERVED_PROJECT_NAMES } from '../../src/services/NewProjectService';
 
 describe('NewProjectService', () => {

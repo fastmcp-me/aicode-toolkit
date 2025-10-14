@@ -1,4 +1,5 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { ProjectConfigResolver } from '@agiflowai/aicode-utils';
 import { BoilerplateGeneratorService } from '../services/BoilerplateGeneratorService';
 import type { ToolDefinition } from './types';
 
@@ -9,44 +10,42 @@ export class GenerateBoilerplateTool {
   static readonly TOOL_NAME = 'generate-boilerplate';
 
   private boilerplateGeneratorService: BoilerplateGeneratorService;
+  private isMonolith: boolean;
 
-  constructor(templatesPath: string) {
+  constructor(templatesPath: string, isMonolith: boolean = false) {
     this.boilerplateGeneratorService = new BoilerplateGeneratorService(templatesPath);
+    this.isMonolith = isMonolith;
   }
 
   /**
    * Get the tool definition for MCP
    */
   getDefinition(): ToolDefinition {
-    return {
-      name: GenerateBoilerplateTool.TOOL_NAME,
-      description: `Add a new boilerplate configuration to a template's scaffold.yaml file.
+    // Build properties object
+    const properties: Record<string, any> = {};
 
-This tool:
-- Creates or updates scaffold.yaml in the specified template directory
-- Adds a boilerplate entry with proper schema following the nextjs-15 pattern
-- Validates the boilerplate name doesn't already exist
-- Creates the template directory if it doesn't exist
+    // In monolith mode, templateName is optional (read from toolkit.yaml)
+    // In monorepo mode, templateName is required
+    if (!this.isMonolith) {
+      properties.templateName = {
+        type: 'string',
+        description: 'Name of the template folder (kebab-case, e.g., "my-framework")',
+      };
+    }
 
-Use this to add custom boilerplate configurations for frameworks not yet supported or for your specific project needs.`,
-      inputSchema: {
-        type: 'object',
-        properties: {
-          templateName: {
-            type: 'string',
-            description: 'Name of the template folder (kebab-case, e.g., "my-framework")',
-          },
-          boilerplateName: {
-            type: 'string',
-            description: 'Name of the boilerplate (kebab-case, e.g., "scaffold-my-app")',
-          },
-          targetFolder: {
-            type: 'string',
-            description: 'Target folder where projects will be created (e.g., "apps", "packages")',
-          },
-          description: {
-            type: 'string',
-            description: `Detailed description of what this boilerplate creates and its key features.
+    // Add common properties
+    Object.assign(properties, {
+      boilerplateName: {
+        type: 'string',
+        description: 'Name of the boilerplate (kebab-case, e.g., "scaffold-my-app")',
+      },
+      targetFolder: {
+        type: 'string',
+        description: 'Target folder where projects will be created (e.g., "apps", "packages")',
+      },
+      description: {
+        type: 'string',
+        description: `Detailed description of what this boilerplate creates and its key features.
 
 STRUCTURE (3-5 sentences in multiple paragraphs):
 - Paragraph 1: Core technology stack and primary value proposition
@@ -57,10 +56,10 @@ Example: "A modern React SPA template powered by Vite for lightning-fast HMR, fe
 Perfect for building data-driven dashboards, admin panels, and interactive web applications requiring client-side routing and real-time data synchronization.
 
 Includes Agiflow Config Management System integration with systematic environment variable naming (VITE_{CATEGORY}_{SUBCATEGORY}_{PROPERTY}) and auto-generated configuration templates for cloud deployment."`,
-          },
-          instruction: {
-            type: 'string',
-            description: `Optional detailed instructions about the generated files, their purposes, and how to work with them.
+      },
+      instruction: {
+        type: 'string',
+        description: `Optional detailed instructions about the generated files, their purposes, and how to work with them.
 
 STRUCTURE (Multi-section guide):
 
@@ -104,40 +103,40 @@ Design patterns to follow:
 - Type-safe Routes: Leverage [framework] type inference for params
 - State Management: Use [library] for server state, [library] for client state
 [... list key patterns with explanations ...]"`,
-          },
-          variables: {
-            type: 'array',
-            description: 'Array of variable definitions for the boilerplate',
-            items: {
-              type: 'object',
-              properties: {
-                name: {
-                  type: 'string',
-                  description: 'Variable name (camelCase)',
-                },
-                description: {
-                  type: 'string',
-                  description: 'Variable description',
-                },
-                type: {
-                  type: 'string',
-                  enum: ['string', 'number', 'boolean'],
-                  description: 'Variable type',
-                },
-                required: {
-                  type: 'boolean',
-                  description: 'Whether this variable is required',
-                },
-                default: {
-                  description: 'Optional default value for the variable',
-                },
-              },
-              required: ['name', 'description', 'type', 'required'],
+      },
+      variables: {
+        type: 'array',
+        description: 'Array of variable definitions for the boilerplate',
+        items: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description: 'Variable name (camelCase)',
+            },
+            description: {
+              type: 'string',
+              description: 'Variable description',
+            },
+            type: {
+              type: 'string',
+              enum: ['string', 'number', 'boolean'],
+              description: 'Variable type',
+            },
+            required: {
+              type: 'boolean',
+              description: 'Whether this variable is required',
+            },
+            default: {
+              description: 'Optional default value for the variable',
             },
           },
-          includes: {
-            type: 'array',
-            description: `Array of specific file paths to include in the boilerplate (highly recommended to list explicitly).
+          required: ['name', 'description', 'type', 'required'],
+        },
+      },
+      includes: {
+        type: 'array',
+        description: `Array of specific file paths to include in the boilerplate (highly recommended to list explicitly).
 
 Examples:
 - ["package.json", "tsconfig.json", "src/index.ts"] - Explicit file list (recommended)
@@ -151,12 +150,34 @@ Best practices:
 - Avoid wildcards unless you have a good reason
 
 See templates/nextjs-15/scaffold.yaml for a good example of explicit file listing.`,
-            items: {
-              type: 'string',
-            },
-          },
+        items: {
+          type: 'string',
         },
-        required: ['templateName', 'boilerplateName', 'description', 'targetFolder', 'variables'],
+      },
+    });
+
+    // Build required array based on mode
+    const required = ['boilerplateName', 'description', 'variables'];
+    if (!this.isMonolith) {
+      required.unshift('templateName');
+      required.push('targetFolder');
+    }
+
+    return {
+      name: GenerateBoilerplateTool.TOOL_NAME,
+      description: `Add a new boilerplate configuration to a template's scaffold.yaml file.
+
+This tool:
+- Creates or updates scaffold.yaml in the specified template directory
+- Adds a boilerplate entry with proper schema following the nextjs-15 pattern
+- Validates the boilerplate name doesn't already exist
+- Creates the template directory if it doesn't exist
+
+Use this to add custom boilerplate configurations for frameworks not yet supported or for your specific project needs.`,
+      inputSchema: {
+        type: 'object',
+        properties,
+        required,
         additionalProperties: false,
       },
     };
@@ -166,11 +187,11 @@ See templates/nextjs-15/scaffold.yaml for a good example of explicit file listin
    * Execute the tool
    */
   async execute(args: {
-    templateName: string;
+    templateName?: string;
     boilerplateName: string;
     description: string;
     instruction?: string;
-    targetFolder: string;
+    targetFolder?: string;
     variables: Array<{
       name: string;
       description: string;
@@ -181,7 +202,61 @@ See templates/nextjs-15/scaffold.yaml for a good example of explicit file listin
     includes?: string[];
   }): Promise<CallToolResult> {
     try {
-      const result = await this.boilerplateGeneratorService.generateBoilerplate(args);
+      let { templateName, targetFolder } = args;
+
+      // In monolith mode, read templateName from toolkit.yaml if not provided
+      if (this.isMonolith && !templateName) {
+        try {
+          const config = await ProjectConfigResolver.resolveProjectConfig(process.cwd());
+          templateName = config.sourceTemplate;
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Failed to read template name from configuration: ${error instanceof Error ? error.message : String(error)}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      }
+
+      // In monolith mode, default targetFolder to "." if not provided
+      if (this.isMonolith && !targetFolder) {
+        targetFolder = '.';
+      }
+
+      // Validate required parameters
+      if (!templateName) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Missing required parameter: templateName',
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      if (!targetFolder) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Missing required parameter: targetFolder',
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const result = await this.boilerplateGeneratorService.generateBoilerplate({
+        ...args,
+        templateName,
+        targetFolder,
+      });
 
       if (!result.success) {
         return {

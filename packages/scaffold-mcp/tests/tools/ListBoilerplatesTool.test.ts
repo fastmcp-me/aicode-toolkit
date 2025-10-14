@@ -64,7 +64,7 @@ describe('ListBoilerplatesTool', () => {
         ],
       };
 
-      const spy = vi.spyOn(tool['boilerplateService'], 'listBoilerplates');
+      const spy = vi.spyOn(tool.boilerplateService, 'listBoilerplates');
       spy.mockResolvedValue(mockBoilerplates);
 
       const result = await tool.execute({});
@@ -83,7 +83,7 @@ describe('ListBoilerplatesTool', () => {
         boilerplates: [],
       };
 
-      const spy = vi.spyOn(tool['boilerplateService'], 'listBoilerplates');
+      const spy = vi.spyOn(tool.boilerplateService, 'listBoilerplates');
       spy.mockResolvedValue(mockBoilerplates);
 
       const result = await tool.execute();
@@ -94,7 +94,7 @@ describe('ListBoilerplatesTool', () => {
     });
 
     it('should handle service errors gracefully', async () => {
-      const spy = vi.spyOn(tool['boilerplateService'], 'listBoilerplates');
+      const spy = vi.spyOn(tool.boilerplateService, 'listBoilerplates');
       spy.mockRejectedValue(new Error('Failed to read templates directory'));
 
       const result = await tool.execute();

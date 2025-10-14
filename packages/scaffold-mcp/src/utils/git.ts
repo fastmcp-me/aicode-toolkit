@@ -63,11 +63,11 @@ export function parseGitHubUrl(url: string): {
   if (treeMatch || blobMatch) {
     const match = treeMatch || blobMatch;
     return {
-      owner: match![1],
-      repo: match![2],
-      repoUrl: `https://github.com/${match![1]}/${match![2]}.git`,
-      branch: match![3],
-      subdirectory: match![4],
+      owner: match?.[1],
+      repo: match?.[2],
+      repoUrl: `https://github.com/${match?.[1]}/${match?.[2]}.git`,
+      branch: match?.[3],
+      subdirectory: match?.[4],
       isSubdirectory: true,
     };
   }

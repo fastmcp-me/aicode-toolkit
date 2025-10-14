@@ -1,6 +1,11 @@
 import { minimatch } from 'minimatch';
-import * as path from 'path';
-import { DesignPatternMatch, FileDesignPatternResult, ArchitectConfig, Feature } from '../types';
+import * as path from 'node:path';
+import type {
+  DesignPatternMatch,
+  FileDesignPatternResult,
+  ArchitectConfig,
+  Feature,
+} from '../types';
 
 export class PatternMatcher {
   /**

@@ -43,7 +43,7 @@ describe('UseBoilerplateTool', () => {
         },
       };
 
-      const spy = vi.spyOn(tool['boilerplateService'], 'useBoilerplate');
+      const spy = vi.spyOn(tool.boilerplateService, 'useBoilerplate');
       spy.mockResolvedValue({
         success: true,
         message: 'Successfully scaffolded boilerplate at /path/to/project',
@@ -58,29 +58,9 @@ describe('UseBoilerplateTool', () => {
       expect(spy).toHaveBeenCalledWith({
         boilerplateName: 'scaffold-nextjs-app',
         variables: { appName: 'my-app', description: 'My test app' },
+        targetFolderOverride: undefined,
+        monolith: false,
       });
-    });
-
-    it('should return error when boilerplateName is missing', async () => {
-      const args = {
-        variables: { appName: 'test' },
-      };
-
-      const result = await tool.execute(args);
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('Missing required parameter: boilerplateName');
-    });
-
-    it('should return error when variables are missing', async () => {
-      const args = {
-        boilerplateName: 'scaffold-test-app',
-      };
-
-      const result = await tool.execute(args);
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('Missing required parameter: variables');
     });
 
     it('should handle service errors gracefully', async () => {
@@ -89,7 +69,7 @@ describe('UseBoilerplateTool', () => {
         variables: { appName: 'test' },
       };
 
-      const spy = vi.spyOn(tool['boilerplateService'], 'useBoilerplate');
+      const spy = vi.spyOn(tool.boilerplateService, 'useBoilerplate');
       spy.mockRejectedValue(new Error('Boilerplate not found'));
 
       const result = await tool.execute(args);

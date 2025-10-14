@@ -17,7 +17,7 @@
 
 import os from 'node:os';
 import path from 'node:path';
-import { icons, ProjectType, print } from '@agiflowai/aicode-utils';
+import { ProjectType, print } from '@agiflowai/aicode-utils';
 import * as fs from 'fs-extra';
 import { cloneSubdirectory, fetchGitHubDirectoryContents } from '../utils/git';
 import type { TemplateRepoConfig } from './TemplatesService';
@@ -42,8 +42,6 @@ export class TemplateSelectionService {
    * @returns Path to the tmp directory containing templates
    */
   async downloadTemplatesToTmp(repoConfig: TemplateRepoConfig): Promise<string> {
-    print.info(`Downloading templates from ${repoConfig.owner}/${repoConfig.repo}...`);
-
     try {
       // Ensure tmp directory exists
       await fs.ensureDir(this.tmpDir);
@@ -315,7 +313,6 @@ export class TemplateSelectionService {
     try {
       if (await fs.pathExists(this.tmpDir)) {
         await fs.remove(this.tmpDir);
-        print.info('Cleaned up temporary files');
       }
     } catch (error) {
       // Log but don't throw - cleanup failures shouldn't stop the process

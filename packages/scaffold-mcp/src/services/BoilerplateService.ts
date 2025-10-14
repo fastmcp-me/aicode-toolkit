@@ -136,7 +136,42 @@ export class BoilerplateService {
    * Executes a specific boilerplate with provided variables
    */
   async useBoilerplate(request: UseBoilerplateRequest): Promise<ScaffoldResult> {
-    const { boilerplateName, variables, monolith = false, targetFolderOverride } = request;
+    let { boilerplateName, variables, monolith, targetFolderOverride } = request;
+
+    // Auto-detect project type if monolith parameter is not explicitly provided
+    if (monolith === undefined) {
+      try {
+        const config = await ProjectConfigResolver.resolveProjectConfig(process.cwd());
+        monolith = config.type === 'monolith';
+        log.info(`Auto-detected project type: ${config.type}`);
+      } catch (_error) {
+        // If no config found, default to monorepo mode
+        monolith = false;
+        log.info('No project configuration found, defaulting to monorepo mode');
+      }
+    }
+
+    // In monolith mode, read boilerplateName from toolkit.yaml if not provided
+    if (monolith && !boilerplateName) {
+      try {
+        const config = await ProjectConfigResolver.resolveProjectConfig(process.cwd());
+        boilerplateName = config.sourceTemplate;
+        log.info(`Using boilerplate from toolkit.yaml: ${boilerplateName}`);
+      } catch (error) {
+        return {
+          success: false,
+          message: `Failed to read boilerplate name from toolkit.yaml: ${error instanceof Error ? error.message : String(error)}`,
+        };
+      }
+    }
+
+    // Validate boilerplateName is provided (either from parameter or toolkit.yaml)
+    if (!boilerplateName) {
+      return {
+        success: false,
+        message: 'Missing required parameter: boilerplateName',
+      };
+    }
 
     // Find the boilerplate configuration
     const boilerplateList = await this.listBoilerplates();
@@ -174,10 +209,14 @@ export class BoilerplateService {
     // Determine target folder based on monolith flag
     const targetFolder = targetFolderOverride || (monolith ? '.' : boilerplate.target_folder);
 
+    // For monolith, don't create a subdirectory - use empty string as projectName
+    // For monorepo, use folderName to create subdirectory
+    const projectNameForPath = monolith ? '' : folderName;
+
     // Use ScaffoldService to perform the scaffolding
     try {
       const result = await this.scaffoldService.useBoilerplate({
-        projectName: folderName,
+        projectName: projectNameForPath,
         packageName: packageName,
         targetFolder,
         templateFolder: boilerplate.template_path,

@@ -52,10 +52,16 @@ export class ScaffoldingMethodsService {
     const projectConfig = await ProjectConfigResolver.resolveProjectConfig(absoluteProjectPath);
 
     const sourceTemplate = projectConfig.sourceTemplate;
-    const templatePath = await this.findTemplatePath(sourceTemplate);
+    return this.listScaffoldingMethodsByTemplate(sourceTemplate);
+  }
+
+  async listScaffoldingMethodsByTemplate(
+    templateName: string,
+  ): Promise<ListScaffoldingMethodsResult> {
+    const templatePath = await this.findTemplatePath(templateName);
 
     if (!templatePath) {
-      throw new Error(`Template not found for sourceTemplate: ${sourceTemplate}`);
+      throw new Error(`Template not found for sourceTemplate: ${templateName}`);
     }
 
     const fullTemplatePath = path.join(this.templatesRootPath, templatePath);
@@ -72,25 +78,26 @@ export class ScaffoldingMethodsService {
 
     if (architectConfig.features && Array.isArray(architectConfig.features)) {
       architectConfig.features.forEach((feature: any) => {
-        if (feature.name) {
-          methods.push({
-            name: feature.name,
-            description: feature.description || '',
-            instruction: feature.instruction || '',
-            variables_schema: feature.variables_schema || {
-              type: 'object',
-              properties: {},
-              required: [],
-              additionalProperties: false,
-            },
-            generator: feature.generator,
-          });
-        }
+        // Use feature.name if available, otherwise fallback to sourceTemplate
+        const featureName = feature.name || `scaffold-${templateName}`;
+
+        methods.push({
+          name: featureName,
+          description: feature.description || '',
+          instruction: feature.instruction || '',
+          variables_schema: feature.variables_schema || {
+            type: 'object',
+            properties: {},
+            required: [],
+            additionalProperties: false,
+          },
+          generator: feature.generator,
+        });
       });
     }
 
     return {
-      sourceTemplate,
+      sourceTemplate: templateName,
       templatePath,
       methods,
     };
@@ -165,6 +172,20 @@ export class ScaffoldingMethodsService {
   }
 
   /**
+   * Resolves the project path, handling both monorepo and monolith cases
+   * Uses ProjectConfigResolver to find the correct workspace/project root
+   */
+  private async resolveProjectPath(projectPath: string): Promise<string> {
+    const absolutePath = path.resolve(projectPath);
+    // Use ProjectConfigResolver to handle both monorepo and monolith cases
+    const projectConfig = await ProjectConfigResolver.resolveProjectConfig(absolutePath);
+
+    // For monolith projects with workspaceRoot, use that
+    // For monorepo projects, use the provided path
+    return projectConfig.workspaceRoot || absolutePath;
+  }
+
+  /**
    * Dynamically discovers all template directories
    * Supports both flat structure (templates/nextjs-15) and nested structure (templates/apps/nextjs-15)
    **/
@@ -220,7 +241,10 @@ export class ScaffoldingMethodsService {
   async useScaffoldMethod(request: UseScaffoldMethodRequest): Promise<ScaffoldResult> {
     const { projectPath, scaffold_feature_name, variables } = request;
 
-    const scaffoldingMethods = await this.listScaffoldingMethods(projectPath);
+    // Resolve the actual project path (handle monolith vs monorepo)
+    const absoluteProjectPath = await this.resolveProjectPath(projectPath);
+
+    const scaffoldingMethods = await this.listScaffoldingMethods(absoluteProjectPath);
 
     const method = scaffoldingMethods.methods.find((m) => m.name === scaffold_feature_name);
 
@@ -247,7 +271,6 @@ export class ScaffoldingMethodsService {
       this.templatesRootPath,
     );
 
-    const absoluteProjectPath = path.resolve(projectPath);
     const projectName = path.basename(absoluteProjectPath);
 
     const result = await scaffoldService.useFeature({

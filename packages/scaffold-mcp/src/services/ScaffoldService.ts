@@ -43,10 +43,15 @@ export class ScaffoldService implements IScaffoldService {
         variables = {},
       } = options;
 
-      // For boilerplates, we create a new directory
+      // For boilerplates, create a new directory (unless projectName is empty for monolith)
+      // If projectName is empty, use targetFolder directly (monolith case)
       const targetPath = path.isAbsolute(targetFolder)
-        ? path.join(targetFolder, projectName)
-        : path.join(process.cwd(), targetFolder, projectName);
+        ? projectName
+          ? path.join(targetFolder, projectName)
+          : targetFolder
+        : projectName
+          ? path.join(process.cwd(), targetFolder, projectName)
+          : path.join(process.cwd(), targetFolder);
       const templatePath = path.join(this.templatesRootPath, templateFolder);
 
       // Validate template first
@@ -67,12 +72,15 @@ export class ScaffoldService implements IScaffoldService {
       }
 
       // Check if target directory already exists - error if it does
-      const targetExists = await this.fileSystem.pathExists(targetPath);
-      if (targetExists) {
-        return {
-          success: false,
-          message: `Directory ${targetPath} already exists`,
-        };
+      // Skip this check for monolith projects (projectName is empty) since workspace root exists
+      if (projectName) {
+        const targetExists = await this.fileSystem.pathExists(targetPath);
+        if (targetExists) {
+          return {
+            success: false,
+            message: `Directory ${targetPath} already exists`,
+          };
+        }
       }
 
       // Get architect config
@@ -100,9 +108,12 @@ export class ScaffoldService implements IScaffoldService {
       }
 
       // Prepare all variables for replacement
+      // If projectName is empty (monolith), use the package name for templates
+      const effectiveProjectName =
+        projectName || (packageName.includes('/') ? packageName.split('/')[1] : packageName);
       const allVariables = {
         ...variables,
-        projectName,
+        projectName: effectiveProjectName,
         packageName,
       };
 

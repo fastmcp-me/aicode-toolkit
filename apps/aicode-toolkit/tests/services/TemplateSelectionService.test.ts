@@ -14,7 +14,6 @@
  */
 
 import os from 'node:os';
-import path from 'node:path';
 import { ProjectType } from '@agiflowai/aicode-utils';
 import * as fs from 'fs-extra';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -171,7 +170,7 @@ describe('TemplateSelectionService', () => {
 
     it('should skip templates that already exist', async () => {
       const templateNames = ['nextjs-15'];
-      const tmpDir = service.getTmpDir();
+      const _tmpDir = service.getTmpDir();
 
       vi.mocked(fs.ensureDir).mockResolvedValue(undefined);
       vi.mocked(fs.pathExists)

@@ -6,12 +6,15 @@ import {
   ListPromptsRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import packageJson from '../../package.json' assert { type: 'json' };
+import serverInstructionsTemplate from '../instructions/server.md?raw';
 import {
   GenerateBoilerplatePrompt,
   GenerateFeatureScaffoldPrompt,
   ScaffoldApplicationPrompt,
   ScaffoldFeaturePrompt,
 } from '../prompts';
+import { TemplateService } from '../services/TemplateService';
 import {
   GenerateBoilerplateFileTool,
   GenerateBoilerplateTool,
@@ -25,103 +28,48 @@ import {
 
 export interface ServerOptions {
   adminEnabled?: boolean;
+  isMonolith?: boolean;
 }
 
 export function createServer(options: ServerOptions = {}) {
-  const { adminEnabled = false } = options;
+  const { adminEnabled = false, isMonolith = false } = options;
 
   // Find templates folder by searching upwards from current directory
   const templatesPath = TemplatesManagerService.findTemplatesPathSync();
 
-  // Initialize tools
-  const listBoilerplatesTool = new ListBoilerplatesTool(templatesPath);
-  const useBoilerplateTool = new UseBoilerplateTool(templatesPath);
-  const listScaffoldingMethodsTool = new ListScaffoldingMethodsTool(templatesPath);
-  const useScaffoldMethodTool = new UseScaffoldMethodTool(templatesPath);
+  // Initialize tools (conditional based on project type)
+  const listBoilerplatesTool = !isMonolith ? new ListBoilerplatesTool(templatesPath, isMonolith) : null;
+  const useBoilerplateTool = !isMonolith ? new UseBoilerplateTool(templatesPath, isMonolith) : null;
+  const listScaffoldingMethodsTool = new ListScaffoldingMethodsTool(templatesPath, isMonolith);
+  const useScaffoldMethodTool = new UseScaffoldMethodTool(templatesPath, isMonolith);
   const writeToFileTool = new WriteToFileTool();
-  const generateBoilerplateTool = adminEnabled ? new GenerateBoilerplateTool(templatesPath) : null;
+  const generateBoilerplateTool = adminEnabled ? new GenerateBoilerplateTool(templatesPath, isMonolith) : null;
   const generateBoilerplateFileTool = adminEnabled
-    ? new GenerateBoilerplateFileTool(templatesPath)
+    ? new GenerateBoilerplateFileTool(templatesPath, isMonolith)
     : null;
   const generateFeatureScaffoldTool = adminEnabled
-    ? new GenerateFeatureScaffoldTool(templatesPath)
+    ? new GenerateFeatureScaffoldTool(templatesPath, isMonolith)
     : null;
 
   // Initialize prompts (admin only)
-  const generateBoilerplatePrompt = adminEnabled ? new GenerateBoilerplatePrompt() : null;
-  const generateFeatureScaffoldPrompt = adminEnabled ? new GenerateFeatureScaffoldPrompt() : null;
+  const generateBoilerplatePrompt = adminEnabled ? new GenerateBoilerplatePrompt(isMonolith) : null;
+  const generateFeatureScaffoldPrompt = adminEnabled ? new GenerateFeatureScaffoldPrompt(isMonolith) : null;
 
   // Initialize user-facing prompts (always available)
-  const scaffoldApplicationPrompt = new ScaffoldApplicationPrompt();
-  const scaffoldFeaturePrompt = new ScaffoldFeaturePrompt();
+  const scaffoldApplicationPrompt = new ScaffoldApplicationPrompt(isMonolith);
+  const scaffoldFeaturePrompt = new ScaffoldFeaturePrompt(isMonolith);
 
-  // Build instructions based on admin mode
-  const baseInstructions = `Use this MCP server to create new project and adding a new feature (pages, component, services, etc...).
-
-## Workflow:
-
-1. **Creating New Project**: Use \`list-boilerplates\` → \`use-boilerplate\`
-2. **Adding Features**: Use \`list-scaffolding-methods\` → \`use-scaffold-method\`
-
-## AI Usage Guidelines:
-
-- Always call \`list-boilerplates\` first when creating new projects to see available options
-- Always call \`list-scaffolding-methods\` first when adding features to understand what's available
-- Follow the exact variable schema provided - validation will fail if required fields are missing
-- Use kebab-case for project names (e.g., "my-new-app")
-- The tools automatically handle file placement, imports, and code generation
-- Check the returned JSON schemas to understand required vs optional variables`;
-
-  const adminInstructions = adminEnabled
-    ? `
-
-## Admin Mode (Template Generation):
-
-When creating custom boilerplate templates for frameworks not yet supported:
-
-1. **Create Boilerplate Configuration**: Use \`generate-boilerplate\` to add a new boilerplate entry to a template's scaffold.yaml
-   - Specify template name, boilerplate name, description, target folder, and variable schema
-   - This creates the scaffold.yaml structure following the nextjs-15 pattern
-   - Optional: Add detailed instruction about file purposes and design patterns
-
-2. **Create Feature Configuration**: Use \`generate-feature-scaffold\` to add a new feature entry to a template's scaffold.yaml
-   - Specify template name, feature name, generator, description, and variable schema
-   - This creates the scaffold.yaml structure for feature scaffolds (pages, components, etc.)
-   - Optional: Add detailed instruction about file purposes and design patterns
-   - Optional: Specify patterns to match existing files this feature works with
-
-3. **Create Template Files**: Use \`generate-boilerplate-file\` to create the actual template files
-   - Create files referenced in the boilerplate's or feature's includes array
-   - Use {{ variableName }} syntax for Liquid variable placeholders
-   - Can copy from existing source files or provide content directly
-   - Files automatically get .liquid extension
-
-4. **Test the Template**: Use \`list-boilerplates\`/\`list-scaffolding-methods\` and \`use-boilerplate\`/\`use-scaffold-method\` to verify your template works
-
-Example workflow for boilerplate:
-\`\`\`
-1. generate-boilerplate { templateName: "react-vite", boilerplateName: "scaffold-vite-app", ... }
-2. generate-boilerplate-file { templateName: "react-vite", filePath: "package.json", content: "..." }
-3. generate-boilerplate-file { templateName: "react-vite", filePath: "src/App.tsx", content: "..." }
-4. list-boilerplates (verify it appears)
-5. use-boilerplate { boilerplateName: "scaffold-vite-app", variables: {...} }
-\`\`\`
-
-Example workflow for feature:
-\`\`\`
-1. generate-feature-scaffold { templateName: "nextjs-15", featureName: "scaffold-nextjs-component", generator: "componentGenerator.ts", ... }
-2. generate-boilerplate-file { templateName: "nextjs-15", filePath: "src/components/Component.tsx", content: "..." }
-3. list-scaffolding-methods (verify it appears)
-4. use-scaffold-method { scaffoldName: "scaffold-nextjs-component", variables: {...} }
-\`\`\``
-    : '';
-
-  const instructions = baseInstructions + adminInstructions;
+  // Render instructions from template
+  const templateService = new TemplateService();
+  const instructions = templateService.renderString(serverInstructionsTemplate, {
+    adminEnabled,
+    isMonolith
+  });
 
   const server = new Server(
     {
       name: 'scaffold-mcp',
-      version: '0.4.0',
+      version: packageJson.version,
     },
     {
       instructions,
@@ -134,19 +82,25 @@ Example workflow for feature:
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     // Get tool definitions
-    const listBoilerplateTool = listBoilerplatesTool.getDefinition();
-    const useBoilerplateToolDef = useBoilerplateTool.getDefinition();
     const listScaffoldingMethodsToolDef = listScaffoldingMethodsTool.getDefinition();
     const useScaffoldMethodToolDef = useScaffoldMethodTool.getDefinition();
     const writeToFileToolDef = writeToFileTool.getDefinition();
 
     const tools = [
-      listBoilerplateTool,
-      useBoilerplateToolDef,
       listScaffoldingMethodsToolDef,
       useScaffoldMethodToolDef,
       writeToFileToolDef,
     ];
+
+    // Add boilerplate tools only for non-monolith projects
+    if (!isMonolith) {
+      if (listBoilerplatesTool) {
+        tools.unshift(listBoilerplatesTool.getDefinition());
+      }
+      if (useBoilerplateTool) {
+        tools.splice(1, 0, useBoilerplateTool.getDefinition());
+      }
+    }
 
     // Add admin tools if enabled
     if (adminEnabled) {
@@ -168,10 +122,16 @@ Example workflow for feature:
     const { name, arguments: args } = request.params;
 
     if (name === ListBoilerplatesTool.TOOL_NAME) {
+      if (isMonolith || !listBoilerplatesTool) {
+        throw new Error('Boilerplate tools are not available for monolith projects');
+      }
       return await listBoilerplatesTool.execute(args || {});
     }
 
     if (name === UseBoilerplateTool.TOOL_NAME) {
+      if (isMonolith || !useBoilerplateTool) {
+        throw new Error('Boilerplate tools are not available for monolith projects');
+      }
       return await useBoilerplateTool.execute(args || {});
     }
 

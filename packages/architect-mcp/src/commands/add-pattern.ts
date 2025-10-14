@@ -1,4 +1,4 @@
-import { log, print } from '@agiflowai/aicode-utils';
+import { print } from '@agiflowai/aicode-utils';
 /**
  * Add Pattern Command
  *
@@ -60,7 +60,7 @@ export const addPatternCommand = new Command('add-pattern')
                 template,
                 patternName,
                 designPattern,
-                description: description.substring(0, 100) + '...',
+                description: `${description.substring(0, 100)}...`,
                 includes: options.includes,
               },
               null,

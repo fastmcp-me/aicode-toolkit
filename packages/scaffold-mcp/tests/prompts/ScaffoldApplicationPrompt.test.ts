@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { ScaffoldApplicationPrompt } from '../../src/prompts/ScaffoldApplicationPrompt';
 
 describe('ScaffoldApplicationPrompt', () => {
@@ -66,6 +66,44 @@ describe('ScaffoldApplicationPrompt', () => {
 
       expect(messages[0].content.text).toContain('Example');
       expect(messages[0].content.text).toContain('boilerplateName');
+    });
+  });
+
+  describe('Monolith Mode', () => {
+    let monolithPrompt: ScaffoldApplicationPrompt;
+
+    beforeEach(() => {
+      monolithPrompt = new ScaffoldApplicationPrompt(true);
+    });
+
+    it('should adjust instructions for monolith mode', () => {
+      const messages = monolithPrompt.getMessages();
+
+      expect(messages[0].content.text).toContain('monolith');
+      expect(messages[0].content.text).toContain('auto-detected');
+    });
+
+    it('should not require boilerplateName in examples for monolith mode', () => {
+      const messages = monolithPrompt.getMessages();
+      const text = messages[0].content.text;
+
+      // In monolith mode, example should not have boilerplateName at the top level
+      // It should only have variables
+      const jsonExample = text.match(/```json\s*\{[\s\S]*?\}\s*```/);
+      expect(jsonExample).toBeTruthy();
+
+      // Extract the JSON example
+      const jsonContent = jsonExample?.[0] || '';
+
+      // Count occurrences of "boilerplateName" in the example
+      const boilerplateNameCount = (jsonContent.match(/"boilerplateName"/g) || []).length;
+      expect(boilerplateNameCount).toBe(0);
+    });
+
+    it('should mention toolkit.yaml in monolith mode', () => {
+      const messages = monolithPrompt.getMessages();
+
+      expect(messages[0].content.text).toContain('toolkit.yaml');
     });
   });
 });
