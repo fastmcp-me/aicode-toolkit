@@ -75,4 +75,26 @@ describe('GenerateFeatureScaffoldPrompt', () => {
       expect(messages[0].content.text).toContain('business-agnostic');
     });
   });
+
+  describe('Monolith Mode', () => {
+    let monolithPrompt: GenerateFeatureScaffoldPrompt;
+
+    beforeEach(() => {
+      monolithPrompt = new GenerateFeatureScaffoldPrompt(true);
+    });
+
+    it('should adjust instructions for monolith mode', () => {
+      const messages = monolithPrompt.getMessages();
+
+      expect(messages[0].content.text).toContain('auto-detected');
+      expect(messages[0].content.text).toContain('toolkit.yaml');
+    });
+
+    it('should mention template name auto-detection', () => {
+      const messages = monolithPrompt.getMessages();
+      const text = messages[0].content.text;
+
+      expect(text).toContain('Template name will be auto-detected');
+    });
+  });
 });

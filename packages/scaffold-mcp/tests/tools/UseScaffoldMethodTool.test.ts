@@ -47,7 +47,7 @@ describe('UseScaffoldMethodTool', () => {
         },
       };
 
-      const spy = vi.spyOn(tool['scaffoldingMethodsService'], 'useScaffoldMethod');
+      const spy = vi.spyOn(tool.scaffoldingMethodsService, 'useScaffoldMethod');
       spy.mockResolvedValue({
         success: true,
         message: 'Successfully scaffolded scaffold-route in /test/apps/my-app',
@@ -72,7 +72,7 @@ describe('UseScaffoldMethodTool', () => {
         variables: { routePath: 'about' },
       };
 
-      const spy = vi.spyOn(tool['scaffoldingMethodsService'], 'useScaffoldMethod');
+      const spy = vi.spyOn(tool.scaffoldingMethodsService, 'useScaffoldMethod');
       spy.mockRejectedValue(new Error('Scaffold method not found'));
 
       const result = await tool.execute(args);

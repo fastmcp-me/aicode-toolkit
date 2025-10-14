@@ -1,11 +1,12 @@
-Use this MCP server to {% if isMonolith %}add features (pages, components, services, etc.) to your monolith project{% else %}create new projects and add features (pages, components, services, etc.){% endif %}.
+Use this MCP server to {% if isMonolith %}create your monolith project and add features (pages, components, services, etc.){% else %}create new projects and add features (pages, components, services, etc.){% endif %}.
 
 ## Workflow:
 {% if not isMonolith %}
 1. **Creating New Project**: Use `list-boilerplates` → `use-boilerplate`
 2. **Adding Features**: Use `list-scaffolding-methods` → `use-scaffold-method`
 {% else %}
-**Adding Features**: Use `list-scaffolding-methods` → `use-scaffold-method`
+1. **Creating Project**: Use `use-boilerplate` (boilerplateName auto-detected from toolkit.yaml)
+2. **Adding Features**: Use `list-scaffolding-methods` → `use-scaffold-method`
 {% endif %}
 
 ## AI Usage Guidelines:
@@ -16,6 +17,9 @@ Use this MCP server to {% if isMonolith %}add features (pages, components, servi
 - Follow the exact variable schema provided - validation will fail if required fields are missing
 {% if not isMonolith %}
 - Use kebab-case for project names (e.g., "my-new-app")
+{% else %}
+- In monolith mode, parameters like `boilerplateName` and `templateName` are auto-detected from toolkit.yaml
+- You only need to provide `variables` when calling `use-boilerplate` or `use-scaffold-method`
 {% endif %}
 - The tools automatically handle file placement, imports, and code generation
 - Check the returned JSON schemas to understand required vs optional variables

@@ -66,7 +66,7 @@ describe('ListScaffoldingMethodsTool', () => {
         ],
       };
 
-      const spy = vi.spyOn(tool['scaffoldingMethodsService'], 'listScaffoldingMethods');
+      const spy = vi.spyOn(tool.scaffoldingMethodsService, 'listScaffoldingMethods');
       spy.mockResolvedValue(mockMethods);
 
       const result = await tool.execute({ projectPath: '/test/apps/my-app' });
@@ -109,7 +109,7 @@ describe('ListScaffoldingMethodsTool', () => {
         ],
       };
 
-      const spy = vi.spyOn(tool['scaffoldingMethodsService'], 'listScaffoldingMethodsByTemplate');
+      const spy = vi.spyOn(tool.scaffoldingMethodsService, 'listScaffoldingMethodsByTemplate');
       spy.mockResolvedValue(mockMethods);
 
       const result = await tool.execute({ templateName: 'typescript-mcp-package' });
@@ -131,11 +131,11 @@ describe('ListScaffoldingMethodsTool', () => {
         methods: [],
       };
 
-      const projectPathSpy = vi.spyOn(tool['scaffoldingMethodsService'], 'listScaffoldingMethods');
+      const projectPathSpy = vi.spyOn(tool.scaffoldingMethodsService, 'listScaffoldingMethods');
       projectPathSpy.mockResolvedValue(mockMethods);
 
       const templateNameSpy = vi.spyOn(
-        tool['scaffoldingMethodsService'],
+        tool.scaffoldingMethodsService,
         'listScaffoldingMethodsByTemplate',
       );
 
@@ -152,7 +152,7 @@ describe('ListScaffoldingMethodsTool', () => {
         methods: [],
       };
 
-      const spy = vi.spyOn(tool['scaffoldingMethodsService'], 'listScaffoldingMethods');
+      const spy = vi.spyOn(tool.scaffoldingMethodsService, 'listScaffoldingMethods');
       spy.mockResolvedValue(mockMethods);
 
       const result = await tool.execute({ projectPath: '/test/apps/my-app' });
@@ -163,7 +163,7 @@ describe('ListScaffoldingMethodsTool', () => {
     });
 
     it('should handle service errors gracefully', async () => {
-      const spy = vi.spyOn(tool['scaffoldingMethodsService'], 'listScaffoldingMethods');
+      const spy = vi.spyOn(tool.scaffoldingMethodsService, 'listScaffoldingMethods');
       spy.mockRejectedValue(new Error('Project not found or missing project.json'));
 
       const result = await tool.execute({ projectPath: '/test/apps/missing' });

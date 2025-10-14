@@ -22,7 +22,7 @@ export const pathExistsSync = vi.fn((path: string) => {
   return virtualFS.has(path);
 });
 
-export const readFile = vi.fn(async (path: string, encoding?: BufferEncoding) => {
+export const readFile = vi.fn(async (path: string, _encoding?: BufferEncoding) => {
   const file = virtualFS.get(path);
   if (!file || file.isDirectory) {
     throw new Error(`ENOENT: no such file, open '${path}'`);
@@ -30,7 +30,7 @@ export const readFile = vi.fn(async (path: string, encoding?: BufferEncoding) =>
   return file.content;
 });
 
-export const readFileSync = vi.fn((path: string, encoding?: BufferEncoding) => {
+export const readFileSync = vi.fn((path: string, _encoding?: BufferEncoding) => {
   const file = virtualFS.get(path);
   if (!file || file.isDirectory) {
     throw new Error(`ENOENT: no such file, open '${path}'`);
@@ -38,9 +38,11 @@ export const readFileSync = vi.fn((path: string, encoding?: BufferEncoding) => {
   return file.content;
 });
 
-export const writeFile = vi.fn(async (path: string, content: string, encoding?: BufferEncoding) => {
-  virtualFS.set(path, { content, isDirectory: false });
-});
+export const writeFile = vi.fn(
+  async (path: string, content: string, _encoding?: BufferEncoding) => {
+    virtualFS.set(path, { content, isDirectory: false });
+  },
+);
 
 export const ensureDir = vi.fn(async (path: string) => {
   virtualFS.set(path, { content: '', isDirectory: true });

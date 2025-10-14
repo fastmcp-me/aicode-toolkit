@@ -35,13 +35,13 @@ export class GenerateFeatureScaffoldTool {
 
     // Add common properties
     Object.assign(properties, {
-          featureName: {
-            type: 'string',
-            description: 'Name of the feature (kebab-case, e.g., "scaffold-nextjs-page")',
-          },
-          description: {
-            type: 'string',
-            description: `Detailed description of what this feature creates and its key capabilities.
+      featureName: {
+        type: 'string',
+        description: 'Name of the feature (kebab-case, e.g., "scaffold-nextjs-page")',
+      },
+      description: {
+        type: 'string',
+        description: `Detailed description of what this feature creates and its key capabilities.
 
 STRUCTURE (2-3 sentences):
 - Sentence 1: What type of code it generates (component, page, service, etc.)
@@ -49,10 +49,10 @@ STRUCTURE (2-3 sentences):
 - Sentence 3: Primary use cases or when to use it
 
 Example: "Generate a new service class for TypeScript libraries following best practices. Creates a service class with interface, implementation, and unit tests. Perfect for creating reusable service modules with dependency injection patterns."`,
-          },
-          instruction: {
-            type: 'string',
-            description: `Optional detailed instructions about the generated files, their purposes, and how to work with them.
+      },
+      instruction: {
+        type: 'string',
+        description: `Optional detailed instructions about the generated files, their purposes, and how to work with them.
 
 STRUCTURE (Concise multi-aspect guide):
 
@@ -63,40 +63,40 @@ STRUCTURE (Concise multi-aspect guide):
 5. **Testing approach**: How to test the feature
 
 Example: "Services follow a class-based pattern with optional interface separation. The service class implements business logic and can be dependency injected. Place services in src/services/ directory. For services with interfaces, define the interface in src/types/interfaces/ for better separation of concerns. Service names should be PascalCase and end with 'Service' suffix. Write comprehensive unit tests for all public methods."`,
-          },
-          variables: {
-            type: 'array',
-            description: 'Array of variable definitions for the feature',
-            items: {
-              type: 'object',
-              properties: {
-                name: {
-                  type: 'string',
-                  description: 'Variable name (camelCase)',
-                },
-                description: {
-                  type: 'string',
-                  description: 'Variable description',
-                },
-                type: {
-                  type: 'string',
-                  enum: ['string', 'number', 'boolean'],
-                  description: 'Variable type',
-                },
-                required: {
-                  type: 'boolean',
-                  description: 'Whether this variable is required',
-                },
-                default: {
-                  description: 'Optional default value for the variable',
-                },
-              },
-              required: ['name', 'description', 'type', 'required'],
+      },
+      variables: {
+        type: 'array',
+        description: 'Array of variable definitions for the feature',
+        items: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description: 'Variable name (camelCase)',
+            },
+            description: {
+              type: 'string',
+              description: 'Variable description',
+            },
+            type: {
+              type: 'string',
+              enum: ['string', 'number', 'boolean'],
+              description: 'Variable type',
+            },
+            required: {
+              type: 'boolean',
+              description: 'Whether this variable is required',
+            },
+            default: {
+              description: 'Optional default value for the variable',
             },
           },
-          includes: {
-            type: 'array',
-            description: `Array of specific file paths to include in the feature (highly recommended to list explicitly).
+          required: ['name', 'description', 'type', 'required'],
+        },
+      },
+      includes: {
+        type: 'array',
+        description: `Array of specific file paths to include in the feature (highly recommended to list explicitly).
 
 Supports advanced syntax:
 - Basic: "src/app/page/page.tsx" - Always included
@@ -117,13 +117,13 @@ Best practices:
 - Use path mapping with -> when source and target paths differ
 - Use {{ variableName }} in target paths for dynamic file placement
 - Avoid wildcards unless you have a good reason`,
-            items: {
-              type: 'string',
-            },
-          },
-          patterns: {
-            type: 'array',
-            description: `Optional array of glob patterns to match existing files that this feature works with.
+        items: {
+          type: 'string',
+        },
+      },
+      patterns: {
+        type: 'array',
+        description: `Optional array of glob patterns to match existing files that this feature works with.
 
 Used to help identify where this feature can be applied in a project.
 
@@ -136,10 +136,10 @@ Best practices:
 - Use glob patterns that match the file types this feature works with
 - Keep patterns specific enough to be meaningful but broad enough to be useful
 - Consider both the feature's output and input files`,
-            items: {
-              type: 'string',
-            },
-          },
+        items: {
+          type: 'string',
+        },
+      },
     });
 
     // Build required array based on mode

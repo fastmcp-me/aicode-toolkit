@@ -144,7 +144,7 @@ export class BoilerplateService {
         const config = await ProjectConfigResolver.resolveProjectConfig(process.cwd());
         monolith = config.type === 'monolith';
         log.info(`Auto-detected project type: ${config.type}`);
-      } catch (error) {
+      } catch (_error) {
         // If no config found, default to monorepo mode
         monolith = false;
         log.info('No project configuration found, defaulting to monorepo mode');

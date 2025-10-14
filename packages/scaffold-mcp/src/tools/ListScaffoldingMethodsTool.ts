@@ -1,6 +1,6 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { ProjectConfigResolver } from '@agiflowai/aicode-utils';
-import listScaffoldingMethodsDescription from '../instructions/list-scaffolding-methods.md?raw';
+import listScaffoldingMethodsDescription from '../instructions/tools/list-scaffolding-methods/description.md?raw';
 import { FileSystemService } from '../services/FileSystemService';
 import { ScaffoldingMethodsService } from '../services/ScaffoldingMethodsService';
 import { TemplateService } from '../services/TemplateService';
@@ -78,9 +78,10 @@ export class ListScaffoldingMethodsTool {
         try {
           const config = await ProjectConfigResolver.resolveProjectConfig(process.cwd());
           const resolvedTemplateName = config.sourceTemplate;
-          result = await this.scaffoldingMethodsService.listScaffoldingMethodsByTemplate(
-            resolvedTemplateName,
-          );
+          result =
+            await this.scaffoldingMethodsService.listScaffoldingMethodsByTemplate(
+              resolvedTemplateName,
+            );
         } catch (error) {
           throw new Error(
             `Failed to read template name from configuration: ${error instanceof Error ? error.message : String(error)}`,

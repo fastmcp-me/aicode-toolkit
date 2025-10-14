@@ -1,5 +1,5 @@
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import listBoilerplatesDescription from '../instructions/list-boilerplates.md?raw';
+import listBoilerplatesDescription from '../instructions/tools/list-boilerplates/description.md?raw';
 import { BoilerplateService } from '../services/BoilerplateService';
 import { TemplateService } from '../services/TemplateService';
 import type { ListBoilerplateResponse } from '../types/boilerplateTypes';

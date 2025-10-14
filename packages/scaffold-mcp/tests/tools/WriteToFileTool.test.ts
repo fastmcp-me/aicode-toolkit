@@ -41,8 +41,8 @@ describe('WriteToFileTool', () => {
         content: 'Hello, World!',
       };
 
-      const ensureDirSpy = vi.spyOn(tool['fileSystemService'], 'ensureDir');
-      const writeFileSpy = vi.spyOn(tool['fileSystemService'], 'writeFile');
+      const ensureDirSpy = vi.spyOn(tool.fileSystemService, 'ensureDir');
+      const writeFileSpy = vi.spyOn(tool.fileSystemService, 'writeFile');
       ensureDirSpy.mockResolvedValue();
       writeFileSpy.mockResolvedValue();
 
@@ -62,8 +62,8 @@ describe('WriteToFileTool', () => {
         content: 'Test content',
       };
 
-      const ensureDirSpy = vi.spyOn(tool['fileSystemService'], 'ensureDir');
-      const writeFileSpy = vi.spyOn(tool['fileSystemService'], 'writeFile');
+      const ensureDirSpy = vi.spyOn(tool.fileSystemService, 'ensureDir');
+      const writeFileSpy = vi.spyOn(tool.fileSystemService, 'writeFile');
       ensureDirSpy.mockResolvedValue();
       writeFileSpy.mockResolvedValue();
 
@@ -81,8 +81,8 @@ describe('WriteToFileTool', () => {
         content: '',
       };
 
-      const ensureDirSpy = vi.spyOn(tool['fileSystemService'], 'ensureDir');
-      const writeFileSpy = vi.spyOn(tool['fileSystemService'], 'writeFile');
+      const ensureDirSpy = vi.spyOn(tool.fileSystemService, 'ensureDir');
+      const writeFileSpy = vi.spyOn(tool.fileSystemService, 'writeFile');
       ensureDirSpy.mockResolvedValue();
       writeFileSpy.mockResolvedValue();
 
@@ -120,7 +120,7 @@ describe('WriteToFileTool', () => {
         content: 'Test',
       };
 
-      const ensureDirSpy = vi.spyOn(tool['fileSystemService'], 'ensureDir');
+      const ensureDirSpy = vi.spyOn(tool.fileSystemService, 'ensureDir');
       ensureDirSpy.mockRejectedValue(new Error('Permission denied'));
 
       const result = await tool.execute(args);
@@ -135,8 +135,8 @@ describe('WriteToFileTool', () => {
         content: 'content',
       };
 
-      const ensureDirSpy = vi.spyOn(tool['fileSystemService'], 'ensureDir');
-      const writeFileSpy = vi.spyOn(tool['fileSystemService'], 'writeFile');
+      const ensureDirSpy = vi.spyOn(tool.fileSystemService, 'ensureDir');
+      const writeFileSpy = vi.spyOn(tool.fileSystemService, 'writeFile');
       ensureDirSpy.mockResolvedValue();
       writeFileSpy.mockResolvedValue();
 

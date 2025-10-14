@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { ScaffoldFeaturePrompt } from '../../src/prompts/ScaffoldFeaturePrompt';
 
 describe('ScaffoldFeaturePrompt', () => {
@@ -80,6 +80,31 @@ describe('ScaffoldFeaturePrompt', () => {
 
       expect(messages[0].content.text).toContain('Example');
       expect(messages[0].content.text).toContain('scaffold_feature_name');
+    });
+  });
+
+  describe('Monolith Mode', () => {
+    let monolithPrompt: ScaffoldFeaturePrompt;
+
+    beforeEach(() => {
+      monolithPrompt = new ScaffoldFeaturePrompt(true);
+    });
+
+    it('should adjust instructions for monolith mode', () => {
+      const messages = monolithPrompt.getMessages();
+
+      expect(messages[0].content.text).toContain('monolith mode');
+      expect(messages[0].content.text).toContain('current working directory');
+    });
+
+    it('should not require projectPath in examples for monolith mode', () => {
+      const messages = monolithPrompt.getMessages();
+      const text = messages[0].content.text;
+
+      // Check that the JSON example doesn't include projectPath
+      expect(text).toContain('```json');
+      // In monolith mode, example should be empty object
+      expect(text).toContain('{}');
     });
   });
 });

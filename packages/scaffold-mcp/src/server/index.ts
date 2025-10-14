@@ -1,4 +1,4 @@
-import { ProjectConfigResolver, TemplatesManagerService } from '@agiflowai/aicode-utils';
+import { TemplatesManagerService } from '@agiflowai/aicode-utils';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
   CallToolRequestSchema,
@@ -52,12 +52,12 @@ export function createServer(options: ServerOptions = {}) {
     : null;
 
   // Initialize prompts (admin only)
-  const generateBoilerplatePrompt = adminEnabled ? new GenerateBoilerplatePrompt() : null;
-  const generateFeatureScaffoldPrompt = adminEnabled ? new GenerateFeatureScaffoldPrompt() : null;
+  const generateBoilerplatePrompt = adminEnabled ? new GenerateBoilerplatePrompt(isMonolith) : null;
+  const generateFeatureScaffoldPrompt = adminEnabled ? new GenerateFeatureScaffoldPrompt(isMonolith) : null;
 
   // Initialize user-facing prompts (always available)
-  const scaffoldApplicationPrompt = new ScaffoldApplicationPrompt();
-  const scaffoldFeaturePrompt = new ScaffoldFeaturePrompt();
+  const scaffoldApplicationPrompt = new ScaffoldApplicationPrompt(isMonolith);
+  const scaffoldFeaturePrompt = new ScaffoldFeaturePrompt(isMonolith);
 
   // Render instructions from template
   const templateService = new TemplateService();

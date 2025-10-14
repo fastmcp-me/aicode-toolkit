@@ -35,14 +35,14 @@ export class GenerateBoilerplateFileTool {
 
     // Add common properties
     Object.assign(properties, {
-          filePath: {
-            type: 'string',
-            description:
-              'Path of the file to create within the template (e.g., "package.json", "src/app/page.tsx")',
-          },
-          content: {
-            type: 'string',
-            description: `Content of the template file using Liquid template syntax.
+      filePath: {
+        type: 'string',
+        description:
+          'Path of the file to create within the template (e.g., "package.json", "src/app/page.tsx")',
+      },
+      content: {
+        type: 'string',
+        description: `Content of the template file using Liquid template syntax.
 
 LIQUID SYNTAX:
 - Variables: {{ variableName }} - Replaced with actual values
@@ -111,14 +111,14 @@ export function calculateTax(income: number) {
   const stateRate = 0.05;
   return income * (federalRate + stateRate);
 }`,
-          },
-          sourceFile: {
-            type: 'string',
-            description: 'Optional: Path to a source file to copy and convert to a template',
-          },
-          header: {
-            type: 'string',
-            description: `Optional: Header comment to add at the top of the file to provide AI hints about design patterns, coding standards, and best practices.
+      },
+      sourceFile: {
+        type: 'string',
+        description: 'Optional: Path to a source file to copy and convert to a template',
+      },
+      header: {
+        type: 'string',
+        description: `Optional: Header comment to add at the top of the file to provide AI hints about design patterns, coding standards, and best practices.
 
 Example format for TypeScript/JavaScript files:
 /**
@@ -138,7 +138,7 @@ Example format for TypeScript/JavaScript files:
  */
 
 The header helps AI understand and follow established patterns when working with generated code.`,
-          },
+      },
     });
 
     // Build required array based on mode

@@ -356,7 +356,7 @@ const initActors = {
         }
 
         // If skipping download, read existing templates from the folder
-        let existingTemplates: string[] | undefined = undefined;
+        let existingTemplates: string[] | undefined;
         if (skipDownload) {
           try {
             const templateSelectionService = new TemplateSelectionService(finalTemplatesPath);
@@ -369,9 +369,7 @@ const initActors = {
 
         return { templatesPath: finalTemplatesPath, skipDownload, existingTemplates };
       } catch (error) {
-        throw new Error(
-          `Failed to check templates folder: ${(error as Error).message}`,
-        );
+        throw new Error(`Failed to check templates folder: ${(error as Error).message}`);
       }
     },
   ),

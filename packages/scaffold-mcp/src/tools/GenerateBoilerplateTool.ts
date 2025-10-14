@@ -35,17 +35,17 @@ export class GenerateBoilerplateTool {
 
     // Add common properties
     Object.assign(properties, {
-          boilerplateName: {
-            type: 'string',
-            description: 'Name of the boilerplate (kebab-case, e.g., "scaffold-my-app")',
-          },
-          targetFolder: {
-            type: 'string',
-            description: 'Target folder where projects will be created (e.g., "apps", "packages")',
-          },
-          description: {
-            type: 'string',
-            description: `Detailed description of what this boilerplate creates and its key features.
+      boilerplateName: {
+        type: 'string',
+        description: 'Name of the boilerplate (kebab-case, e.g., "scaffold-my-app")',
+      },
+      targetFolder: {
+        type: 'string',
+        description: 'Target folder where projects will be created (e.g., "apps", "packages")',
+      },
+      description: {
+        type: 'string',
+        description: `Detailed description of what this boilerplate creates and its key features.
 
 STRUCTURE (3-5 sentences in multiple paragraphs):
 - Paragraph 1: Core technology stack and primary value proposition
@@ -56,10 +56,10 @@ Example: "A modern React SPA template powered by Vite for lightning-fast HMR, fe
 Perfect for building data-driven dashboards, admin panels, and interactive web applications requiring client-side routing and real-time data synchronization.
 
 Includes Agiflow Config Management System integration with systematic environment variable naming (VITE_{CATEGORY}_{SUBCATEGORY}_{PROPERTY}) and auto-generated configuration templates for cloud deployment."`,
-          },
-          instruction: {
-            type: 'string',
-            description: `Optional detailed instructions about the generated files, their purposes, and how to work with them.
+      },
+      instruction: {
+        type: 'string',
+        description: `Optional detailed instructions about the generated files, their purposes, and how to work with them.
 
 STRUCTURE (Multi-section guide):
 
@@ -103,40 +103,40 @@ Design patterns to follow:
 - Type-safe Routes: Leverage [framework] type inference for params
 - State Management: Use [library] for server state, [library] for client state
 [... list key patterns with explanations ...]"`,
-          },
-          variables: {
-            type: 'array',
-            description: 'Array of variable definitions for the boilerplate',
-            items: {
-              type: 'object',
-              properties: {
-                name: {
-                  type: 'string',
-                  description: 'Variable name (camelCase)',
-                },
-                description: {
-                  type: 'string',
-                  description: 'Variable description',
-                },
-                type: {
-                  type: 'string',
-                  enum: ['string', 'number', 'boolean'],
-                  description: 'Variable type',
-                },
-                required: {
-                  type: 'boolean',
-                  description: 'Whether this variable is required',
-                },
-                default: {
-                  description: 'Optional default value for the variable',
-                },
-              },
-              required: ['name', 'description', 'type', 'required'],
+      },
+      variables: {
+        type: 'array',
+        description: 'Array of variable definitions for the boilerplate',
+        items: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description: 'Variable name (camelCase)',
+            },
+            description: {
+              type: 'string',
+              description: 'Variable description',
+            },
+            type: {
+              type: 'string',
+              enum: ['string', 'number', 'boolean'],
+              description: 'Variable type',
+            },
+            required: {
+              type: 'boolean',
+              description: 'Whether this variable is required',
+            },
+            default: {
+              description: 'Optional default value for the variable',
             },
           },
-          includes: {
-            type: 'array',
-            description: `Array of specific file paths to include in the boilerplate (highly recommended to list explicitly).
+          required: ['name', 'description', 'type', 'required'],
+        },
+      },
+      includes: {
+        type: 'array',
+        description: `Array of specific file paths to include in the boilerplate (highly recommended to list explicitly).
 
 Examples:
 - ["package.json", "tsconfig.json", "src/index.ts"] - Explicit file list (recommended)
@@ -150,10 +150,10 @@ Best practices:
 - Avoid wildcards unless you have a good reason
 
 See templates/nextjs-15/scaffold.yaml for a good example of explicit file listing.`,
-            items: {
-              type: 'string',
-            },
-          },
+        items: {
+          type: 'string',
+        },
+      },
     });
 
     // Build required array based on mode

@@ -43,7 +43,7 @@ describe('UseBoilerplateTool', () => {
         },
       };
 
-      const spy = vi.spyOn(tool['boilerplateService'], 'useBoilerplate');
+      const spy = vi.spyOn(tool.boilerplateService, 'useBoilerplate');
       spy.mockResolvedValue({
         success: true,
         message: 'Successfully scaffolded boilerplate at /path/to/project',
@@ -69,7 +69,7 @@ describe('UseBoilerplateTool', () => {
         variables: { appName: 'test' },
       };
 
-      const spy = vi.spyOn(tool['boilerplateService'], 'useBoilerplate');
+      const spy = vi.spyOn(tool.boilerplateService, 'useBoilerplate');
       spy.mockRejectedValue(new Error('Boilerplate not found'));
 
       const result = await tool.execute(args);

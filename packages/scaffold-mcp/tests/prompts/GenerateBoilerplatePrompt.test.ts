@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { GenerateBoilerplatePrompt } from '../../src/prompts/GenerateBoilerplatePrompt';
 
 describe('GenerateBoilerplatePrompt', () => {
@@ -68,6 +68,31 @@ describe('GenerateBoilerplatePrompt', () => {
 
       expect(messages[0].content.text).toContain('MINIMAL');
       expect(messages[0].content.text).toContain('business-agnostic');
+    });
+  });
+
+  describe('Monolith Mode', () => {
+    let monolithPrompt: GenerateBoilerplatePrompt;
+
+    beforeEach(() => {
+      monolithPrompt = new GenerateBoilerplatePrompt(true);
+    });
+
+    it('should adjust instructions for monolith mode', () => {
+      const messages = monolithPrompt.getMessages();
+
+      expect(messages[0].content.text).toContain('monolith');
+      expect(messages[0].content.text).toContain('defaults to "."');
+    });
+
+    it('should not include list-boilerplates step in monolith mode', () => {
+      const messages = monolithPrompt.getMessages();
+      const text = messages[0].content.text;
+
+      // In monolith mode, list-boilerplates step is not included in the workflow
+      const listBoilerplatesMatches = text.match(/list-boilerplates/g);
+      // Should appear less frequently than in monorepo mode (or not at all)
+      expect(listBoilerplatesMatches?.length || 0).toBeLessThan(2);
     });
   });
 });

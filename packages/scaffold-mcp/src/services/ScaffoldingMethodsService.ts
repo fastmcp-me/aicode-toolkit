@@ -177,18 +177,12 @@ export class ScaffoldingMethodsService {
    */
   private async resolveProjectPath(projectPath: string): Promise<string> {
     const absolutePath = path.resolve(projectPath);
+    // Use ProjectConfigResolver to handle both monorepo and monolith cases
+    const projectConfig = await ProjectConfigResolver.resolveProjectConfig(absolutePath);
 
-    try {
-      // Use ProjectConfigResolver to handle both monorepo and monolith cases
-      const projectConfig = await ProjectConfigResolver.resolveProjectConfig(absolutePath);
-
-      // For monolith projects with workspaceRoot, use that
-      // For monorepo projects, use the provided path
-      return projectConfig.workspaceRoot || absolutePath;
-    } catch (error) {
-      // If config resolution fails, the error message from ProjectConfigResolver is already helpful
-      throw error;
-    }
+    // For monolith projects with workspaceRoot, use that
+    // For monorepo projects, use the provided path
+    return projectConfig.workspaceRoot || absolutePath;
   }
 
   /**

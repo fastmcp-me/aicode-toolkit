@@ -109,7 +109,8 @@ export class ScaffoldService implements IScaffoldService {
 
       // Prepare all variables for replacement
       // If projectName is empty (monolith), use the package name for templates
-      const effectiveProjectName = projectName || (packageName.includes('/') ? packageName.split('/')[1] : packageName);
+      const effectiveProjectName =
+        projectName || (packageName.includes('/') ? packageName.split('/')[1] : packageName);
       const allVariables = {
         ...variables,
         projectName: effectiveProjectName,
