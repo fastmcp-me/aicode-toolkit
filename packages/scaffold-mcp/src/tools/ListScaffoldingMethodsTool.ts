@@ -23,10 +23,11 @@ export class ListScaffoldingMethodsTool {
   getDefinition(): ToolDefinition {
     return {
       name: ListScaffoldingMethodsTool.TOOL_NAME,
-      description: `Lists all available scaffolding methods (features) that can be added to an existing project.
+      description: `Lists all available scaffolding methods (features) that can be added to an existing project or for a specific template.
 
 This tool:
-- Reads the project's sourceTemplate from project.json (monorepo) or toolkit.yaml (monolith)
+- Reads the project's sourceTemplate from project.json (monorepo) or toolkit.yaml (monolith), OR
+- Directly uses the provided templateName to list available features
 - Returns available features for that template type
 - Provides variable schemas for each scaffolding method
 - Shows descriptions of what each method creates
@@ -47,10 +48,14 @@ Example methods might include:
           projectPath: {
             type: 'string',
             description:
-              'Absolute path to the project directory (for monorepo: containing project.json; for monolith: workspace root with toolkit.yaml)',
+              'Absolute path to the project directory (for monorepo: containing project.json; for monolith: workspace root with toolkit.yaml). Either projectPath or templateName is required.',
+          },
+          templateName: {
+            type: 'string',
+            description:
+              'Name of the template to list scaffolding methods for (e.g., "nextjs-15", "typescript-mcp-package"). Either projectPath or templateName is required.',
           },
         },
-        required: ['projectPath'],
         additionalProperties: false,
       },
     };
@@ -61,13 +66,25 @@ Example methods might include:
    */
   async execute(args: Record<string, any>): Promise<CallToolResult> {
     try {
-      const { projectPath } = args as { projectPath: string };
+      const { projectPath, templateName } = args as {
+        projectPath?: string;
+        templateName?: string;
+      };
 
-      if (!projectPath) {
-        throw new Error('Missing required parameter: projectPath');
+      // Validate that at least one parameter is provided
+      if (!projectPath && !templateName) {
+        throw new Error('Either projectPath or templateName must be provided');
       }
 
-      const result = await this.scaffoldingMethodsService.listScaffoldingMethods(projectPath);
+      // If both are provided, prioritize projectPath
+      let result;
+      if (projectPath) {
+        result = await this.scaffoldingMethodsService.listScaffoldingMethods(projectPath);
+      } else {
+        result = await this.scaffoldingMethodsService.listScaffoldingMethodsByTemplate(
+          templateName!,
+        );
+      }
 
       return {
         content: [

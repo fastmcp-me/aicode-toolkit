@@ -366,7 +366,10 @@ export class GeminiCliService implements CodingAgentService {
       try {
         // Extension mode: Create/update extension with context file
         const extensionsDir = path.join(this.workspaceRoot, '.gemini', 'extensions');
-        const extensionDir = path.join(extensionsDir, options.extensionName || 'aicode-toolkit-mcp');
+        const extensionDir = path.join(
+          extensionsDir,
+          options.extensionName || 'aicode-toolkit-mcp',
+        );
         const extensionConfigPath = path.join(extensionDir, 'gemini-extension.json');
         const contextPath = path.join(extensionDir, 'GEMINI.md');
 
@@ -458,10 +461,9 @@ export class GeminiCliService implements CodingAgentService {
       const responseContent = jsonResponse.response || '';
 
       // Determine which model was used from stats (first model in the list)
-      const usedModel =
-        jsonResponse.stats?.models
-          ? Object.keys(jsonResponse.stats.models)[0]
-          : params.model || 'gemini-2.0-flash-exp';
+      const usedModel = jsonResponse.stats?.models
+        ? Object.keys(jsonResponse.stats.models)[0]
+        : params.model || 'gemini-2.0-flash-exp';
 
       // Extract token usage from stats.models
       // Sum up tokens from all models used in the request

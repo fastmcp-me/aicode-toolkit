@@ -52,10 +52,16 @@ export class ScaffoldingMethodsService {
     const projectConfig = await ProjectConfigResolver.resolveProjectConfig(absoluteProjectPath);
 
     const sourceTemplate = projectConfig.sourceTemplate;
-    const templatePath = await this.findTemplatePath(sourceTemplate);
+    return this.listScaffoldingMethodsByTemplate(sourceTemplate);
+  }
+
+  async listScaffoldingMethodsByTemplate(
+    templateName: string,
+  ): Promise<ListScaffoldingMethodsResult> {
+    const templatePath = await this.findTemplatePath(templateName);
 
     if (!templatePath) {
-      throw new Error(`Template not found for sourceTemplate: ${sourceTemplate}`);
+      throw new Error(`Template not found for sourceTemplate: ${templateName}`);
     }
 
     const fullTemplatePath = path.join(this.templatesRootPath, templatePath);
@@ -73,7 +79,7 @@ export class ScaffoldingMethodsService {
     if (architectConfig.features && Array.isArray(architectConfig.features)) {
       architectConfig.features.forEach((feature: any) => {
         // Use feature.name if available, otherwise fallback to sourceTemplate
-        const featureName = feature.name || `scaffold-${sourceTemplate}`;
+        const featureName = feature.name || `scaffold-${templateName}`;
 
         methods.push({
           name: featureName,
@@ -91,7 +97,7 @@ export class ScaffoldingMethodsService {
     }
 
     return {
-      sourceTemplate,
+      sourceTemplate: templateName,
       templatePath,
       methods,
     };

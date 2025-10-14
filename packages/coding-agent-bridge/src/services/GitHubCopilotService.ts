@@ -119,7 +119,11 @@ export class GitHubCopilotService implements CodingAgentService {
    */
   async isEnabled(): Promise<boolean> {
     try {
-      const copilotInstructions = path.join(this.workspaceRoot, '.github', 'copilot-instructions.md');
+      const copilotInstructions = path.join(
+        this.workspaceRoot,
+        '.github',
+        'copilot-instructions.md',
+      );
       const agentsMd = path.join(this.workspaceRoot, 'AGENTS.md');
 
       const hasCopilotInstructions = await fs.pathExists(copilotInstructions);
@@ -354,12 +358,20 @@ export class GitHubCopilotService implements CodingAgentService {
     }
 
     try {
-      const copilotInstructionsPath = path.join(this.workspaceRoot, '.github', 'copilot-instructions.md');
+      const copilotInstructionsPath = path.join(
+        this.workspaceRoot,
+        '.github',
+        'copilot-instructions.md',
+      );
       const agentsMdPath = path.join(this.workspaceRoot, 'AGENTS.md');
 
       if (config.customInstructionFile) {
         // Write prompt to custom instruction file in .github directory
-        const customFilePath = path.join(this.workspaceRoot, '.github', config.customInstructionFile);
+        const customFilePath = path.join(
+          this.workspaceRoot,
+          '.github',
+          config.customInstructionFile,
+        );
         await writeFileEnsureDir(customFilePath, config.systemPrompt);
 
         // Reference the file in copilot-instructions.md using @{file} syntax

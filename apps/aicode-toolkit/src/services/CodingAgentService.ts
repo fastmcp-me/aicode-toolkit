@@ -232,7 +232,8 @@ export class CodingAgentService {
       restartInstructions = 'Restart Cursor to load the new MCP servers';
     } else if (agent === GITHUB_COPILOT) {
       configLocation = '~/.copilot/config.json (CLI) or GitHub UI (Coding Agent)';
-      restartInstructions = 'Restart GitHub Copilot CLI or configure via GitHub repository settings';
+      restartInstructions =
+        'Restart GitHub Copilot CLI or configure via GitHub repository settings';
     } else if (agent === CODEX) {
       configLocation = '~/.codex/config.toml';
       restartInstructions = 'Restart Codex CLI to load the new MCP servers';

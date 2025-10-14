@@ -111,7 +111,9 @@ export class CursorService implements CodingAgentService {
       if (error instanceof Error) {
         // Log specific error types that might need attention
         if (error.message.includes('EACCES') || error.message.includes('EPERM')) {
-          console.warn(`Cursor detection warning: Permission denied accessing workspace at ${this.workspaceRoot}`);
+          console.warn(
+            `Cursor detection warning: Permission denied accessing workspace at ${this.workspaceRoot}`,
+          );
         }
       }
       return false;

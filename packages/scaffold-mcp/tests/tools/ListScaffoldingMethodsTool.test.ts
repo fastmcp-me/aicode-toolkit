@@ -22,14 +22,15 @@ describe('ListScaffoldingMethodsTool', () => {
       expect(definition.description).toBeTruthy();
       expect(definition.description).toContain('Lists all available scaffolding methods');
       expect(definition.inputSchema.type).toBe('object');
-      expect(definition.inputSchema.required).toContain('projectPath');
     });
 
-    it('should include projectPath in schema', () => {
+    it('should include projectPath and templateName in schema', () => {
       const definition = tool.getDefinition();
 
       expect(definition.inputSchema.properties.projectPath).toBeDefined();
       expect(definition.inputSchema.properties.projectPath.type).toBe('string');
+      expect(definition.inputSchema.properties.templateName).toBeDefined();
+      expect(definition.inputSchema.properties.templateName.type).toBe('string');
     });
   });
 
@@ -80,11 +81,68 @@ describe('ListScaffoldingMethodsTool', () => {
       expect(spy).toHaveBeenCalledWith('/test/apps/my-app');
     });
 
-    it('should return error when projectPath is missing', async () => {
+    it('should return error when both projectPath and templateName are missing', async () => {
       const result = await tool.execute({});
 
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain('Missing required parameter: projectPath');
+      expect(result.content[0].text).toContain(
+        'Either projectPath or templateName must be provided',
+      );
+    });
+
+    it('should list scaffolding methods by templateName successfully', async () => {
+      const mockMethods = {
+        sourceTemplate: 'typescript-mcp-package',
+        templatePath: 'typescript-mcp-package',
+        methods: [
+          {
+            name: 'scaffold-tool',
+            description: 'Generate a new MCP tool',
+            variables_schema: {
+              type: 'object',
+              properties: {
+                toolName: { type: 'string', description: 'Tool name' },
+              },
+              required: ['toolName'],
+            },
+          },
+        ],
+      };
+
+      const spy = vi.spyOn(tool['scaffoldingMethodsService'], 'listScaffoldingMethodsByTemplate');
+      spy.mockResolvedValue(mockMethods);
+
+      const result = await tool.execute({ templateName: 'typescript-mcp-package' });
+
+      expect(result.isError).toBeFalsy();
+      expect(result.content[0].type).toBe('text');
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.sourceTemplate).toBe('typescript-mcp-package');
+      expect(response.methods).toHaveLength(1);
+      expect(response.methods[0].name).toBe('scaffold-tool');
+      expect(spy).toHaveBeenCalledWith('typescript-mcp-package');
+    });
+
+    it('should prioritize projectPath over templateName when both are provided', async () => {
+      const mockMethods = {
+        sourceTemplate: 'nextjs-15',
+        templatePath: 'nextjs-15',
+        methods: [],
+      };
+
+      const projectPathSpy = vi.spyOn(tool['scaffoldingMethodsService'], 'listScaffoldingMethods');
+      projectPathSpy.mockResolvedValue(mockMethods);
+
+      const templateNameSpy = vi.spyOn(
+        tool['scaffoldingMethodsService'],
+        'listScaffoldingMethodsByTemplate',
+      );
+
+      await tool.execute({ projectPath: '/test/apps/my-app', templateName: 'nextjs-15' });
+
+      expect(projectPathSpy).toHaveBeenCalledWith('/test/apps/my-app');
+      expect(templateNameSpy).not.toHaveBeenCalled();
     });
 
     it('should handle empty methods list', async () => {
