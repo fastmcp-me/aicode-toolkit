@@ -22,6 +22,7 @@
 
 import path from 'node:path';
 import * as fs from 'fs-extra';
+import * as yaml from 'js-yaml';
 import { ProjectType } from '../constants';
 import type { ToolkitConfig } from '../types';
 
@@ -69,7 +70,7 @@ export async function detectProjectType(
   if (await fs.pathExists(toolkitYamlPath)) {
     try {
       const content = await fs.readFile(toolkitYamlPath, 'utf-8');
-      const config = JSON.parse(content) as ToolkitConfig;
+      const config = yaml.load(content) as ToolkitConfig;
       if (config?.projectType) {
         indicators.push(`toolkit.yaml specifies ${config.projectType}`);
         return {

@@ -126,7 +126,7 @@ describe('projectTypeDetector', () => {
         );
       });
       vi.mocked(fs.readFile).mockResolvedValue(
-        JSON.stringify({ projectType: ProjectType.MONOLITH }),
+        `projectType: ${ProjectType.MONOLITH}`,
       );
 
       const result = await detectProjectType(mockWorkspaceRoot);
@@ -161,6 +161,23 @@ describe('projectTypeDetector', () => {
       expect(result.projectType).toBeUndefined();
       expect(result.indicators).toContain('No monorepo indicators found');
     });
+
+    it('should parse toolkit.yaml as YAML (not JSON)', async () => {
+      vi.mocked(fs.pathExists).mockImplementation(async (filePath: string) => {
+        return filePath === path.join(mockWorkspaceRoot, 'toolkit.yaml');
+      });
+      // Provide actual YAML content with YAML-specific syntax (comments, no quotes on keys)
+      vi.mocked(fs.readFile).mockResolvedValue(`
+# Toolkit configuration
+projectType: monolith
+sourceTemplate: nextjs-15
+      `);
+
+      const result = await detectProjectType(mockWorkspaceRoot);
+
+      expect(result.projectType).toBe(ProjectType.MONOLITH);
+      expect(result.indicators[0]).toContain('toolkit.yaml specifies monolith');
+    });
   });
 
   describe('isMonorepo', () => {
@@ -189,7 +206,7 @@ describe('projectTypeDetector', () => {
         return filePath === path.join(mockWorkspaceRoot, 'toolkit.yaml');
       });
       vi.mocked(fs.readFile).mockResolvedValue(
-        JSON.stringify({ projectType: ProjectType.MONOLITH }),
+        `projectType: ${ProjectType.MONOLITH}`,
       );
 
       const result = await isMonolith(mockWorkspaceRoot);
