@@ -125,9 +125,7 @@ describe('projectTypeDetector', () => {
           filePath === path.join(mockWorkspaceRoot, 'nx.json')
         );
       });
-      vi.mocked(fs.readFile).mockResolvedValue(
-        `projectType: ${ProjectType.MONOLITH}`,
-      );
+      vi.mocked(fs.readFile).mockResolvedValue(`projectType: ${ProjectType.MONOLITH}`);
 
       const result = await detectProjectType(mockWorkspaceRoot);
 
@@ -205,9 +203,7 @@ sourceTemplate: nextjs-15
       vi.mocked(fs.pathExists).mockImplementation(async (filePath: string) => {
         return filePath === path.join(mockWorkspaceRoot, 'toolkit.yaml');
       });
-      vi.mocked(fs.readFile).mockResolvedValue(
-        `projectType: ${ProjectType.MONOLITH}`,
-      );
+      vi.mocked(fs.readFile).mockResolvedValue(`projectType: ${ProjectType.MONOLITH}`);
 
       const result = await isMonolith(mockWorkspaceRoot);
 

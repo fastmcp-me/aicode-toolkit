@@ -131,6 +131,8 @@ export interface LlmInvocationParams {
   prompt: string;
   /** Optional model identifier (e.g., 'claude-sonnet-4-20250514') */
   model?: string;
+  /** Optional system prompt to override default system prompt */
+  systemPrompt?: string;
   /** Optional temperature for response randomness (0-1), default varies by service */
   temperature?: number;
   /** Optional maximum tokens to generate, default varies by service */

@@ -21,10 +21,9 @@ import {
   TemplatesManagerService,
   ProjectConfigResolver,
   ProjectFinderService,
-  ProjectType,
 } from '@agiflowai/aicode-utils';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import type { TemplateMapping } from '../types';
 
 export class TemplateFinder {
@@ -54,7 +53,7 @@ export class TemplateFinder {
       let projectConfig: any;
       let projectPath: string;
 
-      if (project && project.root) {
+      if (project?.root) {
         // Monorepo project found - use ProjectConfigResolver with project directory
         projectConfig = await ProjectConfigResolver.resolveProjectConfig(project.root);
         projectPath = project.root;
@@ -71,7 +70,8 @@ export class TemplateFinder {
       // IMPORTANT: Verify the file is actually within the project
       // This prevents returning project config for files outside the project
       const relativeToProject = path.relative(projectPath, normalizedPath);
-      const isInProject = !relativeToProject.startsWith('..') && !path.isAbsolute(relativeToProject);
+      const isInProject =
+        !relativeToProject.startsWith('..') && !path.isAbsolute(relativeToProject);
 
       if (!isInProject) {
         // File is outside the project, cannot determine template

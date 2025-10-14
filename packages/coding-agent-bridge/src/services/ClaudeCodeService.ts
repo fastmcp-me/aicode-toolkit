@@ -286,8 +286,8 @@ export class ClaudeCodeService implements CodingAgentService {
       args.push('--model', params.model);
     }
 
-    // Apply system prompt from promptConfig or params
-    const systemPrompt = this.promptConfig.systemPrompt;
+    // Apply system prompt from params (priority) or promptConfig (fallback)
+    const systemPrompt = params.systemPrompt ?? this.promptConfig.systemPrompt;
     if (systemPrompt) {
       args.push('--system-prompt', systemPrompt);
     }

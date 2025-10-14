@@ -115,7 +115,7 @@ export class SpecToolService {
       // Otherwise, just display the prompt for manual addition
       print.info('\nGenerated OpenSpec instruction prompt:');
       print.info('\nYou can append this to your CLAUDE.md or agent config file:');
-      print.info('\n' + prompt);
+      print.info(`\n${prompt}`);
     }
 
     return prompt;

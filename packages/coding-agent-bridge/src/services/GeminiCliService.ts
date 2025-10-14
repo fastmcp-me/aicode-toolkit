@@ -153,7 +153,7 @@ export class GeminiCliService implements CodingAgentService {
     try {
       const geminiWorkspaceFile = path.join(this.workspaceRoot, '.gemini');
       return await fs.pathExists(geminiWorkspaceFile);
-    } catch (error) {
+    } catch (_error) {
       // Return false if unable to check file existence
       return false;
     }

@@ -18,7 +18,7 @@
  * - Direct tool implementation (services should be tool-agnostic)
  */
 
-import { icons, messages, ProjectType, print } from '@agiflowai/aicode-utils';
+import { messages, ProjectType } from '@agiflowai/aicode-utils';
 import * as fs from 'fs-extra';
 import { cloneRepository, cloneSubdirectory, gitInit, parseGitHubUrl } from '../utils';
 

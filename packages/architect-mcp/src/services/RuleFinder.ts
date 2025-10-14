@@ -2,13 +2,12 @@ import {
   ProjectConfigResolver,
   ProjectFinderService,
   TemplatesManagerService,
-  ProjectType,
 } from '@agiflowai/aicode-utils';
-import * as fs from 'fs/promises';
+import * as fs from 'node:fs/promises';
 import * as yaml from 'js-yaml';
 import { minimatch } from 'minimatch';
-import * as path from 'path';
-import type { RulesYamlConfig, RuleSection, RuleItem, ProjectConfig } from '../types';
+import * as path from 'node:path';
+import type { RulesYamlConfig, RuleSection, ProjectConfig } from '../types';
 
 export class RuleFinder {
   private projectCache: Map<string, ProjectConfig> = new Map();
@@ -36,7 +35,7 @@ export class RuleFinder {
       const globalRulesContent = await fs.readFile(globalRulesPath, 'utf-8');
       this.globalRulesCache = yaml.load(globalRulesContent) as RulesYamlConfig;
       return this.globalRulesCache;
-    } catch (error) {
+    } catch (_error) {
       // Global rules are optional
       return null;
     }
@@ -266,7 +265,7 @@ export class RuleFinder {
       let projectRoot: string;
       let projectName: string;
 
-      if (project && project.root) {
+      if (project?.root) {
         // Monorepo project found - use ProjectConfigResolver with project directory
         projectConfig = await ProjectConfigResolver.resolveProjectConfig(project.root);
         projectRoot = project.root;
@@ -285,7 +284,8 @@ export class RuleFinder {
       // IMPORTANT: Verify the file is actually within the project
       // This prevents returning project config for files outside the project
       const relativeToProject = path.relative(projectRoot, filePath);
-      const isInProject = !relativeToProject.startsWith('..') && !path.isAbsolute(relativeToProject);
+      const isInProject =
+        !relativeToProject.startsWith('..') && !path.isAbsolute(relativeToProject);
 
       if (!isInProject) {
         // File is outside the project, cannot determine rules

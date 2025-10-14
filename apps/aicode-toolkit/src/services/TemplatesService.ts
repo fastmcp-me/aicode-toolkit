@@ -17,7 +17,7 @@
  */
 
 import path from 'node:path';
-import { icons, messages, print } from '@agiflowai/aicode-utils';
+import { messages, print } from '@agiflowai/aicode-utils';
 import * as fs from 'fs-extra';
 import { cloneSubdirectory, fetchGitHubDirectoryContents } from '../utils/git';
 
@@ -56,8 +56,8 @@ export class TemplatesService {
 
       print.info(`Found ${templateDirs.length} template(s)`);
 
-      let downloaded = 0;
-      let skipped = 0;
+      let _downloaded = 0;
+      let _skipped = 0;
 
       // Download each template
       for (const template of templateDirs) {
@@ -66,7 +66,7 @@ export class TemplatesService {
         // Skip if already exists
         if (await fs.pathExists(targetFolder)) {
           print.info(`Skipping ${template.name} (already exists)`);
-          skipped++;
+          _skipped++;
           continue;
         }
 
@@ -76,7 +76,7 @@ export class TemplatesService {
         await cloneSubdirectory(repoUrl, repoConfig.branch, template.path, targetFolder);
 
         print.success(`Downloaded ${template.name}`);
-        downloaded++;
+        _downloaded++;
       }
 
       print.success('\nAll templates downloaded successfully!');

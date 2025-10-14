@@ -1,4 +1,4 @@
-import { log, print } from '@agiflowai/aicode-utils';
+import { print } from '@agiflowai/aicode-utils';
 /**
  * Add Rule Command
  *

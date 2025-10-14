@@ -362,7 +362,7 @@ const initActors = {
             const templateSelectionService = new TemplateSelectionService(finalTemplatesPath);
             const templates = await templateSelectionService.listTemplates();
             existingTemplates = templates.map((t) => t.name);
-          } catch (error) {
+          } catch (_error) {
             print.warning('Could not read existing templates, will proceed anyway');
           }
         }
@@ -615,7 +615,7 @@ const initActors = {
         const templateSelectionService = new TemplateSelectionService(input.tmpTemplatesPath);
         await templateSelectionService.cleanup();
         spinner.succeed('Cleaned up temporary files');
-      } catch (error) {
+      } catch (_error) {
         spinner.warn('Could not clean up all temporary files');
       }
     }

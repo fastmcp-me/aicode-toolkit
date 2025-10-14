@@ -13,8 +13,6 @@
  * - Test behavior, not implementation
  */
 
-import os from 'node:os';
-import path from 'node:path';
 import {
   CLAUDE_CODE,
   CODEX,
@@ -25,7 +23,7 @@ import {
 } from '@agiflowai/coding-agent-bridge';
 import * as fs from 'fs-extra';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { type CodingAgent, CodingAgentService } from '../../src/services/CodingAgentService';
+import { CodingAgentService } from '../../src/services/CodingAgentService';
 
 // Mock dependencies
 vi.mock('fs-extra', async () => {

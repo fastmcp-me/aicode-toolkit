@@ -1,7 +1,7 @@
-import * as fs from 'fs/promises';
+import * as fs from 'node:fs/promises';
 import * as yaml from 'js-yaml';
-import * as path from 'path';
-import { ArchitectConfig, Feature } from '../types';
+import * as path from 'node:path';
+import type { ArchitectConfig, Feature } from '../types';
 import { TemplatesManagerService } from '@agiflowai/aicode-utils';
 
 export class ArchitectParser {
@@ -85,7 +85,7 @@ export class ArchitectParser {
       const config = yaml.load(content) as any;
 
       // Check if this is a standard architect.yaml format with features
-      if (config && config.features && Array.isArray(config.features)) {
+      if (config?.features && Array.isArray(config.features)) {
         const globalConfig: ArchitectConfig = config;
         this.configCache.set(resolvedPath, globalConfig);
         return globalConfig;
@@ -94,7 +94,7 @@ export class ArchitectParser {
       // Otherwise, handle the global architect.yaml with different structure
       const features: Feature[] = [];
 
-      if (config && config.prompts && Array.isArray(config.prompts)) {
+      if (config?.prompts && Array.isArray(config.prompts)) {
         for (const prompt of config.prompts) {
           if (prompt.examples && Array.isArray(prompt.examples)) {
             for (const example of prompt.examples) {

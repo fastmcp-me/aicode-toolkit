@@ -28,9 +28,9 @@ import type {
   RuleItem,
 } from '../types/index.js';
 import { TemplatesManagerService } from '@agiflowai/aicode-utils';
-import * as fs from 'fs/promises';
+import * as fs from 'node:fs/promises';
 import * as yaml from 'js-yaml';
-import * as path from 'path';
+import * as path from 'node:path';
 
 interface AddRuleToolInput {
   template_name?: string;

@@ -17,7 +17,7 @@
 
 import os from 'node:os';
 import path from 'node:path';
-import { icons, ProjectType, print } from '@agiflowai/aicode-utils';
+import { ProjectType, print } from '@agiflowai/aicode-utils';
 import * as fs from 'fs-extra';
 import { cloneSubdirectory, fetchGitHubDirectoryContents } from '../utils/git';
 import type { TemplateRepoConfig } from './TemplatesService';

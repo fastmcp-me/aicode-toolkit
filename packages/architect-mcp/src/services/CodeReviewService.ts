@@ -1,7 +1,7 @@
 import { log } from '@agiflowai/aicode-utils';
 import { ClaudeCodeService } from '@agiflowai/coding-agent-bridge';
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { RuleFinder } from './RuleFinder.js';
 import type { CodeReviewResult, RuleSection, RulesYamlConfig } from '../types';
 
@@ -85,7 +85,7 @@ export class CodeReviewService {
     let fileContent: string;
     try {
       fileContent = await fs.readFile(normalizedPath, 'utf-8');
-    } catch (error) {
+    } catch (_error) {
       throw new Error(`Failed to read file: ${normalizedPath}`);
     }
 

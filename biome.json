@@ -19,7 +19,8 @@
       "!**/*.min.js",
       "!**/pnpm-lock.yaml",
       "!**/package-lock.json",
-      "!**/cli.ts"
+      "!**/cli.ts",
+      "!**/server/index.ts"
     ]
   },
   "formatter": {
@@ -129,6 +130,16 @@
         "rules": {
           "correctness": {
             "noUndeclaredVariables": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.test.ts", "**/tests/**/*.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noEmptyBlockStatements": "off"
           }
         }
       }
